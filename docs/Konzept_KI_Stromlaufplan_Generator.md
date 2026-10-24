@@ -4,7 +4,7 @@
 |---|---|
 | Bezug | Bestand: mehrere hundert Stromlaufpläne (PDF) verschiedener Kunden/Jahrgänge; Datenblätter der Feldgeräte; EPLAN Electric P8 im Einsatz |
 | Ziel | Programm mit lokaler KI, das aus dem Bestand die Hausstandards und deren Entwicklung erfasst und daraus neue Stromlaufpläne teilautomatisiert erzeugt – Variante A über die EPLAN-API, Variante B direkt als PDF inkl. Stückliste |
-| Stand | Konzept + Prototyp Variante B (`schaltplan_generator/`), 24.10.2026 |
+| Stand | Konzept + Prototyp Variante B (`schaltplan_generator/`), 24.10.2026 · <span style="color:red">Rev. 1, 24.10.2026: Entscheidungen des Auftraggebers eingearbeitet (Kap. 2, 5, 9, 10, neu 11)</span> |
 
 Kennzeichnung der Aussagen:
 **[P]** = am Prototyp nachgewiesen (Befehl angegeben, reproduzierbar) ·
@@ -35,6 +35,8 @@ Kennzeichnung der Aussagen:
 | Wiederkehrende Schaltungsteile (z. B. 24-V-Erzeugung 10 A / 20 A) | Typicals: immer gleiche Struktur, nur Parameter variieren | aus Bestand clustern, dann als Typical/Makro fixieren | gering |
 
 Prüfung „Vektor oder Scan“ erfolgt automatisch: `analysieren` listet Pläne ohne Text-Ebene unter `ohne_textebene_ocr_noetig` [P].
+
+<span style="color:red">**Rev. 1 – Datenlage laut Auftraggeber:** Zu vielen PDFs existieren EPLAN-Projekte; der PDF-Bestand ist gemischt (viele exportiert, viele gescannt). Daraus folgt die Rangfolge der Lernquellen: (1) EPLAN-Projekte über Beschriftungsexport (Kap. 11, ohne API), (2) Vektor-PDFs ohne Projekt, (3) Scans ohne Projekt zuletzt – für Scans mit vorhandenem EPLAN-Projekt entfällt die OCR ganz.</span>
 
 ---
 
@@ -90,10 +92,12 @@ Prüfung „Vektor oder Scan“ erfolgt automatisch: `analysieren` listet Pläne
 | Weiterverwendung Fertigung (Klemmen, Beschriftung, Stückliste) | EPLAN-Berichte, Stücklistenexport [Q3] | CSV-Stückliste [P]; weitere Exporte selbst bauen |
 | Risiko | Abhängigkeit EPLAN-Version/API-Änderungen | Akzeptanz bei Kunden, die EPLAN-Daten erwarten **[A]** |
 
-**Empfehlung [A]** (Herleitung: Betrieb zeichnet heute in EPLAN; Makros und Symbolbibliothek existieren bereits und müssten in B nachgebaut werden):
-1. Regelwerk und Planmodell zuerst mit Variante B entwickeln und am Bestand validieren (schnell, ohne Lizenzfrage).
-2. Produktiv Variante A: dasselbe Planmodell per EPLAN-API als Makros einsetzen.
-3. Vor Eigenentwicklung A ein Angebot/Test für EPLAN Cogineer einholen – es löst den Teil „Regeln → Makros → Schaltplan“ bereits [Q4]; die Eigenleistung beschränkt sich dann auf Bestandsanalyse, Datenblatt-KI und Eingabe.
+~~**Empfehlung [A]** (Herleitung: Betrieb zeichnet heute in EPLAN; Makros und Symbolbibliothek existieren bereits und müssten in B nachgebaut werden):~~
+~~1. Regelwerk und Planmodell zuerst mit Variante B entwickeln und am Bestand validieren (schnell, ohne Lizenzfrage).~~
+~~2. Produktiv Variante A: dasselbe Planmodell per EPLAN-API als Makros einsetzen.~~
+~~3. Vor Eigenentwicklung A ein Angebot/Test für EPLAN Cogineer einholen – es löst den Teil „Regeln → Makros → Schaltplan“ bereits [Q4]; die Eigenleistung beschränkt sich dann auf Bestandsanalyse, Datenblatt-KI und Eingabe.~~
+
+<span style="color:red">**Entscheidung Rev. 1 (Auftraggeber):** Zuerst Variante B entwickeln und am Bestand erproben; danach die Brücke zu Variante A **ohne API-Lizenz und ohne Cogineer** über EPLAN-Standardfunktionen (Makros mit Platzhaltern, Geräte-Import, SPS-Zuordnungsliste, Beschriftung) – siehe Kap. 11. Begründung: API-Lizenz kostenpflichtig, Cogineer nicht gewünscht. Konsequenz für B: Die Typicals in slpgen werden 1 : 1 so geschnitten wie die künftigen EPLAN-Makros (gleicher Name, gleiche Varianten, gleiche Platzhalter), damit die Brücke nur noch eine Zuordnungstabelle ist.</span>
 
 ---
 
@@ -161,28 +165,47 @@ Hinweis: Die Normtexte selbst sind kostenpflichtig und wurden nicht eingesehen; 
 
 ## 9 Umsetzungsreihenfolge
 
+~~Ursprüngliche Phasen 0–6 (Rev. 0) ersetzt durch:~~
+
 | Phase | Inhalt | Ergebnis / Abnahme | Voraussetzung |
 |---|---|---|---|
-| 0 | Stichprobe 20–30 Pläne über alle Jahrgänge bereitstellen; klären, ob EPLAN-Projekte vorhanden | Entscheidung Datenweg (PDF vs. EPLAN-Export) | Zugriff Bestand |
-| 1 | `analysieren` über gesamten Bestand; Haus-Layout, BMK-Schema, Kennbuchstaben-Trend auswerten | Bericht „Hausstandard Ist + Entwicklung“ | Phase 0 |
-| 2 | Gerätestamm aus Datenblättern (KI-Vorschlag + Freigabe), Start mit Standardgeräten (Netzteile, Schutz, SPS) | freigegebener Stamm | lokales LLM installiert |
-| 3 | Typicals definieren (24-V-Erzeugung, Sensor-/Aktor-Anschluss, Motorabgang …) und Regelwerk erweitern | Regelwerk + Tests | Phase 1 |
-| 4 | Validierung: 3–5 Bestandsprojekte nachgenerieren, Abweichung zum Original bewerten | Abweichungsliste | Phase 2–3 |
-| 5 | Variante A: Planmodell → EPLAN (Eigenentwicklung oder Cogineer) | EPLAN-Projekt aus Eingabe | EPLAN-Lizenzklärung |
-| 6 | Eingabe-Assistent (Freitext/Kundenliste → Projekt-YAML per LLM) | Dialog-Eingabe | Phase 3 |
+| <span style="color:red">0</span> | <span style="color:red">Skript-Test in EPLAN P8 2025 (`eplan_skripte/Test_Beschriftung.cs`) + GUI-Test Geräte-Import; 2–3 Standardseiten und 3–5 Projekte (EPLAN-Projekt + PDF) als Stichprobe bereitstellen</span> | <span style="color:red">Klarheit: Batch-Export ohne API möglich ja/nein; Beschriftungsschema festgelegt</span> | <span style="color:red">EPLAN-Arbeitsplatz</span> |
+| <span style="color:red">1</span> | <span style="color:red">Lernen aus EPLAN-Projekten: Beschriftungsexport (xlsx/xml) aller Projekte → `slpgen` liest Betriebsmittel, Artikel, Funktionstexte, Jahr; Vektor-PDFs ohne Projekt mit `analysieren`</span> | <span style="color:red">Bericht „Hausstandard Ist + Entwicklung“, Häufigkeit der Standardgeräte</span> | <span style="color:red">Phase 0</span> |
+| <span style="color:red">2</span> | <span style="color:red">Standardseiten erfassen → Typicals in slpgen (B) **und** gleichnamige EPLAN-Seiten-/Fenstermakros mit Platzhaltern und Wertesätzen</span> | <span style="color:red">Typical-/Makrobibliothek v1 (z. B. 24-V-Erzeugung 10/20 A, Sensor-/Aktoranschluss)</span> | <span style="color:red">Phase 1</span> |
+| <span style="color:red">3</span> | <span style="color:red">Gerätestamm aus Datenblättern (KI-Vorschlag + Freigabe), Abgleich mit Artikeln aus Phase 1</span> | <span style="color:red">freigegebener Stamm</span> | <span style="color:red">lokales LLM</span> |
+| <span style="color:red">4</span> | <span style="color:red">**Erprobung B:** 3–5 Bestandsprojekte nachgenerieren, Vergleich Planmodell ↔ Beschriftungsexport des Originals (automatisch: fehlende/abweichende BMK, Artikel, Adressen)</span> | <span style="color:red">Abweichungsliste, Freigabe Regelwerk</span> | <span style="color:red">Phase 1–3</span> |
+| <span style="color:red">5</span> | <span style="color:red">**Brücke A ohne API:** slpgen erzeugt Einfügeliste (Makro + Wertesatz), Geräte-Import-Excel und SPS-Zuordnungsliste; Konstrukteur fügt Makros ein und importiert</span> | <span style="color:red">EPLAN-Projekt, teilautomatisiert</span> | <span style="color:red">Phase 2 + 4; Import-Tests aus Phase 0</span> |
+| <span style="color:red">6</span> | <span style="color:red">Scans ohne EPLAN-Projekt (OCR/Vision) – nur falls Phase 1 zu wenig Lernstoff liefert</span> | <span style="color:red">ergänzende Statistik</span> | <span style="color:red">GPU</span> |
+| <span style="color:red">7</span> | <span style="color:red">Eingabe-Assistent (Freitext/Kundenliste → Projekt-YAML per LLM)</span> | <span style="color:red">Dialog-Eingabe</span> | <span style="color:red">Phase 4</span> |
 
 ---
 
 ## 10 Offene Punkte / Entscheidungen
 
-| Nr. | Frage | Warum relevant |
-|---|---|---|
-| O1 | Liegen zu den PDFs die EPLAN-Projekte (bzw. Exporte) vor? | bestimmt Aufwand Phase 1 (K4) |
-| O2 | Anteil Vektor-PDF vs. Scan? | Scan → OCR/Vision nötig |
-| O3 | EPLAN-Version und Lizenzumfang (API, Cogineer)? | Variante A, [Q1] widersprüchlich |
-| O4 | Gibt es Haus-Makros/Typicals bereits (z. B. 24-V-Erzeugung)? | direkt als Typicals nutzbar |
-| O5 | Haus-Regeln für Reserve, Absicherung, SPS-Adressierung, Kennbuchstaben | ersetzen die Annahmen im Prototyp |
-| O6 | Hardware für lokale KI (GPU/VRAM) | Modellgröße (3B … 72B) [Q8] |
+| Nr. | Frage | Warum relevant | <span style="color:red">Antwort Rev. 1</span> |
+|---|---|---|---|
+| O1 | Liegen zu den PDFs die EPLAN-Projekte (bzw. Exporte) vor? | bestimmt Aufwand Phase 1 (K4) | <span style="color:red">ja, zu vielen PDFs</span> |
+| O2 | Anteil Vektor-PDF vs. Scan? | Scan → OCR/Vision nötig | <span style="color:red">gemischt: viele exportiert, viele gescannt</span> |
+| O3 | EPLAN-Version und Lizenzumfang (API, Cogineer)? | Variante A, [Q1] widersprüchlich | <span style="color:red">EPLAN P8 2025, Standardlizenz, Poollizenzen; keine API-Lizenz, kein Cogineer</span> |
+| O4 | Gibt es Haus-Makros/Typicals bereits (z. B. 24-V-Erzeugung)? | direkt als Typicals nutzbar | <span style="color:red">Standardseiten ja, bisher keine Makrobibliothek (Kopieren)</span> |
+| O5 | Haus-Regeln für Reserve, Absicherung, SPS-Adressierung, Kennbuchstaben | ersetzen die Annahmen im Prototyp | <span style="color:red">offen</span> |
+| O6 | Hardware für lokale KI (GPU/VRAM) | Modellgröße (3B … 72B) [Q8] | <span style="color:red">offen</span> |
+
+---
+
+## 11 Brücke zu Variante A ohne API-Lizenz (Rev. 1, neu)
+
+<span style="color:red">Alle Bausteine nutzen EPLAN-Bordmittel. Ob jede Funktion im Lizenzpaket „P8 2025 Standard“ enthalten ist, ist **nicht verifiziert [A]**: Die EPLAN-Hilfeseiten tragen teils den Vermerk „only available for certain module packages“ [Q18]; deshalb Phase 0 = Test in der eigenen Installation.</span>
+
+| Nr. | Baustein | EPLAN-Funktion (Bordmittel) | slpgen liefert | Quelle | Status |
+|---|---|---|---|---|---|
+| <span style="color:red">B1</span> | <span style="color:red">Makrobibliothek aus Standardseiten</span> | <span style="color:red">Seiten-/Fenstermakros mit Varianten und Platzhalterobjekten; Wertesatz wird beim Einfügen gewählt, Seitenmakros erzeugen neue Seiten; Platzhalterdaten bleiben nach dem Einfügen änderbar</span> | <span style="color:red">Einfügeliste je Projekt: Makro, Variante, Wertesatz, Platzhalterwerte</span> | <span style="color:red">[Q16][Q17]</span> | <span style="color:red">Grundfunktion [A]: im Betrieb prüfen</span> |
+| <span style="color:red">B2</span> | <span style="color:red">Geräte (BMK, Artikel, Funktionstext) einspielen</span> | <span style="color:red">Projektdaten > Geräte > Import aus Excel/CSV mit Importschema; erzeugt unplatzierte Geräte</span> | <span style="color:red">Excel-Datei im Importschema</span> | <span style="color:red">[Q18][Q19]</span> | <span style="color:red">GUI-Test Phase 0</span> |
+| <span style="color:red">B3</span> | <span style="color:red">SPS-Adressen einspielen</span> | <span style="color:red">SPS-Zuordnungsliste mit Schema (Einstellungen > Projekte > Geräte > SPS)</span> | <span style="color:red">Zuordnungsliste Adresse/BMK/Funktionstext</span> | <span style="color:red">[Q20]</span> | <span style="color:red">GUI-Test Phase 0</span> |
+| <span style="color:red">B4</span> | <span style="color:red">Lernen aus EPLAN-Projekten</span> | <span style="color:red">Beschriftung mit Konfigurationsschema nach xlsx/xml/txt (Aktion `label`)</span> | <span style="color:red">Einleser für den Export (nach Festlegung des Schemas)</span> | <span style="color:red">[Q21]</span> | <span style="color:red">GUI je Projekt sicher; Batch nur per Skript</span> |
+| <span style="color:red">B5</span> | <span style="color:red">Batch-Automatisierung</span> | <span style="color:red">Skripte (C#) unter Datei > Extras > Schnittstellen > Skripte; Aktionen aus Skripten aufrufbar; Hilfe widersprüchlich zur Lizenzpflicht</span> | <span style="color:red">Testskript `eplan_skripte/Test_Beschriftung.cs`</span> | <span style="color:red">[Q1][Q22]</span> | <span style="color:red">Test Phase 0</span> |
+
+<span style="color:red">Ablauf A-light (teilautomatisiert): (1) slpgen erzeugt aus der Projekteingabe Planmodell, PDF-Vorschau (B), Einfügeliste, Geräte-Import und SPS-Zuordnungsliste → (2) Konstrukteur legt Projekt aus Vorlage an und fügt die Makros laut Einfügeliste ein → (3) Import von Geräteliste und Zuordnungsliste → (4) Prüfung, Berichte (Stückliste, Klemmenplan) durch EPLAN. Gegenüber der API-Lösung bleibt Schritt (2) Handarbeit; der Aufwand dafür sinkt mit der Makrobibliothek, die Sie ohnehin statt des Kopierens brauchen [A].</span>
 
 ---
 
@@ -205,3 +228,10 @@ Hinweis: Die Normtexte selbst sind kostenpflichtig und wurden nicht eingesehen; 
 | Q13 | IEC Webstore, IEC 60204-1:2016: https://webstore.iec.ch/publication/26036 | Geltungsbereich, überarbeitete Dokumentationsanforderungen |
 | Q14 | VDE Verlag, Vorschau IEC 61082-1 Ed. 3.0: https://www.vde-verlag.de/iec-normen/preview-pdf/info_iec61082-1{ed3.0}b.pdf | Inhalt/Änderungen 2014 |
 | Q15 | AFNOR, IEC 61439-1:2020: https://www.boutique.afnor.org/en-gb/standard/iec-6143912020/lowvoltage-switchgear-and-controlgear-assemblies-part-1-general-rules/xs136993/250624 | 3. Ausgabe, ersetzt 2011 |
+| <span style="color:red">Q16</span> | <span style="color:red">EPLAN-Hilfe „Makros auswählen“: https://www.eplan.help/en-us/infoportal/content/Plattform/2022/Content/htm/macrosgui_h_makrosauswaehlen.htm</span> | <span style="color:red">Varianten, Wertesatz-Auswahl beim Einfügen</span> |
+| <span style="color:red">Q17</span> | <span style="color:red">EPLAN News 2.8, Platzhalterobjekte/Seitenmakros: https://eplan.help/en-us/infoportal/content/Plattform/2.8/Content/htm/news_p_platzhalterobjekte_auswahldialogseitenmakros_171340.htm</span> | <span style="color:red">Wertesatz-Dialog auch für Seitenmakros</span> |
+| <span style="color:red">Q18</span> | <span style="color:red">EPLAN-Hilfe „Projektdaten > Geräte > Import“: https://eplan.help/en-us/Infoportal/Content/Plattform/2.9/Content/htm/projectprocessinggui_d_bmdatenimport.htm</span> | <span style="color:red">Import aus Text/CSV/Excel, Importschema „Standard“</span> |
+| <span style="color:red">Q19</span> | <span style="color:red">EPLAN API `DeviceService.ImportDevicesExcel` (2026): https://www.eplan.help/en-US/Infoportal/content/api/2026/Eplan.EplApi.HEServicesu~Eplan.EplApi.HEServices.DeviceService~ImportDevicesExcel.html</span> | <span style="color:red">Importmodi anlegen/ändern/löschen (nur zur Einordnung, API nicht genutzt)</span> |
+| <span style="color:red">Q20</span> | <span style="color:red">EPLAN TechTipp „SPS-Zuordnungslistenaustausch SIEMENS TIA Portal SDF“: https://www.eplan.help/nl-nl/Infoportal/Content/misc/Techtipps/SPS/TechTipp-SPS-Zuordnungslistenaustausch-SIEMENS-TIA-Portal-SDF.pdf</span> | <span style="color:red">Schema für Zuordnungslisten (Stand Plattform 2.8)</span> |
+| <span style="color:red">Q21</span> | <span style="color:red">EPLAN API, Aktion `label` (2024): https://eplan.help/en-us/Infoportal/Content/api/2024/label.html</span> | <span style="color:red">CONFIGSCHEME, DESTINATIONFILE (txt/xls/xlsx/xml)</span> |
+| <span style="color:red">Q22</span> | <span style="color:red">EPLAN-Hilfe „Verfügbare Aktionen“ (2024): https://eplan.help/en-us/infoportal/content/Plattform/2024/Content/htm/availableactions_o_eplanaktionen.htm</span> | <span style="color:red">Aktionen für Kommandozeile/Skripte/Ribbon</span> |

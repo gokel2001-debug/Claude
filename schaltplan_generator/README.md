@@ -18,5 +18,6 @@ python -m pytest tests
 | `slpgen/zeichnen.py` | PDF-Ausgabe A3 (Rahmen, Schriftfeld, Strompfade, Listen) |
 | `slpgen/analyse.py` | Bestandsanalyse (Format, Jahr, Kennbuchstaben je Jahr) und Datenblatt-Extraktion (optional lokales LLM über Ollama) |
 | `slpgen/modell.py` | neutrales Planmodell (auch Übergabe an Variante A / EPLAN) |
+| `eplan_skripte/Test_Beschriftung.cs` | Test in EPLAN: Laufen Skripte ohne API-Lizenz? (Konzept Kap. 11, Phase 0) |
 
 Erzeugte Pläne tragen im Schriftfeld den Vermerk „nicht freigegeben“; sie ersetzen keine Prüfung durch eine Elektrofachkraft.
