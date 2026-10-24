@@ -2,3 +2,8 @@ __pycache__/
 .pytest_cache/
 ausgabe/
 analyse/
+# vertrauliche Kundendaten/Hausprofile niemals einchecken
+hausprofil/
+*VERTRAULICH*
+*.pdf
+!beispiele/ergebnis/*.pdf

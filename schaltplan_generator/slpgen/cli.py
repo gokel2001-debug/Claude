@@ -48,6 +48,15 @@ def cmd_vergleichen(a):
     print(json.dumps(analyse.vergleiche(Path(a.pdf), modell), indent=2, ensure_ascii=False))
 
 
+def cmd_struktur(a):
+    from .struktur import lese_struktur
+    e = lese_struktur(Path(a.pdf), schwelle=a.schwelle)
+    if a.ausgabe:
+        Path(a.ausgabe).write_text(json.dumps(e, indent=1, ensure_ascii=False), encoding="utf-8")
+    print(json.dumps({k: e[k] for k in ("seiten", "seiten_je_dokumentart", "typical_kandidaten",
+                                        "leere_anlagen", "aderkennzeichnung_gesamt")}, indent=1, ensure_ascii=False))
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="slpgen", description="Stromlaufplan-Generator (Prototyp)")
     sub = p.add_subparsers(dest="befehl", required=True)
@@ -69,6 +78,11 @@ def main(argv=None):
     v.add_argument("pdf")
     v.add_argument("modell")
     v.set_defaults(f=cmd_vergleichen)
+    st = sub.add_parser("struktur", help="Vektor-PDF: Anlagen, BMK, SPS-Adressen, Adern, Typical-Kandidaten")
+    st.add_argument("pdf")
+    st.add_argument("--schwelle", type=float, default=0.75, help="Ähnlichkeit für Typical-Gruppen (0..1)")
+    st.add_argument("--ausgabe", help="JSON-Datei für das vollständige Ergebnis")
+    st.set_defaults(f=cmd_struktur)
     a = p.parse_args(argv)
     try:
         a.f(a)
