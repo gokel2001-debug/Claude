@@ -4,7 +4,7 @@
 |---|---|
 | Bezug | Bestand: mehrere hundert Stromlaufpläne (PDF) verschiedener Kunden/Jahrgänge; Datenblätter der Feldgeräte; EPLAN Electric P8 im Einsatz |
 | Ziel | Programm mit lokaler KI, das aus dem Bestand die Hausstandards und deren Entwicklung erfasst und daraus neue Stromlaufpläne teilautomatisiert erzeugt – Variante A über die EPLAN-API, Variante B direkt als PDF inkl. Stückliste |
-| Stand | Konzept + Prototyp Variante B (`schaltplan_generator/`), 24.10.2026 · <span style="color:red">Rev. 1, 24.10.2026: Entscheidungen des Auftraggebers eingearbeitet (Kap. 2, 5, 9, 10, neu 11)</span> |
+| Stand | Konzept + Prototyp Variante B (`schaltplan_generator/`), 24.10.2026 · <span style="color:red">Rev. 1, 24.10.2026: Entscheidungen des Auftraggebers eingearbeitet (Kap. 2, 5, 9, 10, neu 11)</span> · <span style="color:red">Rev. 2, 24.10.2026: vorerst ausschließlich Variante B ohne EPLAN (Kap. 5, 9, 11, neu 12)</span> |
 
 Kennzeichnung der Aussagen:
 **[P]** = am Prototyp nachgewiesen (Befehl angegeben, reproduzierbar) ·
@@ -99,6 +99,8 @@ Prüfung „Vektor oder Scan“ erfolgt automatisch: `analysieren` listet Pläne
 
 <span style="color:red">**Entscheidung Rev. 1 (Auftraggeber):** Zuerst Variante B entwickeln und am Bestand erproben; danach die Brücke zu Variante A **ohne API-Lizenz und ohne Cogineer** über EPLAN-Standardfunktionen (Makros mit Platzhaltern, Geräte-Import, SPS-Zuordnungsliste, Beschriftung) – siehe Kap. 11. Begründung: API-Lizenz kostenpflichtig, Cogineer nicht gewünscht. Konsequenz für B: Die Typicals in slpgen werden 1 : 1 so geschnitten wie die künftigen EPLAN-Makros (gleicher Name, gleiche Varianten, gleiche Platzhalter), damit die Brücke nur noch eine Zuordnungstabelle ist.</span>
 
+<span style="color:red">**Entscheidung Rev. 2 (Auftraggeber):** Vorerst wird **ausschließlich Variante B** gebaut, ohne EPLAN P8 – weder als Datenquelle noch als Ausgabe. Gelernt wird damit nur aus PDFs (Vektor und Scan) und Datenblättern. Die Brücke zu A (Kap. 11) ist zurückgestellt; der Grundsatz „Typicals so schneiden wie spätere Makros“ bleibt bestehen, damit die Brücke später ohne Umbau möglich ist.</span>
+
 ---
 
 ## 6 Lokale KI – Bausteine
@@ -167,6 +169,8 @@ Hinweis: Die Normtexte selbst sind kostenpflichtig und wurden nicht eingesehen; 
 
 ~~Ursprüngliche Phasen 0–6 (Rev. 0) ersetzt durch:~~
 
+<span style="color:red">**Rev. 2:** Phase 0 (EPLAN-Tests) und Phase 5 (Brücke A) zurückgestellt; Phase 1 nur aus PDFs; der Ausbauplan für B steht in Kap. 12.</span>
+
 | Phase | Inhalt | Ergebnis / Abnahme | Voraussetzung |
 |---|---|---|---|
 | <span style="color:red">0</span> | <span style="color:red">Skript-Test in EPLAN P8 2025 (`eplan_skripte/Test_Beschriftung.cs`) + GUI-Test Geräte-Import; 2–3 Standardseiten und 3–5 Projekte (EPLAN-Projekt + PDF) als Stichprobe bereitstellen</span> | <span style="color:red">Klarheit: Batch-Export ohne API möglich ja/nein; Beschriftungsschema festgelegt</span> | <span style="color:red">EPLAN-Arbeitsplatz</span> |
@@ -195,6 +199,8 @@ Hinweis: Die Normtexte selbst sind kostenpflichtig und wurden nicht eingesehen; 
 
 ## 11 Brücke zu Variante A ohne API-Lizenz (Rev. 1, neu)
 
+<span style="color:red">**Rev. 2: zurückgestellt** – bleibt als Planungsstand erhalten.</span>
+
 <span style="color:red">Alle Bausteine nutzen EPLAN-Bordmittel. Ob jede Funktion im Lizenzpaket „P8 2025 Standard“ enthalten ist, ist **nicht verifiziert [A]**: Die EPLAN-Hilfeseiten tragen teils den Vermerk „only available for certain module packages“ [Q18]; deshalb Phase 0 = Test in der eigenen Installation.</span>
 
 | Nr. | Baustein | EPLAN-Funktion (Bordmittel) | slpgen liefert | Quelle | Status |
@@ -206,6 +212,31 @@ Hinweis: Die Normtexte selbst sind kostenpflichtig und wurden nicht eingesehen; 
 | <span style="color:red">B5</span> | <span style="color:red">Batch-Automatisierung</span> | <span style="color:red">Skripte (C#) unter Datei > Extras > Schnittstellen > Skripte; Aktionen aus Skripten aufrufbar; Hilfe widersprüchlich zur Lizenzpflicht</span> | <span style="color:red">Testskript `eplan_skripte/Test_Beschriftung.cs`</span> | <span style="color:red">[Q1][Q22]</span> | <span style="color:red">Test Phase 0</span> |
 
 <span style="color:red">Ablauf A-light (teilautomatisiert): (1) slpgen erzeugt aus der Projekteingabe Planmodell, PDF-Vorschau (B), Einfügeliste, Geräte-Import und SPS-Zuordnungsliste → (2) Konstrukteur legt Projekt aus Vorlage an und fügt die Makros laut Einfügeliste ein → (3) Import von Geräteliste und Zuordnungsliste → (4) Prüfung, Berichte (Stückliste, Klemmenplan) durch EPLAN. Gegenüber der API-Lösung bleibt Schritt (2) Handarbeit; der Aufwand dafür sinkt mit der Makrobibliothek, die Sie ohnehin statt des Kopierens brauchen [A].</span>
+
+## 12 Ausbau Variante B ohne EPLAN (Rev. 2, neu)
+
+<span style="color:red">Umgesetzt in diesem Stand:</span>
+
+| Baustein | Inhalt | Nachweis |
+|---|---|---|
+| <span style="color:red">Motorabgang Direktstart (Typical DOL)</span> | <span style="color:red">Motorschutzschalter nach Einstellbereich (I_r = I_N), Schütz nach AC-3 ≥ I_N, Klemmen -X2 (U, V, W, PE), Lastkreis- und Steuerkreisseite mit Kontaktspiegel und Querverweisen</span> | <span style="color:red">`slpgen/motor.py`, Test `test_motorabgang_auswahl` [P]</span> |
+| <span style="color:red">Leitungsauslegung</span> | <span style="color:red">kleinster Querschnitt mit I_z · f ≥ I_r und ΔU = √3 · I_N · l · cos φ / (κ · A) ≤ ΔU_max; Sonderfall X = 0 der Formel ΔU = √3 · l · I · (R · cos φ + X · sin φ) [Q24] mit R = 1/(κ · A), κ = 56 m/(Ω·mm²) für Cu [Q25]; Reaktanz vernachlässigt → für lange Leitungen/große Querschnitte ungenau [Q24]</span> | <span style="color:red">Test `test_spannungsfall_formel` [P]</span> |
+| <span style="color:red">Strombelastbarkeit I_z</span> | <span style="color:red">Projektparameter `leitungen.i_z_A`; vorläufig 1,5 mm² → 13,1 A und 2,5 mm² → 17,4 A (Cu/PVC, 40 °C, Verlegeart B2) aus Herstellerangabe [Q23], dort als vereinfachte Werte bezeichnet; die Werte aus EN 60204-1 Tabelle 6 lagen online nicht vor **[A]** → solange `freigegeben: false`, steht eine Warnung im Auslegungsnachweis</span> | <span style="color:red">[P]</span> |
+| <span style="color:red">Kabelliste, Summenstrom 400 V</span> | <span style="color:red">Kabelliste (Querschnitt, Länge, I_r, I_z · f, ΔU); Σ I_N der Motoren + Primärstrom Netzteil gegen den Hauptschalter</span> | <span style="color:red">[P]</span> |
+| <span style="color:red">Dynamischer Seitenplan</span> | <span style="color:red">Seiten für Motorabgänge und Feldgeräte nach Anzahl; Listen über mehrere Seiten (36 Zeilen je Seite)</span> | <span style="color:red">Test `test_seitenplan` [P]</span> |
+| <span style="color:red">Vergleich PDF ↔ Planmodell</span> | <span style="color:red">`slpgen vergleichen <pdf> <modell.json>`: gemeinsame BMK, BMK nur im Modell bzw. nur im PDF, fehlende Artikel = Messgröße für die Erprobung an Bestandsplänen</span> | <span style="color:red">Rundlauftest mit eigenem PDF: Abdeckung 100 % [P]</span> |
+
+<span style="color:red">Nachrechnung Beispiel (4 Motoren): M4 mit I_N = 11,2 A: 1,5 mm² → 13,1 A · 0,8 = 10,48 A < 11,2 A → 2,5 mm² (17,4 A · 0,8 = 13,92 A); ΔU = 0,88 %. 24 V: zusätzlich 4 Schützspulen à 3,0 W → Σ I = 1,887 A, Bedarf 2,359 A → weiterhin 5-A-Netzteil; Abgang DO-Last 1,085 A · 1,25 = 1,36 A → 2 A. 400 V: 21,5 A + 0,58 A = 22,08 A < 40 A Hauptschalter.</span>
+
+<span style="color:red">Nächste Schritte (benötigen Ihre Daten):</span>
+
+| Schritt | Inhalt | Benötigt |
+|---|---|---|
+| <span style="color:red">B2</span> | <span style="color:red">Strukturauslese Vektor-PDF: BMK mit Seite/Spalte, Stücklistenseiten, Schriftfeld (Datum, Revision) – Grundlage für „Lernen“ ohne EPLAN</span> | <span style="color:red">3–5 Vektor-PDFs aus verschiedenen Jahren</span> |
+| <span style="color:red">B3</span> | <span style="color:red">Typicals aus Ihren Standardseiten (24-V-Erzeugung 10/20 A u. a.) als Vorlagen in slpgen; Layout (Schriftfeld, Blattformat, Spalten) an Haus-Layout anpassen</span> | <span style="color:red">2–3 Standardseiten als PDF</span> |
+| <span style="color:red">B4</span> | <span style="color:red">Scans: Texterkennung lokal (Docling/OCR [Q7]) bzw. Vision-Modell [Q8], Fehlerrate an Stichprobe messen</span> | <span style="color:red">5 Scans + GPU-Angabe</span> |
+| <span style="color:red">B5</span> | <span style="color:red">Normwerte I_z eintragen und freigeben; weitere Typicals (Stern-Dreieck, Frequenzumrichter, Not-Halt-Kreis)</span> | <span style="color:red">Hausregeln / Normtabelle</span> |
+| <span style="color:red">B6</span> | <span style="color:red">Eingabe-Assistent (Kundenliste/Freitext → Projekt-YAML per lokalem LLM)</span> | <span style="color:red">Beispiel-Kundenanfragen</span> |
 
 ---
 
@@ -235,3 +266,6 @@ Hinweis: Die Normtexte selbst sind kostenpflichtig und wurden nicht eingesehen; 
 | <span style="color:red">Q20</span> | <span style="color:red">EPLAN TechTipp „SPS-Zuordnungslistenaustausch SIEMENS TIA Portal SDF“: https://www.eplan.help/nl-nl/Infoportal/Content/misc/Techtipps/SPS/TechTipp-SPS-Zuordnungslistenaustausch-SIEMENS-TIA-Portal-SDF.pdf</span> | <span style="color:red">Schema für Zuordnungslisten (Stand Plattform 2.8)</span> |
 | <span style="color:red">Q21</span> | <span style="color:red">EPLAN API, Aktion `label` (2024): https://eplan.help/en-us/Infoportal/Content/api/2024/label.html</span> | <span style="color:red">CONFIGSCHEME, DESTINATIONFILE (txt/xls/xlsx/xml)</span> |
 | <span style="color:red">Q22</span> | <span style="color:red">EPLAN-Hilfe „Verfügbare Aktionen“ (2024): https://eplan.help/en-us/infoportal/content/Plattform/2024/Content/htm/availableactions_o_eplanaktionen.htm</span> | <span style="color:red">Aktionen für Kommandozeile/Skripte/Ribbon</span> |
+| <span style="color:red">Q23</span> | <span style="color:red">Kollmorgen, „Strombelastbarkeit“: https://www.kollmorgen.com/content/strombelastbarkeit-0</span> | <span style="color:red">I_z Cu/PVC 40 °C, B2: 1,5 mm² 13,1 A; 2,5 mm² 17,4 A (vereinfachte Werte, Verweis auf EN 60204-1)</span> |
+| <span style="color:red">Q24</span> | <span style="color:red">VIOX, „Spannungsabfall berechnen“: https://viox.com/de/how-to-calculate-voltage-drop/</span> | <span style="color:red">Drehstrom: ΔV = √3 · L · I · (R cos φ + X sin φ)</span> |
+| <span style="color:red">Q25</span> | <span style="color:red">zaehlerschrank24.de, „Berechnungen“: https://www.zaehlerschrank24.de/berechnungen/</span> | <span style="color:red">Leitfähigkeit Kupfer 56 (Aluminium 37) in der Querschnittsformel</span> |

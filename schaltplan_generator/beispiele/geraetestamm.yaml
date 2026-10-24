@@ -53,6 +53,20 @@ artikel:
   ES-24-06: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 6 A, i_nenn_A: 6}
   ES-24-10: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 10 A, i_nenn_A: 10}
   RK-2.5: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: Reihenklemme 2,5 mm² grau}
+  RK-4: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: Reihenklemme 4 mm² grau}
+
+  # Motorabgang Direktstart: Motorschutzschalter (Einstellbereich), Schütz (AC-3, Spule 24 V DC)
+  MSS-1.6:  {kategorie: motorschutz, hersteller: Beispiel GmbH, bezeichnung: "Motorschutzschalter 1–1,6 A", bereich_A: [1.0, 1.6]}
+  MSS-2.5:  {kategorie: motorschutz, hersteller: Beispiel GmbH, bezeichnung: "Motorschutzschalter 1,6–2,5 A", bereich_A: [1.6, 2.5]}
+  MSS-4:    {kategorie: motorschutz, hersteller: Beispiel GmbH, bezeichnung: "Motorschutzschalter 2,5–4 A", bereich_A: [2.5, 4.0]}
+  MSS-6.3:  {kategorie: motorschutz, hersteller: Beispiel GmbH, bezeichnung: "Motorschutzschalter 4–6,3 A", bereich_A: [4.0, 6.3]}
+  MSS-10:   {kategorie: motorschutz, hersteller: Beispiel GmbH, bezeichnung: "Motorschutzschalter 6,3–10 A", bereich_A: [6.3, 10.0]}
+  MSS-16:   {kategorie: motorschutz, hersteller: Beispiel GmbH, bezeichnung: "Motorschutzschalter 10–16 A", bereich_A: [10.0, 16.0]}
+  SCH-09:   {kategorie: schuetz, hersteller: Beispiel GmbH, bezeichnung: "Leistungsschütz 9 A AC-3, Spule 24 V DC", ac3_A: 9, spule_W: 3.0}
+  SCH-12:   {kategorie: schuetz, hersteller: Beispiel GmbH, bezeichnung: "Leistungsschütz 12 A AC-3, Spule 24 V DC", ac3_A: 12, spule_W: 3.0}
+  SCH-18:   {kategorie: schuetz, hersteller: Beispiel GmbH, bezeichnung: "Leistungsschütz 18 A AC-3, Spule 24 V DC", ac3_A: 18, spule_W: 4.5}
+  KAB-4G1.5: {kategorie: kabel, hersteller: Beispiel GmbH, bezeichnung: "Steuer-/Motorleitung 4G1,5 mm²", adern: 4, querschnitt_mm2: 1.5}
+  KAB-4G2.5: {kategorie: kabel, hersteller: Beispiel GmbH, bezeichnung: "Steuer-/Motorleitung 4G2,5 mm²", adern: 4, querschnitt_mm2: 2.5}
 
   SPS-CPU:
     kategorie: sps_cpu

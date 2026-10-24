@@ -40,3 +40,22 @@ feldgeraete:
   - {bmk: Y2, artikel: MV-24-4W, funktion: "Stopper Auslauf", gruppe: DO-Last}
   - {bmk: Y3, artikel: MV-24-4W, funktion: "Ausschieber", gruppe: DO-Last}
   - {bmk: P1, artikel: LMP-24-GN, funktion: "Meldung Betrieb", gruppe: DO-Last}
+
+# Motoren (Typenschilddaten); Typical: Direktstart mit Motorschutzschalter + Schütz
+motoren:
+  - {bmk: M1, funktion: "Bandantrieb", p_kW: 0.75, i_N_A: 1.9, cos_phi: 0.78, laenge_m: 12}
+  - {bmk: M2, funktion: "Rollenbahn", p_kW: 1.5, i_N_A: 3.5, cos_phi: 0.80, laenge_m: 25}
+  - {bmk: M3, funktion: "Pumpe Kühlmittel", p_kW: 2.2, i_N_A: 4.9, cos_phi: 0.82, laenge_m: 40}
+  - {bmk: M4, funktion: "Lüfter Absaugung", p_kW: 5.5, i_N_A: 11.2, cos_phi: 0.85, laenge_m: 30}
+
+# Leitungsauslegung Motorabgänge – HAUSREGELN / NORMWERTE EINTRAGEN UND FREIGEBEN
+leitungen:
+  freigegeben: false          # solange false: Warnung im Auslegungsnachweis
+  verlegeart: B2              # nur Dokumentation
+  # Strombelastbarkeit I_z [A] Cu/PVC, 40 °C, Verlegeart B2. Vorläufige Werte aus Herstellerangabe
+  # (Kollmorgen, „Strombelastbarkeit“, vereinfachte Werte) – gegen EN 60204-1 Tabelle 6 prüfen
+  # und um weitere Querschnitte ergänzen.
+  i_z_A: {1.5: 13.1, 2.5: 17.4}
+  reduktionsfaktor: 0.8       # Häufung/Umgebung (Beispiel-Hausregel)
+  kappa: 56                   # Leitfähigkeit Cu [m/(Ω·mm²)]
+  du_max_prozent: 3.0         # zulässiger Spannungsfall (Beispiel-Hausregel)

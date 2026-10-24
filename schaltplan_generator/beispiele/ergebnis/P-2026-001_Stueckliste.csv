@@ -1,15 +1,26 @@
-Artikel;Menge;Hersteller;Bezeichnung
-HS-3P-40;1;Beispiel GmbH;Hauptschalter 3-polig 40 A
-LS-1P-C06;1;Beispiel GmbH;Leitungsschutzschalter 1P C6
-NT-24-05;1;Beispiel GmbH;Netzteil 1~ 230 V AC / 24 V DC, 5 A
-ES-24-01;3;Beispiel GmbH;Elektronische Sicherung 24 V 1 A
-SPS-CPU;1;Beispiel GmbH;SPS-CPU 24 V DC
-SPS-DI16;1;Beispiel GmbH;Digitaleingabe 16 x 24 V DC
-SPS-DO16;1;Beispiel GmbH;Digitalausgabe 16 x 24 V DC / 0,5 A
-SPS-AI8;1;Beispiel GmbH;Analogeingabe 8 x 4–20 mA
-IND-M12-PNP;2;Beispiel GmbH;Induktiver Näherungsschalter M12, PNP Schließer
-OPT-REF-PNP;2;Beispiel GmbH;Reflexionslichtschranke, PNP
-PT-420-2L;1;Beispiel GmbH;Drucktransmitter 0–10 bar, 4–20 mA, 2-Leiter
-MV-24-4W;3;Beispiel GmbH;Magnetventil 24 V DC, 4,2 W
-LMP-24-GN;1;Beispiel GmbH;Leuchtmelder grün 24 V DC
-RK-2.5;22;Beispiel GmbH;Reihenklemme 2
+Pos;Menge;Artikel;Hersteller;Bezeichnung;BMK
+1;77 m;KAB-4G1.5;Beispiel GmbH;Steuer-/Motorleitung 4G1,5 mm²;-W1, -W2, -W3
+2;1 Stk;MSS-2.5;Beispiel GmbH;Motorschutzschalter 1,6–2,5 A;-Q2
+3;3 Stk;SCH-09;Beispiel GmbH;Leistungsschütz 9 A AC-3, Spule 24 V DC;-K1, -K2, -K3
+4;4 Stk;KUNDE;;Beistellung Kunde;-M1, -M2, -M3, -M4
+5;1 Stk;MSS-4;Beispiel GmbH;Motorschutzschalter 2,5–4 A;-Q3
+6;1 Stk;MSS-6.3;Beispiel GmbH;Motorschutzschalter 4–6,3 A;-Q4
+7;30 m;KAB-4G2.5;Beispiel GmbH;Steuer-/Motorleitung 4G2,5 mm²;-W4
+8;1 Stk;MSS-16;Beispiel GmbH;Motorschutzschalter 10–16 A;-Q5
+9;1 Stk;SCH-12;Beispiel GmbH;Leistungsschütz 12 A AC-3, Spule 24 V DC;-K4
+10;16 Stk;RK-4;Beispiel GmbH;Reihenklemme 4 mm² grau;-X2
+11;1 Stk;HS-3P-40;Beispiel GmbH;Hauptschalter 3-polig 40 A;-Q1
+12;1 Stk;LS-1P-C06;Beispiel GmbH;Leitungsschutzschalter 1P C6;-F1
+13;1 Stk;NT-24-05;Beispiel GmbH;Netzteil 1~ 230 V AC / 24 V DC, 5 A;-G1
+14;2 Stk;ES-24-01;Beispiel GmbH;Elektronische Sicherung 24 V 1 A;-F2, -F3
+15;1 Stk;ES-24-02;Beispiel GmbH;Elektronische Sicherung 24 V 2 A;-F4
+16;1 Stk;SPS-CPU;Beispiel GmbH;SPS-CPU 24 V DC;-A1
+17;1 Stk;SPS-DI16;Beispiel GmbH;Digitaleingabe 16 x 24 V DC;-A2
+18;1 Stk;SPS-DO16;Beispiel GmbH;Digitalausgabe 16 x 24 V DC / 0,5 A;-A3
+19;1 Stk;SPS-AI8;Beispiel GmbH;Analogeingabe 8 x 4–20 mA;-A4
+20;2 Stk;IND-M12-PNP;Beispiel GmbH;Induktiver Näherungsschalter M12, PNP Schließer;-B1, -B2
+21;2 Stk;OPT-REF-PNP;Beispiel GmbH;Reflexionslichtschranke, PNP;-B3, -B4
+22;1 Stk;PT-420-2L;Beispiel GmbH;Drucktransmitter 0–10 bar, 4–20 mA, 2-Leiter;-B5
+23;3 Stk;MV-24-4W;Beispiel GmbH;Magnetventil 24 V DC, 4,2 W;-Y1, -Y2, -Y3
+24;1 Stk;LMP-24-GN;Beispiel GmbH;Leuchtmelder grün 24 V DC;-P1
+25;22 Stk;RK-2.5;Beispiel GmbH;Reihenklemme 2;-X1

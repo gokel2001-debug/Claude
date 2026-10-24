@@ -7,6 +7,7 @@ pip install -r requirements.txt
 python -m slpgen generieren beispiele/projekt_beispiel.yaml      # -> ausgabe/
 python -m slpgen analysieren /pfad/zu/bestandsplaenen             # -> analyse/
 python -m slpgen datenblatt datenblatt.pdf --ollama http://localhost:11434
+python -m slpgen vergleichen original.pdf ausgabe/P-2026-001_Planmodell.json
 python -m pytest tests
 ```
 
@@ -14,10 +15,11 @@ python -m pytest tests
 |---|---|
 | `beispiele/projekt_beispiel.yaml` | Eingabe: Projektkopf, Einspeisung, 24-V-Regeln, SPS, Feldgeräte |
 | `beispiele/geraetestamm.yaml` | Gerätestamm (Platzhalter-Artikel, aus Datenblättern zu befüllen) |
-| `slpgen/regeln.py` | Regelwerk: 24-V-Bilanz, Netzteil, Absicherung, SPS-Kanäle, Klemmen, BMK |
+| `slpgen/regeln.py` | Regelwerk: 24-V-Bilanz, Netzteil, Absicherung, SPS-Kanäle, Klemmen, BMK, Seitenplan |
+| `slpgen/motor.py` | Typical Motorabgang Direktstart: Motorschutzschalter, Schütz, Leitungsauslegung (I_z, Spannungsfall), Kabel |
 | `slpgen/zeichnen.py` | PDF-Ausgabe A3 (Rahmen, Schriftfeld, Strompfade, Listen) |
-| `slpgen/analyse.py` | Bestandsanalyse (Format, Jahr, Kennbuchstaben je Jahr) und Datenblatt-Extraktion (optional lokales LLM über Ollama) |
+| `slpgen/analyse.py` | Bestandsanalyse (Format, Jahr, Kennbuchstaben je Jahr), Datenblatt-Extraktion (optional lokales LLM über Ollama), Vergleich PDF ↔ Planmodell |
 | `slpgen/modell.py` | neutrales Planmodell (auch Übergabe an Variante A / EPLAN) |
-| `eplan_skripte/Test_Beschriftung.cs` | Test in EPLAN: Laufen Skripte ohne API-Lizenz? (Konzept Kap. 11, Phase 0) |
+| `eplan_skripte/Test_Beschriftung.cs` | zurückgestellt (Variante A): Test, ob EPLAN-Skripte ohne API-Lizenz laufen |
 
 Erzeugte Pläne tragen im Schriftfeld den Vermerk „nicht freigegeben“; sie ersetzen keine Prüfung durch eine Elektrofachkraft.

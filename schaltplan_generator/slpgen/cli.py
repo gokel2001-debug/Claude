@@ -43,6 +43,11 @@ def cmd_datenblatt(a):
                      indent=2, ensure_ascii=False))
 
 
+def cmd_vergleichen(a):
+    modell = json.loads(Path(a.modell).read_text(encoding="utf-8"))
+    print(json.dumps(analyse.vergleiche(Path(a.pdf), modell), indent=2, ensure_ascii=False))
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="slpgen", description="Stromlaufplan-Generator (Prototyp)")
     sub = p.add_subparsers(dest="befehl", required=True)
@@ -60,6 +65,10 @@ def main(argv=None):
     d.add_argument("--ollama", help="z. B. http://localhost:11434 (lokales LLM, optional)")
     d.add_argument("--modell", default="qwen2.5:7b")
     d.set_defaults(f=cmd_datenblatt)
+    v = sub.add_parser("vergleichen", help="Original-PDF gegen Planmodell (JSON) abgleichen")
+    v.add_argument("pdf")
+    v.add_argument("modell")
+    v.set_defaults(f=cmd_vergleichen)
     a = p.parse_args(argv)
     try:
         a.f(a)

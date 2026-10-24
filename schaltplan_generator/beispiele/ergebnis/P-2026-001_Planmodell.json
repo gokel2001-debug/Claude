@@ -8,10 +8,293 @@
     "ersteller": "N.N.",
     "datum": "2026-10-24",
     "revision": "00",
-    "_netz": "3/N/PE AC 400/230 V 50 Hz",
-    "letzte_feldseite": 7
+    "_netz": "3/N/PE AC 400/230 V 50 Hz"
   },
   "betriebsmittel": [
+    {
+      "bmk": "-W1",
+      "artikel": "KAB-4G1.5",
+      "bezeichnung": "Steuer-/Motorleitung 4G1,5 mm²",
+      "funktion": "Zuleitung -M1",
+      "kategorie": "kabel",
+      "seite": 6,
+      "spalte": 2,
+      "daten": {
+        "laenge_m": 12.0
+      }
+    },
+    {
+      "bmk": "-Q2",
+      "artikel": "MSS-2.5",
+      "bezeichnung": "Motorschutzschalter 1,6–2,5 A",
+      "funktion": "Rückmeldung -M1 Bandantrieb",
+      "kategorie": "motorschutz",
+      "seite": 6,
+      "spalte": 1,
+      "daten": {
+        "i_r_A": 1.9,
+        "signal": "DI",
+        "i_A": 0.0,
+        "gruppe": "SPS",
+        "steuer_seite": 7,
+        "steuer_spalte": 2,
+        "funktion_sps": "Rückmeldung -M1 Bandantrieb",
+        "sps": "-A2:4 (%I0.4)",
+        "adresse": "%I0.4",
+        "absicherung": "-F2"
+      }
+    },
+    {
+      "bmk": "-K1",
+      "artikel": "SCH-09",
+      "bezeichnung": "Leistungsschütz 9 A AC-3, Spule 24 V DC",
+      "funktion": "Ein -M1 Bandantrieb",
+      "kategorie": "schuetz",
+      "seite": 6,
+      "spalte": 2,
+      "daten": {
+        "signal": "DO",
+        "i_A": 0.125,
+        "gruppe": "DO-Last",
+        "steuer_seite": 7,
+        "steuer_spalte": 1,
+        "funktion_sps": "Ein -M1 Bandantrieb",
+        "sps": "-A3:4 (%Q0.4)",
+        "adresse": "%Q0.4",
+        "absicherung": "-F4"
+      }
+    },
+    {
+      "bmk": "-M1",
+      "artikel": "KUNDE",
+      "bezeichnung": "Drehstrommotor 0.75 kW",
+      "funktion": "Bandantrieb",
+      "kategorie": "motor",
+      "seite": 6,
+      "spalte": 1,
+      "daten": {
+        "p_kW": 0.75,
+        "i_N_A": 1.9,
+        "cos_phi": 0.78,
+        "kabel": "-W1"
+      }
+    },
+    {
+      "bmk": "-W2",
+      "artikel": "KAB-4G1.5",
+      "bezeichnung": "Steuer-/Motorleitung 4G1,5 mm²",
+      "funktion": "Zuleitung -M2",
+      "kategorie": "kabel",
+      "seite": 6,
+      "spalte": 4,
+      "daten": {
+        "laenge_m": 25.0
+      }
+    },
+    {
+      "bmk": "-Q3",
+      "artikel": "MSS-4",
+      "bezeichnung": "Motorschutzschalter 2,5–4 A",
+      "funktion": "Rückmeldung -M2 Rollenbahn",
+      "kategorie": "motorschutz",
+      "seite": 6,
+      "spalte": 3,
+      "daten": {
+        "i_r_A": 3.5,
+        "signal": "DI",
+        "i_A": 0.0,
+        "gruppe": "SPS",
+        "steuer_seite": 7,
+        "steuer_spalte": 4,
+        "funktion_sps": "Rückmeldung -M2 Rollenbahn",
+        "sps": "-A2:5 (%I0.5)",
+        "adresse": "%I0.5",
+        "absicherung": "-F2"
+      }
+    },
+    {
+      "bmk": "-K2",
+      "artikel": "SCH-09",
+      "bezeichnung": "Leistungsschütz 9 A AC-3, Spule 24 V DC",
+      "funktion": "Ein -M2 Rollenbahn",
+      "kategorie": "schuetz",
+      "seite": 6,
+      "spalte": 4,
+      "daten": {
+        "signal": "DO",
+        "i_A": 0.125,
+        "gruppe": "DO-Last",
+        "steuer_seite": 7,
+        "steuer_spalte": 3,
+        "funktion_sps": "Ein -M2 Rollenbahn",
+        "sps": "-A3:5 (%Q0.5)",
+        "adresse": "%Q0.5",
+        "absicherung": "-F4"
+      }
+    },
+    {
+      "bmk": "-M2",
+      "artikel": "KUNDE",
+      "bezeichnung": "Drehstrommotor 1.5 kW",
+      "funktion": "Rollenbahn",
+      "kategorie": "motor",
+      "seite": 6,
+      "spalte": 3,
+      "daten": {
+        "p_kW": 1.5,
+        "i_N_A": 3.5,
+        "cos_phi": 0.8,
+        "kabel": "-W2"
+      }
+    },
+    {
+      "bmk": "-W3",
+      "artikel": "KAB-4G1.5",
+      "bezeichnung": "Steuer-/Motorleitung 4G1,5 mm²",
+      "funktion": "Zuleitung -M3",
+      "kategorie": "kabel",
+      "seite": 6,
+      "spalte": 6,
+      "daten": {
+        "laenge_m": 40.0
+      }
+    },
+    {
+      "bmk": "-Q4",
+      "artikel": "MSS-6.3",
+      "bezeichnung": "Motorschutzschalter 4–6,3 A",
+      "funktion": "Rückmeldung -M3 Pumpe Kühlmittel",
+      "kategorie": "motorschutz",
+      "seite": 6,
+      "spalte": 5,
+      "daten": {
+        "i_r_A": 4.9,
+        "signal": "DI",
+        "i_A": 0.0,
+        "gruppe": "SPS",
+        "steuer_seite": 7,
+        "steuer_spalte": 6,
+        "funktion_sps": "Rückmeldung -M3 Pumpe Kühlmittel",
+        "sps": "-A2:6 (%I0.6)",
+        "adresse": "%I0.6",
+        "absicherung": "-F2"
+      }
+    },
+    {
+      "bmk": "-K3",
+      "artikel": "SCH-09",
+      "bezeichnung": "Leistungsschütz 9 A AC-3, Spule 24 V DC",
+      "funktion": "Ein -M3 Pumpe Kühlmittel",
+      "kategorie": "schuetz",
+      "seite": 6,
+      "spalte": 6,
+      "daten": {
+        "signal": "DO",
+        "i_A": 0.125,
+        "gruppe": "DO-Last",
+        "steuer_seite": 7,
+        "steuer_spalte": 5,
+        "funktion_sps": "Ein -M3 Pumpe Kühlmittel",
+        "sps": "-A3:6 (%Q0.6)",
+        "adresse": "%Q0.6",
+        "absicherung": "-F4"
+      }
+    },
+    {
+      "bmk": "-M3",
+      "artikel": "KUNDE",
+      "bezeichnung": "Drehstrommotor 2.2 kW",
+      "funktion": "Pumpe Kühlmittel",
+      "kategorie": "motor",
+      "seite": 6,
+      "spalte": 5,
+      "daten": {
+        "p_kW": 2.2,
+        "i_N_A": 4.9,
+        "cos_phi": 0.82,
+        "kabel": "-W3"
+      }
+    },
+    {
+      "bmk": "-W4",
+      "artikel": "KAB-4G2.5",
+      "bezeichnung": "Steuer-/Motorleitung 4G2,5 mm²",
+      "funktion": "Zuleitung -M4",
+      "kategorie": "kabel",
+      "seite": 6,
+      "spalte": 8,
+      "daten": {
+        "laenge_m": 30.0
+      }
+    },
+    {
+      "bmk": "-Q5",
+      "artikel": "MSS-16",
+      "bezeichnung": "Motorschutzschalter 10–16 A",
+      "funktion": "Rückmeldung -M4 Lüfter Absaugung",
+      "kategorie": "motorschutz",
+      "seite": 6,
+      "spalte": 7,
+      "daten": {
+        "i_r_A": 11.2,
+        "signal": "DI",
+        "i_A": 0.0,
+        "gruppe": "SPS",
+        "steuer_seite": 7,
+        "steuer_spalte": 8,
+        "funktion_sps": "Rückmeldung -M4 Lüfter Absaugung",
+        "sps": "-A2:7 (%I0.7)",
+        "adresse": "%I0.7",
+        "absicherung": "-F2"
+      }
+    },
+    {
+      "bmk": "-K4",
+      "artikel": "SCH-12",
+      "bezeichnung": "Leistungsschütz 12 A AC-3, Spule 24 V DC",
+      "funktion": "Ein -M4 Lüfter Absaugung",
+      "kategorie": "schuetz",
+      "seite": 6,
+      "spalte": 8,
+      "daten": {
+        "signal": "DO",
+        "i_A": 0.125,
+        "gruppe": "DO-Last",
+        "steuer_seite": 7,
+        "steuer_spalte": 7,
+        "funktion_sps": "Ein -M4 Lüfter Absaugung",
+        "sps": "-A3:7 (%Q0.7)",
+        "adresse": "%Q0.7",
+        "absicherung": "-F4"
+      }
+    },
+    {
+      "bmk": "-M4",
+      "artikel": "KUNDE",
+      "bezeichnung": "Drehstrommotor 5.5 kW",
+      "funktion": "Lüfter Absaugung",
+      "kategorie": "motor",
+      "seite": 6,
+      "spalte": 7,
+      "daten": {
+        "p_kW": 5.5,
+        "i_N_A": 11.2,
+        "cos_phi": 0.85,
+        "kabel": "-W4"
+      }
+    },
+    {
+      "bmk": "-X2",
+      "artikel": "RK-4",
+      "bezeichnung": "Reihenklemme 4 mm² grau",
+      "funktion": "Klemmleiste Motoren",
+      "kategorie": "klemme",
+      "seite": null,
+      "spalte": null,
+      "daten": {
+        "anzahl": 16
+      }
+    },
     {
       "bmk": "-Q1",
       "artikel": "HS-3P-40",
@@ -73,8 +356,8 @@
     },
     {
       "bmk": "-F4",
-      "artikel": "ES-24-01",
-      "bezeichnung": "Elektronische Sicherung 24 V 1 A",
+      "artikel": "ES-24-02",
+      "bezeichnung": "Elektronische Sicherung 24 V 2 A",
       "funktion": "24 V DO-Last",
       "kategorie": "schutz_dc",
       "seite": 4,
@@ -139,7 +422,7 @@
       "bezeichnung": "Induktiver Näherungsschalter M12, PNP Schließer",
       "funktion": "Endlage Band vorne",
       "kategorie": "sensor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 1,
       "daten": {
         "gruppe": "Sensorik",
@@ -166,7 +449,7 @@
       "bezeichnung": "Induktiver Näherungsschalter M12, PNP Schließer",
       "funktion": "Endlage Band hinten",
       "kategorie": "sensor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 2,
       "daten": {
         "gruppe": "Sensorik",
@@ -193,7 +476,7 @@
       "bezeichnung": "Reflexionslichtschranke, PNP",
       "funktion": "Teileerkennung Einlauf",
       "kategorie": "sensor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 3,
       "daten": {
         "gruppe": "Sensorik",
@@ -220,7 +503,7 @@
       "bezeichnung": "Reflexionslichtschranke, PNP",
       "funktion": "Teileerkennung Auslauf",
       "kategorie": "sensor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 4,
       "daten": {
         "gruppe": "Sensorik",
@@ -247,7 +530,7 @@
       "bezeichnung": "Drucktransmitter 0–10 bar, 4–20 mA, 2-Leiter",
       "funktion": "Druck Pneumatik",
       "kategorie": "sensor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 5,
       "daten": {
         "gruppe": "Sensorik",
@@ -272,7 +555,7 @@
       "bezeichnung": "Magnetventil 24 V DC, 4,2 W",
       "funktion": "Stopper Einlauf",
       "kategorie": "aktor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 6,
       "daten": {
         "gruppe": "DO-Last",
@@ -297,7 +580,7 @@
       "bezeichnung": "Magnetventil 24 V DC, 4,2 W",
       "funktion": "Stopper Auslauf",
       "kategorie": "aktor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 7,
       "daten": {
         "gruppe": "DO-Last",
@@ -322,7 +605,7 @@
       "bezeichnung": "Magnetventil 24 V DC, 4,2 W",
       "funktion": "Ausschieber",
       "kategorie": "aktor",
-      "seite": 6,
+      "seite": 8,
       "spalte": 8,
       "daten": {
         "gruppe": "DO-Last",
@@ -347,7 +630,7 @@
       "bezeichnung": "Leuchtmelder grün 24 V DC",
       "funktion": "Meldung Betrieb",
       "kategorie": "aktor",
-      "seite": 7,
+      "seite": 9,
       "spalte": 1,
       "daten": {
         "gruppe": "DO-Last",
@@ -381,12 +664,156 @@
   ],
   "klemmen": [
     {
+      "leiste": "-X2",
+      "nr": 1,
+      "potential": "U",
+      "ziel_innen": "-K1",
+      "ziel_aussen": "-M1:U1",
+      "seite": 6,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X2",
+      "nr": 2,
+      "potential": "V",
+      "ziel_innen": "-K1",
+      "ziel_aussen": "-M1:V1",
+      "seite": 6,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X2",
+      "nr": 3,
+      "potential": "W",
+      "ziel_innen": "-K1",
+      "ziel_aussen": "-M1:W1",
+      "seite": 6,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X2",
+      "nr": 4,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M1:PE",
+      "seite": 6,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X2",
+      "nr": 5,
+      "potential": "U",
+      "ziel_innen": "-K2",
+      "ziel_aussen": "-M2:U1",
+      "seite": 6,
+      "spalte": 3
+    },
+    {
+      "leiste": "-X2",
+      "nr": 6,
+      "potential": "V",
+      "ziel_innen": "-K2",
+      "ziel_aussen": "-M2:V1",
+      "seite": 6,
+      "spalte": 3
+    },
+    {
+      "leiste": "-X2",
+      "nr": 7,
+      "potential": "W",
+      "ziel_innen": "-K2",
+      "ziel_aussen": "-M2:W1",
+      "seite": 6,
+      "spalte": 3
+    },
+    {
+      "leiste": "-X2",
+      "nr": 8,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M2:PE",
+      "seite": 6,
+      "spalte": 3
+    },
+    {
+      "leiste": "-X2",
+      "nr": 9,
+      "potential": "U",
+      "ziel_innen": "-K3",
+      "ziel_aussen": "-M3:U1",
+      "seite": 6,
+      "spalte": 5
+    },
+    {
+      "leiste": "-X2",
+      "nr": 10,
+      "potential": "V",
+      "ziel_innen": "-K3",
+      "ziel_aussen": "-M3:V1",
+      "seite": 6,
+      "spalte": 5
+    },
+    {
+      "leiste": "-X2",
+      "nr": 11,
+      "potential": "W",
+      "ziel_innen": "-K3",
+      "ziel_aussen": "-M3:W1",
+      "seite": 6,
+      "spalte": 5
+    },
+    {
+      "leiste": "-X2",
+      "nr": 12,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M3:PE",
+      "seite": 6,
+      "spalte": 5
+    },
+    {
+      "leiste": "-X2",
+      "nr": 13,
+      "potential": "U",
+      "ziel_innen": "-K4",
+      "ziel_aussen": "-M4:U1",
+      "seite": 6,
+      "spalte": 7
+    },
+    {
+      "leiste": "-X2",
+      "nr": 14,
+      "potential": "V",
+      "ziel_innen": "-K4",
+      "ziel_aussen": "-M4:V1",
+      "seite": 6,
+      "spalte": 7
+    },
+    {
+      "leiste": "-X2",
+      "nr": 15,
+      "potential": "W",
+      "ziel_innen": "-K4",
+      "ziel_aussen": "-M4:W1",
+      "seite": 6,
+      "spalte": 7
+    },
+    {
+      "leiste": "-X2",
+      "nr": 16,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M4:PE",
+      "seite": 6,
+      "spalte": 7
+    },
+    {
       "leiste": "-X1",
       "nr": 1,
       "potential": "+24V",
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B1:1 (L+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 1
     },
     {
@@ -395,7 +822,7 @@
       "potential": "Signal",
       "ziel_innen": "-A2:0 (%I0.0)",
       "ziel_aussen": "-B1:4 (Q)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 1
     },
     {
@@ -404,7 +831,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B1:3 (L-)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 1
     },
     {
@@ -413,7 +840,7 @@
       "potential": "+24V",
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B2:1 (L+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 2
     },
     {
@@ -422,7 +849,7 @@
       "potential": "Signal",
       "ziel_innen": "-A2:1 (%I0.1)",
       "ziel_aussen": "-B2:4 (Q)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 2
     },
     {
@@ -431,7 +858,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B2:3 (L-)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 2
     },
     {
@@ -440,7 +867,7 @@
       "potential": "+24V",
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B3:1 (L+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 3
     },
     {
@@ -449,7 +876,7 @@
       "potential": "Signal",
       "ziel_innen": "-A2:2 (%I0.2)",
       "ziel_aussen": "-B3:4 (Q)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 3
     },
     {
@@ -458,7 +885,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B3:3 (L-)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 3
     },
     {
@@ -467,7 +894,7 @@
       "potential": "+24V",
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B4:1 (L+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 4
     },
     {
@@ -476,7 +903,7 @@
       "potential": "Signal",
       "ziel_innen": "-A2:3 (%I0.3)",
       "ziel_aussen": "-B4:4 (Q)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 4
     },
     {
@@ -485,7 +912,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B4:3 (L-)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 4
     },
     {
@@ -494,7 +921,7 @@
       "potential": "+24V",
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B5:1 (+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 5
     },
     {
@@ -503,7 +930,7 @@
       "potential": "Signal",
       "ziel_innen": "-A4:0 (%IW0)",
       "ziel_aussen": "-B5:2 (I)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 5
     },
     {
@@ -512,7 +939,7 @@
       "potential": "Signal",
       "ziel_innen": "-A3:0 (%Q0.0)",
       "ziel_aussen": "-Y1:1 (+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 6
     },
     {
@@ -521,7 +948,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-Y1:2 (-)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 6
     },
     {
@@ -530,7 +957,7 @@
       "potential": "Signal",
       "ziel_innen": "-A3:1 (%Q0.1)",
       "ziel_aussen": "-Y2:1 (+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 7
     },
     {
@@ -539,7 +966,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-Y2:2 (-)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 7
     },
     {
@@ -548,7 +975,7 @@
       "potential": "Signal",
       "ziel_innen": "-A3:2 (%Q0.2)",
       "ziel_aussen": "-Y3:1 (+)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 8
     },
     {
@@ -557,7 +984,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-Y3:2 (-)",
-      "seite": 6,
+      "seite": 8,
       "spalte": 8
     },
     {
@@ -566,7 +993,7 @@
       "potential": "Signal",
       "ziel_innen": "-A3:3 (%Q0.3)",
       "ziel_aussen": "-P1:X1 (+)",
-      "seite": 7,
+      "seite": 9,
       "spalte": 1
     },
     {
@@ -575,7 +1002,7 @@
       "potential": "0V",
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-P1:X2 (-)",
-      "seite": 7,
+      "seite": 9,
       "spalte": 1
     }
   ],
@@ -613,6 +1040,38 @@
       "funktion": "Teileerkennung Auslauf"
     },
     {
+      "modul_bmk": "-A2",
+      "kanal": 4,
+      "art": "DI",
+      "adresse": "%I0.4",
+      "geraet_bmk": "-Q2",
+      "funktion": "Rückmeldung -M1 Bandantrieb"
+    },
+    {
+      "modul_bmk": "-A2",
+      "kanal": 5,
+      "art": "DI",
+      "adresse": "%I0.5",
+      "geraet_bmk": "-Q3",
+      "funktion": "Rückmeldung -M2 Rollenbahn"
+    },
+    {
+      "modul_bmk": "-A2",
+      "kanal": 6,
+      "art": "DI",
+      "adresse": "%I0.6",
+      "geraet_bmk": "-Q4",
+      "funktion": "Rückmeldung -M3 Pumpe Kühlmittel"
+    },
+    {
+      "modul_bmk": "-A2",
+      "kanal": 7,
+      "art": "DI",
+      "adresse": "%I0.7",
+      "geraet_bmk": "-Q5",
+      "funktion": "Rückmeldung -M4 Lüfter Absaugung"
+    },
+    {
       "modul_bmk": "-A3",
       "kanal": 0,
       "art": "DO",
@@ -645,6 +1104,38 @@
       "funktion": "Meldung Betrieb"
     },
     {
+      "modul_bmk": "-A3",
+      "kanal": 4,
+      "art": "DO",
+      "adresse": "%Q0.4",
+      "geraet_bmk": "-K1",
+      "funktion": "Ein -M1 Bandantrieb"
+    },
+    {
+      "modul_bmk": "-A3",
+      "kanal": 5,
+      "art": "DO",
+      "adresse": "%Q0.5",
+      "geraet_bmk": "-K2",
+      "funktion": "Ein -M2 Rollenbahn"
+    },
+    {
+      "modul_bmk": "-A3",
+      "kanal": 6,
+      "art": "DO",
+      "adresse": "%Q0.6",
+      "geraet_bmk": "-K3",
+      "funktion": "Ein -M3 Pumpe Kühlmittel"
+    },
+    {
+      "modul_bmk": "-A3",
+      "kanal": 7,
+      "art": "DO",
+      "adresse": "%Q0.7",
+      "geraet_bmk": "-K4",
+      "funktion": "Ein -M4 Lüfter Absaugung"
+    },
+    {
       "modul_bmk": "-A4",
       "kanal": 0,
       "art": "AI",
@@ -663,7 +1154,11 @@
       "verbraucher": [
         "-A1",
         "-A2",
-        "-A4"
+        "-A4",
+        "-Q2",
+        "-Q3",
+        "-Q4",
+        "-Q5"
       ]
     },
     {
@@ -682,12 +1177,16 @@
     },
     {
       "bmk": "-F4",
-      "artikel": "ES-24-01",
-      "i_nenn_A": 1,
+      "artikel": "ES-24-02",
+      "i_nenn_A": 2,
       "gruppe": "DO-Last",
-      "i_gruppe_A": 0.585,
+      "i_gruppe_A": 1.085,
       "verbraucher": [
         "-A3",
+        "-K1",
+        "-K2",
+        "-K3",
+        "-K4",
         "-Y1",
         "-Y2",
         "-Y3",
@@ -695,20 +1194,168 @@
       ]
     }
   ],
+  "kabel": [
+    {
+      "bmk": "-W1",
+      "artikel": "KAB-4G1.5",
+      "von": "-X2",
+      "nach": "-M1",
+      "adern": 4,
+      "querschnitt_mm2": 1.5,
+      "laenge_m": 12.0,
+      "i_b_A": 1.9,
+      "i_z_A": 10.48,
+      "du_prozent": 0.09,
+      "seite": 6,
+      "spalte": 2
+    },
+    {
+      "bmk": "-W2",
+      "artikel": "KAB-4G1.5",
+      "von": "-X2",
+      "nach": "-M2",
+      "adern": 4,
+      "querschnitt_mm2": 1.5,
+      "laenge_m": 25.0,
+      "i_b_A": 3.5,
+      "i_z_A": 10.48,
+      "du_prozent": 0.36,
+      "seite": 6,
+      "spalte": 4
+    },
+    {
+      "bmk": "-W3",
+      "artikel": "KAB-4G1.5",
+      "von": "-X2",
+      "nach": "-M3",
+      "adern": 4,
+      "querschnitt_mm2": 1.5,
+      "laenge_m": 40.0,
+      "i_b_A": 4.9,
+      "i_z_A": 10.48,
+      "du_prozent": 0.83,
+      "seite": 6,
+      "spalte": 6
+    },
+    {
+      "bmk": "-W4",
+      "artikel": "KAB-4G2.5",
+      "von": "-X2",
+      "nach": "-M4",
+      "adern": 4,
+      "querschnitt_mm2": 2.5,
+      "laenge_m": 30.0,
+      "i_b_A": 11.2,
+      "i_z_A": 13.92,
+      "du_prozent": 0.88,
+      "seite": 6,
+      "spalte": 8
+    }
+  ],
+  "seiten": [
+    [
+      1,
+      "Deckblatt",
+      "deckblatt",
+      0
+    ],
+    [
+      2,
+      "Inhaltsverzeichnis",
+      "inhalt",
+      0
+    ],
+    [
+      3,
+      "Einspeisung / Netzteil 24 V",
+      "einspeisung",
+      0
+    ],
+    [
+      4,
+      "Verteilung 24 V DC",
+      "verteilung",
+      0
+    ],
+    [
+      5,
+      "SPS-Übersicht",
+      "sps",
+      0
+    ],
+    [
+      6,
+      "Motorabgänge 1 (Last)",
+      "motor_last",
+      0
+    ],
+    [
+      7,
+      "Motorabgänge 1 (Steuerung)",
+      "motor_steuer",
+      0
+    ],
+    [
+      8,
+      "Feldgeräte 1",
+      "feld",
+      0
+    ],
+    [
+      9,
+      "Feldgeräte 2",
+      "feld",
+      1
+    ],
+    [
+      10,
+      "Klemmenplan 1",
+      "klemmen",
+      0
+    ],
+    [
+      11,
+      "Klemmenplan 2",
+      "klemmen",
+      1
+    ],
+    [
+      12,
+      "Kabelliste",
+      "kabel",
+      0
+    ],
+    [
+      13,
+      "Stückliste",
+      "stueckliste",
+      0
+    ],
+    [
+      14,
+      "Auslegungsnachweis",
+      "auslegung",
+      0
+    ]
+  ],
   "bilanz": {
-    "i_summe_A": 1.387,
+    "i_summe_A": 1.887,
     "gleichzeitigkeit": 1.0,
     "reserve": 0.25,
-    "i_bedarf_A": 1.734,
+    "i_bedarf_A": 2.359,
     "netzteil": "NT-24-05",
     "i_nenn_A": 5,
-    "auslastung": 0.277,
+    "auslastung": 0.377,
     "i_primaer_max_A": 0.58,
     "gruppen": {
       "SPS": 0.68,
       "Sensorik": 0.122,
-      "DO-Last": 0.585
-    }
+      "DO-Last": 1.085
+    },
+    "i_motoren_A": 21.5,
+    "i_400V_max_A": 22.08
   },
-  "warnungen": []
+  "warnungen": [
+    "Strombelastbarkeitstabelle (leitungen.i_z_A) nicht freigegeben – Querschnitte vorläufig"
+  ]
 }

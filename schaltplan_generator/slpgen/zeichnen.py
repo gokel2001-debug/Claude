@@ -7,16 +7,15 @@ Produktiveinsatz werden sie durch die Symbolbibliothek des Hauses ersetzt.
 """
 from __future__ import annotations
 
-from collections import Counter, OrderedDict
-from typing import Callable
+from collections import OrderedDict
 
 from reportlab.lib.pagesizes import A3, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfgen.canvas import Canvas
 
 from .modell import Planmodell
-from .regeln import (ERSTE_FELDSEITE, SEITE_EINSPEISUNG, SEITE_SPS,
-                     SEITE_VERTEILUNG, SPALTEN_JE_SEITE)
+from .regeln import (SEITE_EINSPEISUNG, SEITE_SPS, SEITE_VERTEILUNG,
+                     SPALTEN_JE_SEITE, ZEILEN_JE_SEITE)
 
 LAYOUT = {
     "rand_links": 20, "rand": 10, "spaltenleiste": 7, "schriftfeld": 30,
@@ -111,6 +110,20 @@ def verweis(seite: int | None, spalte: int | None) -> str:
     return f"/{seite}.{spalte}" if seite else ""
 
 
+def erste_seite(m: Planmodell, art: str) -> int | None:
+    return next((nr for nr, _, a, _ in m.seiten if a == art), None)
+
+
+def sps_box(b: Blatt, m: Planmodell, x: float, y: float, geraet_bmk: str):
+    """Kasten für einen SPS-Kanal (Unterkante y) mit Verweis auf die SPS-Übersicht."""
+    kanal = next(c for c in m.sps_kanaele if c.geraet_bmk == geraet_bmk)
+    b.rechteck(x - 7, y, 14, 14)
+    b.text(x, y + 9, kanal.modul_bmk, 2.3, True, "m")
+    b.text(x, y + 5.5, f"Kanal {kanal.kanal}", 1.9, ausr="m")
+    b.text(x, y + 2, kanal.adresse, 2, ausr="m")
+    b.text(x, y + 15, verweis(SEITE_SPS, m.bm(kanal.modul_bmk).spalte), 1.9, ausr="m")
+
+
 # --------------------------------------------------------------------------- #
 # Rahmen und Schriftfeld
 # --------------------------------------------------------------------------- #
@@ -186,7 +199,8 @@ def s_einspeisung(b: Blatt, m: Planmodell):
             b.linie(xq + 1.5, y, X1 - 12, y)
         else:
             b.linie(X0 + 8, y, X1 - 12, y)
-        potential_pfeil(b, X1 - 12, y, "", True)
+        ziel = erste_seite(m, "motor_last") if name in ("L1", "L2", "L3", "PE") else None
+        potential_pfeil(b, X1 - 12, y, f"{name} {verweis(ziel, 1)}" if ziel else "", True)
     b.text(X0 + 8, 268, netz, 2.5)
     q1 = m.bm("-Q1")
     b.rechteck(sx(2) - 7, 247, 14, 18, strich=([1.5, 1], 0))
@@ -266,50 +280,130 @@ def s_sps(b: Blatt, m: Planmodell):
             b.text(x, 196, f"über {fa} {verweis(SEITE_VERTEILUNG, m.bm(fa).spalte)}", 2.2, ausr="m")
 
 
-def s_feld(seite: int):
-    def f(b: Blatt, m: Planmodell):
-        geraete = [g for g in m.betriebsmittel if g.seite == seite and g.kategorie in ("sensor", "aktor")]
-        y0v, y_k, y_dev = 272, 200, 150
-        b.linie(X0 + 6, y0v, X1 - 6, y0v)
-        potential_pfeil(b, X0 + 6, y0v, f"0V {verweis(SEITE_VERTEILUNG, 1)}", False)
-        lane = {"+24V": -12, "Signal": 0, "0V": 12}
-        for g in geraete:
-            x = sx(g.spalte)
-            kl = [k for k in m.klemmen if k.ziel_aussen.startswith(g.bmk + ":")]
-            for k in kl:
-                xl = x + lane[k.potential]
-                if k.potential == "+24V":
-                    fa = m.bm(g.daten["absicherung"])
-                    b.text(xl - 1, 266, f"{fa.bmk}:2", 2, ausr="r", drehen=0)
-                    b.text(xl - 1, 263, verweis(fa.seite, fa.spalte), 2, ausr="r")
-                    b.linie(xl, 268, xl, y_k + 1.1)
-                elif k.potential == "0V":
-                    b.kreis(xl, y0v, 0.6, True)
-                    b.linie(xl, y0v, xl, y_k + 1.1)
-                else:
-                    kanal = next(c for c in m.sps_kanaele if c.geraet_bmk == g.bmk)
-                    b.rechteck(xl - 7, 238, 14, 14)
-                    b.text(xl, 247, kanal.modul_bmk, 2.3, True, "m")
-                    b.text(xl, 243.5, f"Kanal {kanal.kanal}", 1.9, ausr="m")
-                    b.text(xl, 240, kanal.adresse, 2, ausr="m")
-                    b.text(xl, 253, verweis(SEITE_SPS, m.bm(kanal.modul_bmk).spalte), 1.9, ausr="m")
-                    b.linie(xl, 238, xl, y_k + 1.1)
-                sym_klemme(b, xl, y_k, k.leiste, k.nr)
-                b.linie(xl, y_k - 1.1, xl, y_dev)
-                b.text(xl + 0.8, y_dev + 1, k.ziel_aussen.split(":", 1)[1].split(" ")[0], 1.9)
-            b.text(x - 20, y_k + 4, "-X1", 2.2, True)
-            b.rechteck(x - 20, y_dev - 35, 40, 35, 0.4)
-            b.text(x, y_dev - 9, g.bmk, 4, True, "m")
-            b.text(x, y_dev - 15, g.funktion[:28], 2.2, ausr="m")
-            b.text(x, y_dev - 20, g.artikel, 2, ausr="m")
-            if g.kategorie == "aktor":
-                b.rechteck(x - 4, y_dev - 32, 8, 6)       # Spule/Last
-            b.text(x - 20, y_dev - 40, m.voll_bmk(g.bmk), 2, True)
-            text = g.bezeichnung
-            b.text(x - 20, y_dev - 44, text[:34], 1.9)
-            b.text(x - 20, y_dev - 47, text[34:68], 1.9)
-            b.text(x - 20, y_dev - 51, f"I = {g.daten['i_A'] * 1000:.0f} mA", 1.9)
-    return f
+def s_feld(b: Blatt, m: Planmodell, seite: int, _idx: int = 0):
+    geraete = [g for g in m.betriebsmittel if g.seite == seite and g.kategorie in ("sensor", "aktor")]
+    y0v, y_k, y_dev = 272, 200, 150
+    b.linie(X0 + 6, y0v, X1 - 6, y0v)
+    potential_pfeil(b, X0 + 6, y0v, f"0V {verweis(SEITE_VERTEILUNG, 1)}", False)
+    lane = {"+24V": -12, "Signal": 0, "0V": 12}
+    for g in geraete:
+        x = sx(g.spalte)
+        kl = [k for k in m.klemmen if k.ziel_aussen.startswith(g.bmk + ":")]
+        for k in kl:
+            xl = x + lane[k.potential]
+            if k.potential == "+24V":
+                fa = m.bm(g.daten["absicherung"])
+                b.text(xl - 1, 266, f"{fa.bmk}:2", 2, ausr="r", drehen=0)
+                b.text(xl - 1, 263, verweis(fa.seite, fa.spalte), 2, ausr="r")
+                b.linie(xl, 268, xl, y_k + 1.1)
+            elif k.potential == "0V":
+                b.kreis(xl, y0v, 0.6, True)
+                b.linie(xl, y0v, xl, y_k + 1.1)
+            else:
+                sps_box(b, m, xl, 238, g.bmk)
+                b.linie(xl, 238, xl, y_k + 1.1)
+            sym_klemme(b, xl, y_k, k.leiste, k.nr)
+            b.linie(xl, y_k - 1.1, xl, y_dev)
+            b.text(xl + 0.8, y_dev + 1, k.ziel_aussen.split(":", 1)[1].split(" ")[0], 1.9)
+        b.text(x - 20, y_k + 4, "-X1", 2.2, True)
+        b.rechteck(x - 20, y_dev - 35, 40, 35, 0.4)
+        b.text(x, y_dev - 9, g.bmk, 4, True, "m")
+        b.text(x, y_dev - 15, g.funktion[:28], 2.2, ausr="m")
+        b.text(x, y_dev - 20, g.artikel, 2, ausr="m")
+        if g.kategorie == "aktor":
+            b.rechteck(x - 4, y_dev - 32, 8, 6)       # Spule/Last
+        b.text(x - 20, y_dev - 40, m.voll_bmk(g.bmk), 2, True)
+        text = g.bezeichnung
+        b.text(x - 20, y_dev - 44, text[:34], 1.9)
+        b.text(x - 20, y_dev - 47, text[34:68], 1.9)
+        b.text(x - 20, y_dev - 51, f"I = {g.daten['i_A'] * 1000:.0f} mA", 1.9)
+
+
+def s_motor_last(b: Blatt, m: Planmodell, seite: int, idx: int):
+    """Lastkreise Direktstart: je Motor zwei Spalten, Mittellinie auf der Spaltengrenze."""
+    motoren = [x for x in m.betriebsmittel if x.kategorie == "motor" and x.seite == seite]
+    busse = [("L1", 262), ("L2", 256), ("L3", 250), ("PE", 238)]
+    weitere = [nr for nr, _, a, i in m.seiten if a == "motor_last" and i == idx + 1]
+    for name, y in busse:
+        b.linie(X0 + 6, y, X1 - 14, y)
+        quelle = (SEITE_EINSPEISUNG, 8) if idx == 0 else (seite - 1, 8)
+        potential_pfeil(b, X0 + 6, y, f"{name} {verweis(*quelle)}", False)
+        if weitere:
+            potential_pfeil(b, X1 - 14, y, f"{verweis(weitere[0], 1)}")
+    for mot in motoren:
+        x = X0 + mot.spalte * COLW
+        nr = mot.bmk.lstrip("-M")
+        q, k = m.bm(f"-Q{int(nr) + 1}"), m.bm(f"-K{nr}")
+        w = next(c for c in m.kabel if c.nach == mot.bmk)
+        kl = [c for c in m.klemmen if c.leiste == "-X2" and c.ziel_aussen.startswith(mot.bmk + ":")]
+        for d, (_, y_bus) in zip((-6, 0, 6), busse):
+            xl = x + d
+            b.kreis(xl, y_bus, 0.6, True)
+            b.linie(xl, y_bus, xl, 222)
+            b.rechteck(xl - 1.2, 216, 2.4, 6)                      # Auslöser (therm./magn.)
+            b.linie(xl, 216, xl, 190)
+            sym_schliesser(b, xl, 190, 12)                          # Hauptkontakt Schütz
+            b.linie(xl, 178, xl, 146.1)
+        b.kreis(x + 12, 238, 0.6, True)
+        b.linie(x + 12, 238, x + 12, 146.1)
+        b.rechteck(x - 10, 210, 20, 18, strich=([1.5, 1], 0))
+        b.linie(x - 6, 184, x + 6, 184, strich=([1, 1], 0))         # mechanische Wirkverbindung
+        b.text(x - 11, 222, q.bmk, 3, True, "r")
+        b.text(x - 11, 218, f"Ir = {q.daten['i_r_A']:g} A", 2, ausr="r")
+        b.text(x - 11, 214.5, f"13-14 {verweis(q.daten['steuer_seite'], q.daten['steuer_spalte'])}", 1.9, ausr="r")
+        b.text(x - 11, 186, k.bmk, 3, True, "r")
+        b.text(x - 11, 182.5, f"A1-A2 {verweis(k.daten['steuer_seite'], k.daten['steuer_spalte'])}", 1.9, ausr="r")
+        for c, d in zip(kl, (-6, 0, 6, 12)):
+            sym_klemme(b, x + d, 145, c.leiste, c.nr)
+            b.linie(x + d, 143.9, x + d, 110 if d < 12 else 100)
+        b.text(x - 11, 144.2, "-X2", 2.2, True, "r")
+        b.linie(x - 9, 124, x + 15, 130, 0.25)                      # Kabelmarkierung
+        b.text(x + 15, 131.5, w.bmk, 2.3, True)
+        b.text(x + 15, 128, f"{w.adern}G{w.querschnitt_mm2:g} {w.laenge_m:g} m", 1.9)
+        b.linie(x + 12, 100, x + 9.9, 100)
+        b.kreis(x, 100, 10)
+        b.text(x, 101, "M", 4, True, "m")
+        b.text(x, 95.5, "3~", 2.6, ausr="m")
+        b.text(x - 12, 84, mot.bmk, 3.5, True)
+        b.text(x - 12, 80, mot.funktion[:30], 2)
+        b.text(x - 12, 76.5, f"P = {mot.daten['p_kW']:g} kW  I_N = {mot.daten['i_N_A']:g} A", 2)
+        b.text(x - 12, 73, m.voll_bmk(mot.bmk), 1.9)
+
+
+def s_motor_steuer(b: Blatt, m: Planmodell, seite: int, idx: int):
+    """Steuerkreis: Schützspule über SPS-Ausgang, Rückmeldung Motorschutzschalter auf SPS-Eingang."""
+    spulen = [x for x in m.betriebsmittel if x.kategorie == "schuetz" and x.daten.get("steuer_seite") == seite]
+    y0v = 95
+    b.linie(X0 + 6, y0v, X1 - 6, y0v)
+    potential_pfeil(b, X0 + 6, y0v, f"0V {verweis(SEITE_VERTEILUNG, 1)}", False)
+    for k in spulen:
+        nr = int(k.bmk.lstrip("-K"))
+        q = m.bm(f"-Q{nr + 1}")
+        # Spalte a: Spule
+        x = sx(k.daten["steuer_spalte"])
+        sps_box(b, m, x, 238, k.bmk)
+        b.linie(x, 238, x, 156)
+        b.rechteck(x - 4, 150, 8, 6, 0.4)
+        b.text(x + 1, 157, "A1", 1.9)
+        b.text(x + 1, 147.5, "A2", 1.9)
+        b.text(x - 6, 152, k.bmk, 3, True, "r")
+        b.linie(x, 150, x, y0v)
+        b.kreis(x, y0v, 0.6, True)
+        for i, kontakt in enumerate(("1-2", "3-4", "5-6")):
+            b.text(x - 6, 88 - i * 3.5, f"{kontakt}  {verweis(k.seite, k.spalte - 1)}", 1.9)
+        # Spalte b: Rückmeldung Motorschutzschalter
+        xb = sx(q.daten["steuer_spalte"])
+        fa = m.bm(q.daten["absicherung"])
+        b.text(xb - 1, 266, f"{fa.bmk}:2", 2, ausr="r")
+        b.text(xb - 1, 263, verweis(fa.seite, fa.spalte), 2, ausr="r")
+        b.linie(xb, 268, xb, 205)
+        sym_schliesser(b, xb, 205, 12)
+        b.text(xb - 4, 199, q.bmk, 3, True, "r")
+        b.text(xb + 2, 203, "13", 1.9)
+        b.text(xb + 2, 194, "14", 1.9)
+        b.text(xb - 4, 195.5, verweis(q.seite, q.spalte), 1.9, ausr="r")
+        b.linie(xb, 193, xb, 170)
+        sps_box(b, m, xb, 156, q.bmk)
 
 
 def tabelle(b: Blatt, kopf, zeilen, breiten, y_start=None, groesse=2.5):
@@ -327,43 +421,67 @@ def tabelle(b: Blatt, kopf, zeilen, breiten, y_start=None, groesse=2.5):
             x += w
 
 
-def s_klemmen(b: Blatt, m: Planmodell):
+def teil(zeilen: list, idx: int) -> list:
+    return zeilen[idx * ZEILEN_JE_SEITE:(idx + 1) * ZEILEN_JE_SEITE]
+
+
+def s_klemmen(b: Blatt, m: Planmodell, _seite: int, idx: int):
     zeilen = [(f"{k.leiste}:{k.nr}", k.potential, k.ziel_innen, k.ziel_aussen, verweis(k.seite, k.spalte))
               for k in m.klemmen]
     tabelle(b, ["Klemme", "Potential", "Ziel innen (Schrank)", "Ziel außen (Feld)", "Seite"],
-            zeilen, [30, 30, 90, 80, 30])
+            teil(zeilen, idx), [30, 30, 90, 80, 30])
 
 
-def s_stueckliste(b: Blatt, m: Planmodell, stamm: dict):
+def s_kabel(b: Blatt, m: Planmodell, _seite: int, idx: int):
+    zeilen = [(c.bmk, c.von, c.nach, c.artikel, f"{c.adern} x {c.querschnitt_mm2:g} mm²", f"{c.laenge_m:g} m",
+               f"{c.i_b_A:g}", f"{c.i_z_A:g}", f"{c.du_prozent:.2f}", verweis(c.seite, c.spalte)) for c in m.kabel]
+    tabelle(b, ["Kabel", "von", "nach", "Artikel", "Adern x Querschnitt", "Länge", "I_r [A]", "I_z·f [A]",
+                "dU [%]", "Seite"], teil(zeilen, idx), [25, 25, 25, 35, 45, 25, 25, 25, 25, 25])
+
+
+def stueckliste_zeilen(m: Planmodell, stamm: dict) -> list[tuple]:
     gruppen: "OrderedDict[str, list[str]]" = OrderedDict()
     for x in m.betriebsmittel:
         gruppen.setdefault(x.artikel, []).append(x.bmk)
     zeilen = []
     for pos, (art, bmks) in enumerate(gruppen.items(), 1):
-        a = stamm["artikel"][art]
-        menge = len(bmks)
+        a = stamm["artikel"].get(art, {"kategorie": "beistellung", "bezeichnung": "Beistellung Kunde"})
+        menge: float = len(bmks)
         if a["kategorie"] == "klemme":
-            menge = m.bm(bmks[0]).daten.get("anzahl", menge)
-        zeilen.append((pos, menge, art, a.get("hersteller", ""), a["bezeichnung"][:60],
-                       ", ".join(bmks)[:40]))
+            menge = sum(m.bm(x).daten.get("anzahl", 1) for x in bmks)
+        elif a["kategorie"] == "kabel":
+            menge = sum(m.bm(x).daten.get("laenge_m", 0) for x in bmks)
+        einheit = "m" if a["kategorie"] == "kabel" else "Stk"
+        zeilen.append((pos, f"{menge:g} {einheit}", art, a.get("hersteller", ""), a["bezeichnung"][:60],
+                       ", ".join(bmks)[:45]))
+    return zeilen
+
+
+def s_stueckliste(b: Blatt, m: Planmodell, stamm: dict, idx: int):
     tabelle(b, ["Pos.", "Menge", "Artikel", "Hersteller", "Bezeichnung", "BMK"],
-            zeilen, [15, 15, 35, 40, 150, 100])
+            teil(stueckliste_zeilen(m, stamm), idx), [15, 20, 35, 40, 145, 100])
 
 
-def s_auslegung(b: Blatt, m: Planmodell):
+def s_auslegung(b: Blatt, m: Planmodell, _seite: int = 0, _idx: int = 0):
     bil = m.bilanz
     zeilen = [(a.bmk, a.gruppe, f"{a.i_gruppe_A:.3f}", f"{a.i_nenn_A:g}", ", ".join(a.verbraucher)[:80])
               for a in m.absicherungen]
     tabelle(b, ["Abgang", "Gruppe", "Σ I [A]", "Sicherung [A]", "Verbraucher"], zeilen,
             [25, 30, 25, 30, 200])
     y = YL - 12 - 7 - len(zeilen) * 5.5 - 10
-    for t in [
-        f"Summenstrom Σ I = {bil['i_summe_A']} A",
+    texte = [
+        f"Summenstrom 24 V: Σ I = {bil['i_summe_A']} A",
         f"Bedarf = Σ I · g · (1 + Reserve) = {bil['i_summe_A']} · {bil['gleichzeitigkeit']} · "
         f"(1 + {bil['reserve']}) = {bil['i_bedarf_A']} A",
         f"Gewählt: {bil['netzteil']} mit I_N = {bil['i_nenn_A']} A (Auslastung {bil['auslastung']:.0%})",
-        f"Primärstrom max. ≈ U·I_N / (η·U_ein) = {bil['i_primaer_max_A']} A",
-    ]:
+        f"Primärstrom Netzteil max. ≈ U·I_N / (η·U_ein) = {bil['i_primaer_max_A']} A",
+    ]
+    if m.kabel:
+        texte += [
+            f"Motoren: Σ I_N = {bil['i_motoren_A']} A; 400 V gesamt (Motoren + Netzteil) ≤ {bil['i_400V_max_A']} A",
+            "Leitungen: I_z · f ≥ I_r und dU = √3 · I_N · l · cos φ / (κ · A) ≤ dU_max (Werte siehe Kabelliste)",
+        ]
+    for t in texte:
         b.text(X0 + 6, y, t, 2.8)
         y -= 6
     y -= 4
@@ -375,39 +493,33 @@ def s_auslegung(b: Blatt, m: Planmodell):
 
 # --------------------------------------------------------------------------- #
 def erzeuge_pdf(m: Planmodell, stamm: dict, pfad: str) -> list[tuple[int, str]]:
-    feldseiten = range(ERSTE_FELDSEITE, m.projekt["letzte_feldseite"] + 1)
-    inhalt: list[tuple[str, Callable]] = [
-        ("Deckblatt", s_deckblatt),
-        ("Inhaltsverzeichnis", None),
-        ("Einspeisung / Netzteil 24 V", s_einspeisung),
-        ("Verteilung 24 V DC", s_verteilung),
-        ("SPS-Übersicht", s_sps),
-        *[(f"Feldgeräte {i + 1}", s_feld(s)) for i, s in enumerate(feldseiten)],
-        ("Klemmenplan -X1", s_klemmen),
-        ("Stückliste", lambda b, mm_: s_stueckliste(b, mm_, stamm)),
-        ("Auslegung 24 V", s_auslegung),
-    ]
-    seiten = [(i + 1, t, f) for i, (t, f) in enumerate(inhalt)]
-    assert seiten[SEITE_EINSPEISUNG - 1][1].startswith("Einspeisung")
-    seiten[1] = (2, "Inhaltsverzeichnis", s_inhalt(seiten))
-
+    seiten = m.seiten
+    zeichner = {
+        "deckblatt": lambda b, nr, i: s_deckblatt(b, m),
+        "inhalt": lambda b, nr, i: s_inhalt([(n, t, None) for n, t, _, _ in seiten])(b, m),
+        "einspeisung": lambda b, nr, i: s_einspeisung(b, m),
+        "verteilung": lambda b, nr, i: s_verteilung(b, m),
+        "sps": lambda b, nr, i: s_sps(b, m),
+        "motor_last": lambda b, nr, i: s_motor_last(b, m, nr, i),
+        "motor_steuer": lambda b, nr, i: s_motor_steuer(b, m, nr, i),
+        "feld": lambda b, nr, i: s_feld(b, m, nr, i),
+        "klemmen": lambda b, nr, i: s_klemmen(b, m, nr, i),
+        "kabel": lambda b, nr, i: s_kabel(b, m, nr, i),
+        "stueckliste": lambda b, nr, i: s_stueckliste(b, m, stamm, i),
+        "auslegung": lambda b, nr, i: s_auslegung(b, m),
+    }
     c = Canvas(pfad, pagesize=landscape(A3))
     c.setTitle(f"Stromlaufplan {m.projekt.get('nummer', '')}")
     b = Blatt(c)
-    for nr, titel, f in seiten:
+    for nr, titel, art, idx in seiten:
         rahmen(b, m, nr, len(seiten), titel, spalten=nr > 2)
-        f(b, m)
+        zeichner[art](b, nr, idx)
         c.showPage()
     c.save()
-    return [(nr, t) for nr, t, _ in seiten]
+    return [(nr, t) for nr, t, _, _ in seiten]
 
 
 def stueckliste_csv(m: Planmodell, stamm: dict) -> str:
-    z = Counter(x.artikel for x in m.betriebsmittel)
-    zeilen = ["Artikel;Menge;Hersteller;Bezeichnung"]
-    for art, n in z.items():
-        a = stamm["artikel"][art]
-        if a["kategorie"] == "klemme":
-            n = next(x for x in m.betriebsmittel if x.artikel == art).daten.get("anzahl", n)
-        zeilen.append(f"{art};{n};{a.get('hersteller', '')};{a['bezeichnung']}")
+    zeilen = ["Pos;Menge;Artikel;Hersteller;Bezeichnung;BMK"]
+    zeilen += [";".join(str(x) for x in z) for z in stueckliste_zeilen(m, stamm)]
     return "\n".join(zeilen) + "\n"

@@ -128,3 +128,22 @@ def datenblatt_vorschlag(pdf: Path, ollama_url: str | None = None, modell: str =
         with urllib.request.urlopen(req, timeout=300) as resp:
             erg["llm"] = json.loads(json.loads(resp.read())["response"])
     return erg
+
+
+# --------------------------------------------------------------------------- #
+# Vergleich Original-PDF <-> Planmodell (Erprobung Variante B)
+# --------------------------------------------------------------------------- #
+def vergleiche(pdf: Path, modell: dict) -> dict:
+    """Welche BMK und Artikel des Planmodells finden sich im PDF wieder – und umgekehrt?"""
+    text = "\n".join((s.extract_text() or "") for s in PdfReader(str(pdf)).pages)
+    im_pdf = {f"-{mt.group(1)}{mt.group(2)}{mt.group(3)}" for mt in RE_BMK.finditer(text)}
+    im_modell = {b["bmk"] for b in modell["betriebsmittel"]}
+    artikel = sorted({b["artikel"] for b in modell["betriebsmittel"]})
+    return {
+        "pdf": pdf.name,
+        "bmk_gemeinsam": len(im_modell & im_pdf),
+        "bmk_nur_modell": sorted(im_modell - im_pdf),
+        "bmk_nur_pdf": sorted(im_pdf - im_modell),
+        "bmk_abdeckung": round(len(im_modell & im_pdf) / max(1, len(im_modell)), 3),
+        "artikel_fehlen_im_pdf": [a for a in artikel if a not in text],
+    }

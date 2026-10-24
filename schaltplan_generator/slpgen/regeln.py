@@ -10,18 +10,16 @@ import math
 from collections import OrderedDict
 from typing import Any
 
-from .modell import Absicherung, Betriebsmittel, Klemme, Planmodell, SpsKanal
+from .modell import Absicherung, Betriebsmittel, Klemme, Planmodell, RegelFehler, SpsKanal
+from .motor import MOTOREN_JE_SEITE, plane_motoren
 
-# Seitenaufteilung (fest im Prototyp)
+# Feste Seiten; ab Seite 6 folgen Motor-Last-, Motor-Steuer- und Feldgeräteseiten (dynamisch)
 SEITE_EINSPEISUNG = 3
 SEITE_VERTEILUNG = 4
 SEITE_SPS = 5
-ERSTE_FELDSEITE = 6
+ERSTE_DYN_SEITE = 6
 SPALTEN_JE_SEITE = 8
-
-
-class RegelFehler(Exception):
-    pass
+ZEILEN_JE_SEITE = 36          # Listen (Klemmen, Kabel, Stückliste)
 
 
 def strom_A(art: dict[str, Any]) -> float:
@@ -61,6 +59,12 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                                   "signal": a["signal"], "anschluss": a.get("anschluss", [])})
         feld.append(b)
 
+    # ---- Motorabgänge (Typical DOL) ------------------------------------------
+    n_mot = len(projekt.get("motoren", []))
+    n_motseiten = math.ceil(n_mot / MOTOREN_JE_SEITE)
+    erste_feldseite = ERSTE_DYN_SEITE + 2 * n_motseiten
+    motor_signale = plane_motoren(m, projekt, art, ERSTE_DYN_SEITE)
+
     # ---- SPS: Module bestimmen, Kanäle zuweisen ----------------------------
     sps = projekt["sps"]
     cpu = artikel(sps["cpu"])
@@ -70,7 +74,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     modul_nr = 2
     zaehler: dict[str, int] = {}
     for sig in ("DI", "DO", "AI"):
-        geraete = [b for b in feld if b.daten["signal"] == sig]
+        geraete = [b for b in feld + motor_signale if b.daten["signal"] == sig]
         if not geraete:
             continue
         mod_key = sps["module_kandidaten"][sig]
@@ -100,6 +104,8 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     gruppen: "OrderedDict[str, list[Betriebsmittel]]" = OrderedDict()
     gruppen["SPS"] = [b for b in sps_bm if b.kategorie != "sps_do"]
     do_last = [b for b in sps_bm if b.kategorie == "sps_do"]
+    for b in motor_signale:          # Schützspulen -> DO-Last, MSS-Rückmeldung -> SPS
+        (do_last if b.daten["gruppe"] == "DO-Last" else gruppen["SPS"]).append(b)
     for b in feld:
         if b.daten["signal"] == "DO":
             b.daten["gruppe"] = "DO-Last"
@@ -125,11 +131,17 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         "i_primaer_max_A": round(i_primaer, 2),
         "gruppen": {k: round(sum(b.daten["i_A"] for b in v), 3) for k, v in gruppen.items()},
     }
+    # 400-V-Summenstrom gegen Hauptschalter (Netzteil vereinfacht auf einem Außenleiter addiert)
+    i_mot = sum(float(x["i_N_A"]) for x in projekt.get("motoren", []))
+    m.bilanz["i_motoren_A"] = round(i_mot, 2)
+    m.bilanz["i_400V_max_A"] = round(i_mot + i_primaer, 2)
 
     # ---- Einspeisung -----------------------------------------------------------
     hs_key = projekt["einspeisung"]["hauptschalter"]
     m.betriebsmittel.append(Betriebsmittel("-Q1", hs_key, artikel(hs_key)["bezeichnung"],
                                            "Hauptschalter", "hauptschalter", SEITE_EINSPEISUNG, 2))
+    if m.bilanz["i_400V_max_A"] > artikel(hs_key)["i_nenn_A"]:
+        m.warnungen.append(f"Σ I 400 V = {m.bilanz['i_400V_max_A']} A > Hauptschalter {artikel(hs_key)['i_nenn_A']} A")
     ls_kand = [k for k, a in art.items() if a["kategorie"] == "schutz"]
     ls_key = waehle_kleinste(art, ls_kand, nt["vorsicherung_A"])
     if ls_key is None or art[ls_key]["i_nenn_A"] != nt["vorsicherung_A"]:
@@ -165,7 +177,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     # ---- Feldgeräte auf Seiten/Spalten + Klemmen -X1 --------------------------
     knr = 1
     for i, b in enumerate(feld):
-        b.seite = ERSTE_FELDSEITE + i // SPALTEN_JE_SEITE
+        b.seite = erste_feldseite + i // SPALTEN_JE_SEITE
         b.spalte = i % SPALTEN_JE_SEITE + 1
         ans = b.daten["anschluss"]
         sig = b.daten["signal"]
@@ -190,5 +202,22 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     m.betriebsmittel.append(Betriebsmittel("-X1", "RK-2.5", artikel("RK-2.5")["bezeichnung"],
                                            "Klemmleiste Feld", "klemme",
                                            daten={"anzahl": knr - 1}))
-    m.projekt["letzte_feldseite"] = ERSTE_FELDSEITE + (len(feld) - 1) // SPALTEN_JE_SEITE
+    # ---- Seitenplan --------------------------------------------------------------
+    n_feldseiten = math.ceil(len(feld) / SPALTEN_JE_SEITE)
+    plan = [("Deckblatt", "deckblatt", 0), ("Inhaltsverzeichnis", "inhalt", 0),
+            ("Einspeisung / Netzteil 24 V", "einspeisung", 0), ("Verteilung 24 V DC", "verteilung", 0),
+            ("SPS-Übersicht", "sps", 0)]
+    plan += [(f"Motorabgänge {i + 1} (Last)", "motor_last", i) for i in range(n_motseiten)]
+    plan += [(f"Motorabgänge {i + 1} (Steuerung)", "motor_steuer", i) for i in range(n_motseiten)]
+    plan += [(f"Feldgeräte {i + 1}", "feld", i) for i in range(n_feldseiten)]
+    def listenseiten(titel, art_, n):
+        k = max(1, math.ceil(n / ZEILEN_JE_SEITE))
+        return [(titel if k == 1 else f"{titel} {i + 1}", art_, i) for i in range(k)]
+    plan += listenseiten("Klemmenplan", "klemmen", len(m.klemmen))
+    if m.kabel:
+        plan += listenseiten("Kabelliste", "kabel", len(m.kabel))
+    plan += listenseiten("Stückliste", "stueckliste", len({b.artikel for b in m.betriebsmittel}))
+    plan += [("Auslegungsnachweis", "auslegung", 0)]
+    m.seiten = [(i + 1, t, a, x) for i, (t, a, x) in enumerate(plan)]
+    assert m.seiten[SEITE_SPS - 1][2] == "sps" and (n_mot == 0 or m.seiten[ERSTE_DYN_SEITE - 1][2] == "motor_last")
     return m

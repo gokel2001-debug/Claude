@@ -10,6 +10,10 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 
+class RegelFehler(Exception):
+    """Eingabe/Stamm erlauben keine regelkonforme Auslegung."""
+
+
 @dataclass
 class Betriebsmittel:
     bmk: str                      # z. B. "-G1" (ohne Anlage/Ort-Präfix)
@@ -54,12 +58,30 @@ class Absicherung:
 
 
 @dataclass
+class Kabel:
+    bmk: str                      # z. B. "-W1"
+    artikel: str
+    von: str
+    nach: str
+    adern: int
+    querschnitt_mm2: float
+    laenge_m: float
+    i_b_A: float                  # Betriebsstrom (Einstellstrom Schutzorgan)
+    i_z_A: float                  # Strombelastbarkeit inkl. Reduktionsfaktor
+    du_prozent: float
+    seite: int | None = None
+    spalte: int | None = None
+
+
+@dataclass
 class Planmodell:
     projekt: dict[str, Any]
     betriebsmittel: list[Betriebsmittel] = field(default_factory=list)
     klemmen: list[Klemme] = field(default_factory=list)
     sps_kanaele: list[SpsKanal] = field(default_factory=list)
     absicherungen: list[Absicherung] = field(default_factory=list)
+    kabel: list[Kabel] = field(default_factory=list)
+    seiten: list[tuple[int, str, str, int]] = field(default_factory=list)  # Nr, Titel, Art, Index
     bilanz: dict[str, Any] = field(default_factory=dict)
     warnungen: list[str] = field(default_factory=list)
 
