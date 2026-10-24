@@ -1,0 +1,121 @@
+# Gerätestamm (Artikelstamm) – BEISPIELDATEN
+# Artikelnummern/Hersteller sind Platzhalter, KEINE realen Produkte.
+# Im Betrieb werden diese Einträge aus Datenblättern befüllt (manuell oder per
+# `python -m slpgen datenblatt <pdf>` als Vorschlag) und vor Freigabe geprüft.
+#
+# Pflichtfelder je Kategorie:
+#   netzteil:  u_aus_V, i_nenn_A, wirkungsgrad, u_ein_V, vorsicherung_A
+#   sensor:    u_V, i_mA, signal (DI|AI), anschluss (Liste Klemmenbezeichner)
+#   aktor:     u_V, p_W oder i_mA, signal (DO|AO), anschluss
+#   sps_*:     kanaele, i_mA (Eigenbedarf an 24 V)
+#   schutz:    i_nenn_A, charakteristik
+
+artikel:
+  NT-24-05:
+    kategorie: netzteil
+    hersteller: Beispiel GmbH
+    bezeichnung: Netzteil 1~ 230 V AC / 24 V DC, 5 A
+    u_ein_V: 230
+    u_aus_V: 24
+    i_nenn_A: 5
+    wirkungsgrad: 0.90
+    vorsicherung_A: 6
+  NT-24-10:
+    kategorie: netzteil
+    hersteller: Beispiel GmbH
+    bezeichnung: Netzteil 1~ 230 V AC / 24 V DC, 10 A
+    u_ein_V: 230
+    u_aus_V: 24
+    i_nenn_A: 10
+    wirkungsgrad: 0.92
+    vorsicherung_A: 10
+  NT-24-20:
+    kategorie: netzteil
+    hersteller: Beispiel GmbH
+    bezeichnung: Netzteil 1~ 230 V AC / 24 V DC, 20 A
+    u_ein_V: 230
+    u_aus_V: 24
+    i_nenn_A: 20
+    wirkungsgrad: 0.93
+    vorsicherung_A: 16
+
+  HS-3P-40:
+    kategorie: hauptschalter
+    hersteller: Beispiel GmbH
+    bezeichnung: Hauptschalter 3-polig 40 A
+    i_nenn_A: 40
+  LS-1P-C06: {kategorie: schutz, hersteller: Beispiel GmbH, bezeichnung: Leitungsschutzschalter 1P C6, i_nenn_A: 6, charakteristik: C}
+  LS-1P-C10: {kategorie: schutz, hersteller: Beispiel GmbH, bezeichnung: Leitungsschutzschalter 1P C10, i_nenn_A: 10, charakteristik: C}
+  LS-1P-C16: {kategorie: schutz, hersteller: Beispiel GmbH, bezeichnung: Leitungsschutzschalter 1P C16, i_nenn_A: 16, charakteristik: C}
+  ES-24-01: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 1 A, i_nenn_A: 1}
+  ES-24-02: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 2 A, i_nenn_A: 2}
+  ES-24-04: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 4 A, i_nenn_A: 4}
+  ES-24-06: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 6 A, i_nenn_A: 6}
+  ES-24-10: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 10 A, i_nenn_A: 10}
+  RK-2.5: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: Reihenklemme 2,5 mm² grau}
+
+  SPS-CPU:
+    kategorie: sps_cpu
+    hersteller: Beispiel GmbH
+    bezeichnung: SPS-CPU 24 V DC
+    i_mA: 600
+    kanaele: 0
+  SPS-DI16:
+    kategorie: sps_di
+    hersteller: Beispiel GmbH
+    bezeichnung: Digitaleingabe 16 x 24 V DC
+    i_mA: 30
+    kanaele: 16
+  SPS-DO16:
+    kategorie: sps_do
+    hersteller: Beispiel GmbH
+    bezeichnung: Digitalausgabe 16 x 24 V DC / 0,5 A
+    i_mA: 40
+    kanaele: 16
+  SPS-AI8:
+    kategorie: sps_ai
+    hersteller: Beispiel GmbH
+    bezeichnung: Analogeingabe 8 x 4–20 mA
+    i_mA: 50
+    kanaele: 8
+
+  IND-M12-PNP:
+    kategorie: sensor
+    hersteller: Beispiel GmbH
+    bezeichnung: Induktiver Näherungsschalter M12, PNP Schließer
+    u_V: 24
+    i_mA: 15
+    signal: DI
+    anschluss: ["1 (L+)", "3 (L-)", "4 (Q)"]
+  OPT-REF-PNP:
+    kategorie: sensor
+    hersteller: Beispiel GmbH
+    bezeichnung: Reflexionslichtschranke, PNP
+    u_V: 24
+    i_mA: 35
+    signal: DI
+    anschluss: ["1 (L+)", "3 (L-)", "4 (Q)"]
+  PT-420-2L:
+    kategorie: sensor
+    hersteller: Beispiel GmbH
+    bezeichnung: Drucktransmitter 0–10 bar, 4–20 mA, 2-Leiter
+    u_V: 24
+    i_mA: 22
+    signal: AI
+    anschluss: ["1 (+)", "2 (I)"]
+  MV-24-4W:
+    kategorie: aktor
+    hersteller: Beispiel GmbH
+    bezeichnung: Magnetventil 24 V DC, 4,2 W
+    u_V: 24
+    p_W: 4.2
+    signal: DO
+    anschluss: ["1 (+)", "2 (-)"]
+  LMP-24-GN:
+    kategorie: aktor
+    hersteller: Beispiel GmbH
+    bezeichnung: Leuchtmelder grün 24 V DC
+    u_V: 24
+    i_mA: 20
+    signal: DO
+    anschluss: ["X1 (+)", "X2 (-)"]

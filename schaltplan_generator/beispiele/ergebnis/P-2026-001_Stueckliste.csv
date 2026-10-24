@@ -1,0 +1,15 @@
+Artikel;Menge;Hersteller;Bezeichnung
+HS-3P-40;1;Beispiel GmbH;Hauptschalter 3-polig 40 A
+LS-1P-C06;1;Beispiel GmbH;Leitungsschutzschalter 1P C6
+NT-24-05;1;Beispiel GmbH;Netzteil 1~ 230 V AC / 24 V DC, 5 A
+ES-24-01;3;Beispiel GmbH;Elektronische Sicherung 24 V 1 A
+SPS-CPU;1;Beispiel GmbH;SPS-CPU 24 V DC
+SPS-DI16;1;Beispiel GmbH;Digitaleingabe 16 x 24 V DC
+SPS-DO16;1;Beispiel GmbH;Digitalausgabe 16 x 24 V DC / 0,5 A
+SPS-AI8;1;Beispiel GmbH;Analogeingabe 8 x 4–20 mA
+IND-M12-PNP;2;Beispiel GmbH;Induktiver Näherungsschalter M12, PNP Schließer
+OPT-REF-PNP;2;Beispiel GmbH;Reflexionslichtschranke, PNP
+PT-420-2L;1;Beispiel GmbH;Drucktransmitter 0–10 bar, 4–20 mA, 2-Leiter
+MV-24-4W;3;Beispiel GmbH;Magnetventil 24 V DC, 4,2 W
+LMP-24-GN;1;Beispiel GmbH;Leuchtmelder grün 24 V DC
+RK-2.5;22;Beispiel GmbH;Reihenklemme 2

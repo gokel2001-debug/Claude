@@ -1,0 +1,714 @@
+{
+  "projekt": {
+    "nummer": "P-2026-001",
+    "bezeichnung": "Steuerschrank Förderband Linie 1",
+    "kunde": "Musterkunde AG",
+    "anlage": "=FB1",
+    "ort": "+SS1",
+    "ersteller": "N.N.",
+    "datum": "2026-10-24",
+    "revision": "00",
+    "_netz": "3/N/PE AC 400/230 V 50 Hz",
+    "letzte_feldseite": 7
+  },
+  "betriebsmittel": [
+    {
+      "bmk": "-Q1",
+      "artikel": "HS-3P-40",
+      "bezeichnung": "Hauptschalter 3-polig 40 A",
+      "funktion": "Hauptschalter",
+      "kategorie": "hauptschalter",
+      "seite": 3,
+      "spalte": 2,
+      "daten": {}
+    },
+    {
+      "bmk": "-F1",
+      "artikel": "LS-1P-C06",
+      "bezeichnung": "Leitungsschutzschalter 1P C6",
+      "funktion": "Vorsicherung Netzteil",
+      "kategorie": "schutz",
+      "seite": 3,
+      "spalte": 5,
+      "daten": {}
+    },
+    {
+      "bmk": "-G1",
+      "artikel": "NT-24-05",
+      "bezeichnung": "Netzteil 1~ 230 V AC / 24 V DC, 5 A",
+      "funktion": "Versorgung 24 V DC",
+      "kategorie": "netzteil",
+      "seite": 3,
+      "spalte": 7,
+      "daten": {
+        "kategorie": "netzteil",
+        "hersteller": "Beispiel GmbH",
+        "bezeichnung": "Netzteil 1~ 230 V AC / 24 V DC, 5 A",
+        "u_ein_V": 230,
+        "u_aus_V": 24,
+        "i_nenn_A": 5,
+        "wirkungsgrad": 0.9,
+        "vorsicherung_A": 6
+      }
+    },
+    {
+      "bmk": "-F2",
+      "artikel": "ES-24-01",
+      "bezeichnung": "Elektronische Sicherung 24 V 1 A",
+      "funktion": "24 V SPS",
+      "kategorie": "schutz_dc",
+      "seite": 4,
+      "spalte": 1,
+      "daten": {}
+    },
+    {
+      "bmk": "-F3",
+      "artikel": "ES-24-01",
+      "bezeichnung": "Elektronische Sicherung 24 V 1 A",
+      "funktion": "24 V Sensorik",
+      "kategorie": "schutz_dc",
+      "seite": 4,
+      "spalte": 2,
+      "daten": {}
+    },
+    {
+      "bmk": "-F4",
+      "artikel": "ES-24-01",
+      "bezeichnung": "Elektronische Sicherung 24 V 1 A",
+      "funktion": "24 V DO-Last",
+      "kategorie": "schutz_dc",
+      "seite": 4,
+      "spalte": 3,
+      "daten": {}
+    },
+    {
+      "bmk": "-A1",
+      "artikel": "SPS-CPU",
+      "bezeichnung": "SPS-CPU 24 V DC",
+      "funktion": "Steuerung",
+      "kategorie": "sps_cpu",
+      "seite": 5,
+      "spalte": 1,
+      "daten": {
+        "i_A": 0.6,
+        "absicherung": "-F2"
+      }
+    },
+    {
+      "bmk": "-A2",
+      "artikel": "SPS-DI16",
+      "bezeichnung": "Digitaleingabe 16 x 24 V DC",
+      "funktion": "DI-Modul 1",
+      "kategorie": "sps_di",
+      "seite": 5,
+      "spalte": 2,
+      "daten": {
+        "i_A": 0.03,
+        "absicherung": "-F2"
+      }
+    },
+    {
+      "bmk": "-A3",
+      "artikel": "SPS-DO16",
+      "bezeichnung": "Digitalausgabe 16 x 24 V DC / 0,5 A",
+      "funktion": "DO-Modul 1",
+      "kategorie": "sps_do",
+      "seite": 5,
+      "spalte": 3,
+      "daten": {
+        "i_A": 0.04,
+        "absicherung": "-F4"
+      }
+    },
+    {
+      "bmk": "-A4",
+      "artikel": "SPS-AI8",
+      "bezeichnung": "Analogeingabe 8 x 4–20 mA",
+      "funktion": "AI-Modul 1",
+      "kategorie": "sps_ai",
+      "seite": 5,
+      "spalte": 4,
+      "daten": {
+        "i_A": 0.05,
+        "absicherung": "-F2"
+      }
+    },
+    {
+      "bmk": "-B1",
+      "artikel": "IND-M12-PNP",
+      "bezeichnung": "Induktiver Näherungsschalter M12, PNP Schließer",
+      "funktion": "Endlage Band vorne",
+      "kategorie": "sensor",
+      "seite": 6,
+      "spalte": 1,
+      "daten": {
+        "gruppe": "Sensorik",
+        "i_A": 0.015,
+        "signal": "DI",
+        "anschluss": [
+          "1 (L+)",
+          "3 (L-)",
+          "4 (Q)"
+        ],
+        "sps": "-A2:0 (%I0.0)",
+        "adresse": "%I0.0",
+        "absicherung": "-F3",
+        "klemmen": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "bmk": "-B2",
+      "artikel": "IND-M12-PNP",
+      "bezeichnung": "Induktiver Näherungsschalter M12, PNP Schließer",
+      "funktion": "Endlage Band hinten",
+      "kategorie": "sensor",
+      "seite": 6,
+      "spalte": 2,
+      "daten": {
+        "gruppe": "Sensorik",
+        "i_A": 0.015,
+        "signal": "DI",
+        "anschluss": [
+          "1 (L+)",
+          "3 (L-)",
+          "4 (Q)"
+        ],
+        "sps": "-A2:1 (%I0.1)",
+        "adresse": "%I0.1",
+        "absicherung": "-F3",
+        "klemmen": [
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "bmk": "-B3",
+      "artikel": "OPT-REF-PNP",
+      "bezeichnung": "Reflexionslichtschranke, PNP",
+      "funktion": "Teileerkennung Einlauf",
+      "kategorie": "sensor",
+      "seite": 6,
+      "spalte": 3,
+      "daten": {
+        "gruppe": "Sensorik",
+        "i_A": 0.035,
+        "signal": "DI",
+        "anschluss": [
+          "1 (L+)",
+          "3 (L-)",
+          "4 (Q)"
+        ],
+        "sps": "-A2:2 (%I0.2)",
+        "adresse": "%I0.2",
+        "absicherung": "-F3",
+        "klemmen": [
+          7,
+          8,
+          9
+        ]
+      }
+    },
+    {
+      "bmk": "-B4",
+      "artikel": "OPT-REF-PNP",
+      "bezeichnung": "Reflexionslichtschranke, PNP",
+      "funktion": "Teileerkennung Auslauf",
+      "kategorie": "sensor",
+      "seite": 6,
+      "spalte": 4,
+      "daten": {
+        "gruppe": "Sensorik",
+        "i_A": 0.035,
+        "signal": "DI",
+        "anschluss": [
+          "1 (L+)",
+          "3 (L-)",
+          "4 (Q)"
+        ],
+        "sps": "-A2:3 (%I0.3)",
+        "adresse": "%I0.3",
+        "absicherung": "-F3",
+        "klemmen": [
+          10,
+          11,
+          12
+        ]
+      }
+    },
+    {
+      "bmk": "-B5",
+      "artikel": "PT-420-2L",
+      "bezeichnung": "Drucktransmitter 0–10 bar, 4–20 mA, 2-Leiter",
+      "funktion": "Druck Pneumatik",
+      "kategorie": "sensor",
+      "seite": 6,
+      "spalte": 5,
+      "daten": {
+        "gruppe": "Sensorik",
+        "i_A": 0.022,
+        "signal": "AI",
+        "anschluss": [
+          "1 (+)",
+          "2 (I)"
+        ],
+        "sps": "-A4:0 (%IW0)",
+        "adresse": "%IW0",
+        "absicherung": "-F3",
+        "klemmen": [
+          13,
+          14
+        ]
+      }
+    },
+    {
+      "bmk": "-Y1",
+      "artikel": "MV-24-4W",
+      "bezeichnung": "Magnetventil 24 V DC, 4,2 W",
+      "funktion": "Stopper Einlauf",
+      "kategorie": "aktor",
+      "seite": 6,
+      "spalte": 6,
+      "daten": {
+        "gruppe": "DO-Last",
+        "i_A": 0.17500000000000002,
+        "signal": "DO",
+        "anschluss": [
+          "1 (+)",
+          "2 (-)"
+        ],
+        "sps": "-A3:0 (%Q0.0)",
+        "adresse": "%Q0.0",
+        "absicherung": "-F4",
+        "klemmen": [
+          15,
+          16
+        ]
+      }
+    },
+    {
+      "bmk": "-Y2",
+      "artikel": "MV-24-4W",
+      "bezeichnung": "Magnetventil 24 V DC, 4,2 W",
+      "funktion": "Stopper Auslauf",
+      "kategorie": "aktor",
+      "seite": 6,
+      "spalte": 7,
+      "daten": {
+        "gruppe": "DO-Last",
+        "i_A": 0.17500000000000002,
+        "signal": "DO",
+        "anschluss": [
+          "1 (+)",
+          "2 (-)"
+        ],
+        "sps": "-A3:1 (%Q0.1)",
+        "adresse": "%Q0.1",
+        "absicherung": "-F4",
+        "klemmen": [
+          17,
+          18
+        ]
+      }
+    },
+    {
+      "bmk": "-Y3",
+      "artikel": "MV-24-4W",
+      "bezeichnung": "Magnetventil 24 V DC, 4,2 W",
+      "funktion": "Ausschieber",
+      "kategorie": "aktor",
+      "seite": 6,
+      "spalte": 8,
+      "daten": {
+        "gruppe": "DO-Last",
+        "i_A": 0.17500000000000002,
+        "signal": "DO",
+        "anschluss": [
+          "1 (+)",
+          "2 (-)"
+        ],
+        "sps": "-A3:2 (%Q0.2)",
+        "adresse": "%Q0.2",
+        "absicherung": "-F4",
+        "klemmen": [
+          19,
+          20
+        ]
+      }
+    },
+    {
+      "bmk": "-P1",
+      "artikel": "LMP-24-GN",
+      "bezeichnung": "Leuchtmelder grün 24 V DC",
+      "funktion": "Meldung Betrieb",
+      "kategorie": "aktor",
+      "seite": 7,
+      "spalte": 1,
+      "daten": {
+        "gruppe": "DO-Last",
+        "i_A": 0.02,
+        "signal": "DO",
+        "anschluss": [
+          "X1 (+)",
+          "X2 (-)"
+        ],
+        "sps": "-A3:3 (%Q0.3)",
+        "adresse": "%Q0.3",
+        "absicherung": "-F4",
+        "klemmen": [
+          21,
+          22
+        ]
+      }
+    },
+    {
+      "bmk": "-X1",
+      "artikel": "RK-2.5",
+      "bezeichnung": "Reihenklemme 2",
+      "funktion": "Klemmleiste Feld",
+      "kategorie": "klemme",
+      "seite": null,
+      "spalte": null,
+      "daten": {
+        "anzahl": 22
+      }
+    }
+  ],
+  "klemmen": [
+    {
+      "leiste": "-X1",
+      "nr": 1,
+      "potential": "+24V",
+      "ziel_innen": "-F3:2",
+      "ziel_aussen": "-B1:1 (L+)",
+      "seite": 6,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X1",
+      "nr": 2,
+      "potential": "Signal",
+      "ziel_innen": "-A2:0 (%I0.0)",
+      "ziel_aussen": "-B1:4 (Q)",
+      "seite": 6,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X1",
+      "nr": 3,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-B1:3 (L-)",
+      "seite": 6,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X1",
+      "nr": 4,
+      "potential": "+24V",
+      "ziel_innen": "-F3:2",
+      "ziel_aussen": "-B2:1 (L+)",
+      "seite": 6,
+      "spalte": 2
+    },
+    {
+      "leiste": "-X1",
+      "nr": 5,
+      "potential": "Signal",
+      "ziel_innen": "-A2:1 (%I0.1)",
+      "ziel_aussen": "-B2:4 (Q)",
+      "seite": 6,
+      "spalte": 2
+    },
+    {
+      "leiste": "-X1",
+      "nr": 6,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-B2:3 (L-)",
+      "seite": 6,
+      "spalte": 2
+    },
+    {
+      "leiste": "-X1",
+      "nr": 7,
+      "potential": "+24V",
+      "ziel_innen": "-F3:2",
+      "ziel_aussen": "-B3:1 (L+)",
+      "seite": 6,
+      "spalte": 3
+    },
+    {
+      "leiste": "-X1",
+      "nr": 8,
+      "potential": "Signal",
+      "ziel_innen": "-A2:2 (%I0.2)",
+      "ziel_aussen": "-B3:4 (Q)",
+      "seite": 6,
+      "spalte": 3
+    },
+    {
+      "leiste": "-X1",
+      "nr": 9,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-B3:3 (L-)",
+      "seite": 6,
+      "spalte": 3
+    },
+    {
+      "leiste": "-X1",
+      "nr": 10,
+      "potential": "+24V",
+      "ziel_innen": "-F3:2",
+      "ziel_aussen": "-B4:1 (L+)",
+      "seite": 6,
+      "spalte": 4
+    },
+    {
+      "leiste": "-X1",
+      "nr": 11,
+      "potential": "Signal",
+      "ziel_innen": "-A2:3 (%I0.3)",
+      "ziel_aussen": "-B4:4 (Q)",
+      "seite": 6,
+      "spalte": 4
+    },
+    {
+      "leiste": "-X1",
+      "nr": 12,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-B4:3 (L-)",
+      "seite": 6,
+      "spalte": 4
+    },
+    {
+      "leiste": "-X1",
+      "nr": 13,
+      "potential": "+24V",
+      "ziel_innen": "-F3:2",
+      "ziel_aussen": "-B5:1 (+)",
+      "seite": 6,
+      "spalte": 5
+    },
+    {
+      "leiste": "-X1",
+      "nr": 14,
+      "potential": "Signal",
+      "ziel_innen": "-A4:0 (%IW0)",
+      "ziel_aussen": "-B5:2 (I)",
+      "seite": 6,
+      "spalte": 5
+    },
+    {
+      "leiste": "-X1",
+      "nr": 15,
+      "potential": "Signal",
+      "ziel_innen": "-A3:0 (%Q0.0)",
+      "ziel_aussen": "-Y1:1 (+)",
+      "seite": 6,
+      "spalte": 6
+    },
+    {
+      "leiste": "-X1",
+      "nr": 16,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-Y1:2 (-)",
+      "seite": 6,
+      "spalte": 6
+    },
+    {
+      "leiste": "-X1",
+      "nr": 17,
+      "potential": "Signal",
+      "ziel_innen": "-A3:1 (%Q0.1)",
+      "ziel_aussen": "-Y2:1 (+)",
+      "seite": 6,
+      "spalte": 7
+    },
+    {
+      "leiste": "-X1",
+      "nr": 18,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-Y2:2 (-)",
+      "seite": 6,
+      "spalte": 7
+    },
+    {
+      "leiste": "-X1",
+      "nr": 19,
+      "potential": "Signal",
+      "ziel_innen": "-A3:2 (%Q0.2)",
+      "ziel_aussen": "-Y3:1 (+)",
+      "seite": 6,
+      "spalte": 8
+    },
+    {
+      "leiste": "-X1",
+      "nr": 20,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-Y3:2 (-)",
+      "seite": 6,
+      "spalte": 8
+    },
+    {
+      "leiste": "-X1",
+      "nr": 21,
+      "potential": "Signal",
+      "ziel_innen": "-A3:3 (%Q0.3)",
+      "ziel_aussen": "-P1:X1 (+)",
+      "seite": 7,
+      "spalte": 1
+    },
+    {
+      "leiste": "-X1",
+      "nr": 22,
+      "potential": "0V",
+      "ziel_innen": "0V-Schiene",
+      "ziel_aussen": "-P1:X2 (-)",
+      "seite": 7,
+      "spalte": 1
+    }
+  ],
+  "sps_kanaele": [
+    {
+      "modul_bmk": "-A2",
+      "kanal": 0,
+      "art": "DI",
+      "adresse": "%I0.0",
+      "geraet_bmk": "-B1",
+      "funktion": "Endlage Band vorne"
+    },
+    {
+      "modul_bmk": "-A2",
+      "kanal": 1,
+      "art": "DI",
+      "adresse": "%I0.1",
+      "geraet_bmk": "-B2",
+      "funktion": "Endlage Band hinten"
+    },
+    {
+      "modul_bmk": "-A2",
+      "kanal": 2,
+      "art": "DI",
+      "adresse": "%I0.2",
+      "geraet_bmk": "-B3",
+      "funktion": "Teileerkennung Einlauf"
+    },
+    {
+      "modul_bmk": "-A2",
+      "kanal": 3,
+      "art": "DI",
+      "adresse": "%I0.3",
+      "geraet_bmk": "-B4",
+      "funktion": "Teileerkennung Auslauf"
+    },
+    {
+      "modul_bmk": "-A3",
+      "kanal": 0,
+      "art": "DO",
+      "adresse": "%Q0.0",
+      "geraet_bmk": "-Y1",
+      "funktion": "Stopper Einlauf"
+    },
+    {
+      "modul_bmk": "-A3",
+      "kanal": 1,
+      "art": "DO",
+      "adresse": "%Q0.1",
+      "geraet_bmk": "-Y2",
+      "funktion": "Stopper Auslauf"
+    },
+    {
+      "modul_bmk": "-A3",
+      "kanal": 2,
+      "art": "DO",
+      "adresse": "%Q0.2",
+      "geraet_bmk": "-Y3",
+      "funktion": "Ausschieber"
+    },
+    {
+      "modul_bmk": "-A3",
+      "kanal": 3,
+      "art": "DO",
+      "adresse": "%Q0.3",
+      "geraet_bmk": "-P1",
+      "funktion": "Meldung Betrieb"
+    },
+    {
+      "modul_bmk": "-A4",
+      "kanal": 0,
+      "art": "AI",
+      "adresse": "%IW0",
+      "geraet_bmk": "-B5",
+      "funktion": "Druck Pneumatik"
+    }
+  ],
+  "absicherungen": [
+    {
+      "bmk": "-F2",
+      "artikel": "ES-24-01",
+      "i_nenn_A": 1,
+      "gruppe": "SPS",
+      "i_gruppe_A": 0.68,
+      "verbraucher": [
+        "-A1",
+        "-A2",
+        "-A4"
+      ]
+    },
+    {
+      "bmk": "-F3",
+      "artikel": "ES-24-01",
+      "i_nenn_A": 1,
+      "gruppe": "Sensorik",
+      "i_gruppe_A": 0.122,
+      "verbraucher": [
+        "-B1",
+        "-B2",
+        "-B3",
+        "-B4",
+        "-B5"
+      ]
+    },
+    {
+      "bmk": "-F4",
+      "artikel": "ES-24-01",
+      "i_nenn_A": 1,
+      "gruppe": "DO-Last",
+      "i_gruppe_A": 0.585,
+      "verbraucher": [
+        "-A3",
+        "-Y1",
+        "-Y2",
+        "-Y3",
+        "-P1"
+      ]
+    }
+  ],
+  "bilanz": {
+    "i_summe_A": 1.387,
+    "gleichzeitigkeit": 1.0,
+    "reserve": 0.25,
+    "i_bedarf_A": 1.734,
+    "netzteil": "NT-24-05",
+    "i_nenn_A": 5,
+    "auslastung": 0.277,
+    "i_primaer_max_A": 0.58,
+    "gruppen": {
+      "SPS": 0.68,
+      "Sensorik": 0.122,
+      "DO-Last": 0.585
+    }
+  },
+  "warnungen": []
+}

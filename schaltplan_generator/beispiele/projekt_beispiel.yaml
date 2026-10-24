@@ -1,0 +1,42 @@
+# Projekteingabe (Was soll gebaut werden?) – Beispiel
+# Diese Datei ist die strukturierte Eingabe, die später auch per Dialog/LLM aus
+# einer Freitext-Anfrage vorbefüllt werden kann.
+
+projekt:
+  nummer: P-2026-001
+  bezeichnung: Steuerschrank Förderband Linie 1
+  kunde: Musterkunde AG
+  anlage: "=FB1"          # Funktionsaspekt / Anlage (IEC 81346)
+  ort: "+SS1"             # Ortsaspekt / Schrank (IEC 81346)
+  ersteller: N.N.
+  datum: 2026-10-24
+  revision: "00"
+
+einspeisung:
+  netz: "3/N/PE AC 400/230 V 50 Hz"
+  hauptschalter: HS-3P-40
+
+versorgung_24V:
+  # Kandidaten für die Netzteilauswahl (kleinstes passendes wird gewählt)
+  netzteile: [NT-24-05, NT-24-10, NT-24-20]
+  gleichzeitigkeit: 1.0      # g, Anteil gleichzeitig aktiver Verbraucher
+  reserve: 0.25              # Reserve auf den Bedarf (Hausregel, parametrierbar)
+  absicherungsfaktor: 1.25   # I_Sicherung >= Faktor * I_Gruppe (Hausregel)
+
+sps:
+  cpu: SPS-CPU
+  module_kandidaten: {DI: SPS-DI16, DO: SPS-DO16, AI: SPS-AI8}
+  adressschema: {DI: "%I{byte}.{bit}", DO: "%Q{byte}.{bit}", AI: "%IW{wort}"}
+
+# Feldgeräte: Typ verweist auf den Gerätestamm; gruppe = gemeinsamer 24-V-Abgang
+# (DO-Aktoren laufen immer über den Abgang der DO-Module, Gruppe "DO-Last")
+feldgeraete:
+  - {bmk: B1, artikel: IND-M12-PNP, funktion: "Endlage Band vorne", gruppe: Sensorik}
+  - {bmk: B2, artikel: IND-M12-PNP, funktion: "Endlage Band hinten", gruppe: Sensorik}
+  - {bmk: B3, artikel: OPT-REF-PNP, funktion: "Teileerkennung Einlauf", gruppe: Sensorik}
+  - {bmk: B4, artikel: OPT-REF-PNP, funktion: "Teileerkennung Auslauf", gruppe: Sensorik}
+  - {bmk: B5, artikel: PT-420-2L, funktion: "Druck Pneumatik", gruppe: Sensorik}
+  - {bmk: Y1, artikel: MV-24-4W, funktion: "Stopper Einlauf", gruppe: DO-Last}
+  - {bmk: Y2, artikel: MV-24-4W, funktion: "Stopper Auslauf", gruppe: DO-Last}
+  - {bmk: Y3, artikel: MV-24-4W, funktion: "Ausschieber", gruppe: DO-Last}
+  - {bmk: P1, artikel: LMP-24-GN, funktion: "Meldung Betrieb", gruppe: DO-Last}
