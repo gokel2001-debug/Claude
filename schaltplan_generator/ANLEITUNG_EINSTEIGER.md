@@ -12,6 +12,7 @@ einer Elektrofachkraft geprüft werden.
 ## 1 Einmalig: Python installieren (ca. 5 Minuten)
 
 1. https://www.python.org/downloads/ öffnen → gelben Knopf **„Download Python 3.x“** klicken.
+   (Empfohlen: Python **3.13**; neuere Versionen funktionieren ebenfalls.)
 2. Heruntergeladene Datei starten.
 3. **Wichtig:** im ersten Fenster unten den Haken **„Add python.exe to PATH“** setzen.
 4. **„Install Now“** klicken und warten, bis „Setup was successful“ erscheint.
@@ -74,6 +75,7 @@ Im Ordner **`ausgabe`**:
 |---|---|---|
 | „Python wurde nicht gefunden“ | Python fehlt oder Haken „PATH“ nicht gesetzt | Schritt 1 wiederholen, Haken setzen |
 | „FEHLER bei der Einrichtung“ | kein Internet / Firmen-Proxy | Ordner `.venv` löschen, mit Internet erneut starten; ggf. IT fragen |
+| „Microsoft Visual C++ 14.0 or greater is required“ (Bibliothek PyYAML) | sehr neue Python-Version ohne fertige Bibliothek | ab dieser Programmversion automatisch umgangen; bei älterer `start.bat` neue Version laden. Alternativ Python 3.13 zusätzlich installieren |
 | „Datei gesperrt“ | PDF oder Excel noch geöffnet | Datei schließen, erneut erzeugen |
 | „Regelfehler: Artikel … fehlt im Gerätestamm“ | Artikel nicht im Stamm | Artikel aus der Auswahlliste wählen |
 | „Regelfehler: Kein Querschnitt …“ | Kabel zu lang / Strom zu hoch für Tabelle | im Blatt *Regeln* weitere `iz_…`-Zeilen (Normwerte) ergänzen |

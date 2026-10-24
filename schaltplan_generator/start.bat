@@ -6,9 +6,10 @@ chcp 65001 >nul
 set "PYTHONIOENCODING=utf-8"
 title Stromlaufplan-Generator (slpgen)
 
-rem ---- Python suchen (zuerst Python-Launcher "py") ----
+rem ---- Python suchen: bevorzugt Versionen, fuer die alle Bibliotheken fertig vorliegen ----
 set "PY="
-where py >nul 2>nul && set "PY=py -3"
+for %%V in (3.13 3.14 3.12) do if not defined PY py -%%V -c "pass" >nul 2>nul && set "PY=py -%%V"
+if not defined PY where py >nul 2>nul && set "PY=py -3"
 if not defined PY where python >nul 2>nul && set "PY=python"
 if not defined PY goto :keinpython
 
@@ -18,6 +19,8 @@ echo.
 echo Erster Start: Programmumgebung wird eingerichtet (1-3 Minuten, Internet noetig) ...
 %PY% -m venv .venv
 if errorlevel 1 goto :keinpython
+rem PyYAML ohne C-Erweiterung bauen: kein C++-Compiler noetig (z. B. bei sehr neuen Python-Versionen)
+set "PYYAML_FORCE_LIBYAML=0"
 ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check -q -r requirements.txt
 if errorlevel 1 goto :fehler_install
 echo ok> ".venv\eingerichtet.txt"
@@ -114,7 +117,9 @@ goto :ende
 
 :fehler_install
 echo.
-echo FEHLER bei der Einrichtung (Internet/Proxy?). Ordner ".venv" loeschen und erneut starten.
+echo FEHLER bei der Einrichtung - Ursache steht im Text oben (rot: "ERROR").
+echo Haeufig: keine Internetverbindung/Firmen-Proxy oder sehr neue Python-Version.
+echo Abhilfe: Ordner ".venv" loeschen und erneut starten; sonst Python 3.13 zusaetzlich installieren.
 echo Details: ANLEITUNG_EINSTEIGER.md, Abschnitt "Probleme"
 pause
 goto :ende
