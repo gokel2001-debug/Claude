@@ -16,8 +16,15 @@ def lade_yaml(p: str) -> dict:
         return yaml.safe_load(f)
 
 
+def lade_projekt(p: str) -> dict:
+    if p.lower().endswith((".xlsx", ".xlsm")):
+        from .excel_eingabe import lade_excel
+        return lade_excel(p)
+    return lade_yaml(p)
+
+
 def cmd_generieren(a):
-    projekt, stamm = lade_yaml(a.projekt), lade_yaml(a.stamm)
+    projekt, stamm = lade_projekt(a.projekt), lade_yaml(a.stamm)
     m = regeln.plane(projekt, stamm)
     ziel = Path(a.ausgabe)
     ziel.mkdir(parents=True, exist_ok=True)
@@ -57,10 +64,16 @@ def cmd_struktur(a):
                                         "leere_anlagen", "aderkennzeichnung_gesamt")}, indent=1, ensure_ascii=False))
 
 
+def cmd_vorlage(a):
+    from .excel_eingabe import schreibe_vorlage
+    schreibe_vorlage(lade_yaml(a.beispiel), lade_yaml(a.stamm), a.ziel)
+    print(f"Excel-Vorlage -> {a.ziel}")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="slpgen", description="Stromlaufplan-Generator (Prototyp)")
     sub = p.add_subparsers(dest="befehl", required=True)
-    g = sub.add_parser("generieren", help="Projekt-YAML -> PDF + Stückliste + Planmodell")
+    g = sub.add_parser("generieren", help="Projekt (Excel .xlsx oder YAML) -> PDF + Stückliste + Planmodell")
     g.add_argument("projekt")
     g.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
     g.add_argument("--ausgabe", default="ausgabe")
@@ -83,8 +96,18 @@ def main(argv=None):
     st.add_argument("--schwelle", type=float, default=0.75, help="Ähnlichkeit für Typical-Gruppen (0..1)")
     st.add_argument("--ausgabe", help="JSON-Datei für das vollständige Ergebnis")
     st.set_defaults(f=cmd_struktur)
+    vo = sub.add_parser("vorlage", help="Excel-Vorlage für die Projekteingabe erzeugen")
+    vo.add_argument("ziel", nargs="?", default="beispiele/Projekt_Vorlage.xlsx")
+    vo.add_argument("--beispiel", default="beispiele/projekt_beispiel.yaml")
+    vo.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
+    vo.set_defaults(f=cmd_vorlage)
     a = p.parse_args(argv)
     try:
         a.f(a)
     except regeln.RegelFehler as e:
         sys.exit(f"Regelfehler: {e}")
+    except PermissionError as e:
+        sys.exit(f"Datei gesperrt: {e.filename}\n-> Ist die Datei noch in einem PDF-Programm oder Excel geöffnet? "
+                 f"Bitte schließen und erneut starten.")
+    except FileNotFoundError as e:
+        sys.exit(f"Datei nicht gefunden: {e.filename}")

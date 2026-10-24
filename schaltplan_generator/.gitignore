@@ -7,3 +7,5 @@ hausprofil/
 *VERTRAULICH*
 *.pdf
 !beispiele/ergebnis/*.pdf
+meine_projekte/
+.venv/
