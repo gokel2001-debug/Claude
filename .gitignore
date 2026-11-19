@@ -1,0 +1,6 @@
+# Vertraulichkeit: Kundendaten nie einchecken (auch außerhalb von schaltplan_generator/)
+*.pdf
+!schaltplan_generator/beispiele/ergebnis/*.pdf
+**/hausprofil/
+**/meine_projekte/
+*VERTRAULICH*

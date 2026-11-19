@@ -1,12 +1,16 @@
 """Synthetischer Testkorpus im Hausstil – Stromlaufplan-PDFs ohne Kunden- oder Firmendaten.
 
 Zweck: Lern- und Auswertefunktionen (struktur, analysieren, später „lernen“) reproduzierbar
-testen, ohne echte Pläne ins Repository zu legen. Aufbau und Konventionen sind dem
-ausgewerteten Hausstandard nachempfunden (Anlage je Funktion, Spalten 0–9, Zeichnungsnummer
-im Schriftfeld, SPS-Adressen E/EW, Aderkennzeichnung Farbe + Querschnitt), alle Namen sind neutral.
+testen, ohne echte Pläne ins Repository zu legen. Verwendet werden nur allgemein übliche
+Konventionen (Anlage je Funktion, Spalten 0–9, Zeichnungsnummer im Schriftfeld, SPS-Adressen
+E/EW/A/AW, Aderkennzeichnung Farbe + Querschnitt); Anlagennummern, Nummernschema und Namen
+sind bewusst neutral gewählt und stammen nicht aus Kundenplänen.
 
 Eingebauter Trend (bekannte Sollwerte für Tests): Feldklemmleiste bis WECHSELJAHR-1 „-X20“,
 ab WECHSELJAHR „-X10“.
+
+Adressbereiche je Plan (überschneidungsfrei): Zähler-DI E0.0–E1.7 (Karte =SA1-K1),
+Pumpen-DI ab E2.0 (=SA1-K2), Analogeingänge ab EW256, Analogausgänge ab AW256, DO ab A0.0.
 """
 from __future__ import annotations
 
@@ -27,6 +31,7 @@ class KorpusPlan:
     datei: str
     projekt: str
     jahr: int
+    datum: str
     feldleiste: str
     anlagen: list[str]
     typicals: dict[str, list[str]] = field(default_factory=dict)   # Typical-Name -> Anlagen
@@ -44,7 +49,7 @@ def _rahmen(c: Canvas, projekt: str, anlage: str, art: str, titel: str, datum: s
     c.setFont("Helvetica", 7)
     c.drawString(25 * mm, y, f"Datum {datum}   Bearb. Muster   Rev. 00")
     c.drawString(120 * mm, y, titel)
-    c.drawString(220 * mm, y, f"Zeichnung-Nr. {projekt}-{anlage}-0-{art}-00")
+    c.drawString(220 * mm, y, f"Zeichnung-Nr. {projekt}-{anlage}-1-{art}-01")
     c.drawString(330 * mm, y, f"= {anlage}   + S01   & {art}   Seite 1")
 
 
@@ -67,9 +72,9 @@ def _sps_kasten(c: Canvas, x: float, y: float, karte: str, adresse: str, klemme:
 
 def _seite_zaehler_di(c, anlage, leiste, n_kanal):
     """Typical Zähler DI: Zählimpuls + Drahtbruchmeldung, geschirmte Feldleitung."""
-    _sps_kasten(c, 80, 190, "=810-K1", f"E{n_kanal // 8}.{n_kanal % 8}", f"{leiste}:2",
+    _sps_kasten(c, 80, 190, "=SA1-K1", f"E{n_kanal // 8}.{n_kanal % 8}", f"{leiste}:2",
                 f"Betriebsmeldung Zähler {anlage} Zählimpuls")
-    _sps_kasten(c, 160, 190, "=810-K1", f"E{(n_kanal + 1) // 8}.{(n_kanal + 1) % 8}", f"{leiste}:3",
+    _sps_kasten(c, 160, 190, "=SA1-K1", f"E{(n_kanal + 1) // 8}.{(n_kanal + 1) % 8}", f"{leiste}:3",
                 f"Störmeldung Zähler {anlage} Drahtbruch")
     for i, (x, farbe) in enumerate(((50, "DBU"), (80, "DBU"), (160, "DBU"), (200, "DBU/WH")), 1):
         _verbindung(c, x, 170, 130, farbe, "0,75")
@@ -79,12 +84,12 @@ def _seite_zaehler_di(c, anlage, leiste, n_kanal):
     c.drawString(30 * mm, 127 * mm, leiste)
     c.drawString(30 * mm, 112 * mm, "-W1 LIYCY 7x0,75")
     c.drawString(30 * mm, 80 * mm, "-P1 Zähler 24V DC Puls GND")
-    c.drawString(120 * mm, 100 * mm, "Widerstand 2,2KΩ im Leerstecker")
+    c.drawString(120 * mm, 100 * mm, "Abschlusswiderstand 2,2 kOhm (Drahtbruchüberwachung)")
 
 
 def _seite_messstelle_ai(c, anlage, leiste, n_wort):
     """Typical Messstelle AI: 2-Leiter 4–20 mA."""
-    _sps_kasten(c, 120, 190, "=830-K1", f"EW{n_wort}", f"{leiste}:2", f"Messwert 4I20 {anlage}")
+    _sps_kasten(c, 120, 190, "=SA3-K1", f"EW{n_wort}", f"{leiste}:2", f"Messwert 4I20 {anlage}")
     for i, (x, farbe) in enumerate(((90, "DBU"), (120, "WH")), 1):
         _verbindung(c, x, 170, 130, farbe, "0,75")
         c.circle(x * mm, 128 * mm, 1.2 * mm)
@@ -92,15 +97,16 @@ def _seite_messstelle_ai(c, anlage, leiste, n_wort):
     c.setFont("Helvetica", 7)
     c.drawString(30 * mm, 127 * mm, leiste)
     c.drawString(30 * mm, 112 * mm, "-W1 JE-Y(ST)Y 2x2x0,8")
-    c.drawString(30 * mm, 80 * mm, "-BT1 Messumformer 4-20mA")
+    c.drawString(30 * mm, 80 * mm, "-BP1 Druckmessumformer 4-20mA")
 
 
 def _seite_pumpe(c, anlage, leiste):
-    """Typical Pumpe: Motorschutzschalter, Freigabe über Koppelrelais, Stellsignal, Meldungen."""
-    _sps_kasten(c, 200, 200, "=840-K1", "AW256", f"{leiste}:5", f"Stellsignal 4I20 {anlage}")
-    _sps_kasten(c, 260, 200, "=820-K1", "A1.0", "-K1:A1", f"Freigabe {anlage}")
-    _sps_kasten(c, 320, 200, "=810-K1", "E4.0", f"{leiste}:7", f"Betrieb {anlage}")
-    for x, farbe, qs in ((60, "BK", "2,5"), (70, "BK", "2,5"), (80, "BK", "2,5"), (200, "WH", "0,75"),
+    """Typical Pumpe 230 V (EC-Antrieb mit Stelleingang): Motorschutzschalter mit Störmeldung,
+    Freigabe über Koppelrelais, Stellsignal 4–20 mA."""
+    _sps_kasten(c, 200, 200, "=SA4-K1", "AW256", f"{leiste}:5", f"Stellsignal 4I20 {anlage}")
+    _sps_kasten(c, 260, 200, "=SA2-K1", "A0.0", "-K1:A1", f"Freigabe {anlage}")
+    _sps_kasten(c, 320, 200, "=SA1-K2", "E2.0", "-Q1:14", f"Störung Motorschutz {anlage}")
+    for x, farbe, qs in ((60, "BK", "1,5"), (70, "LBU", "1,5"), (80, "GNYE", "1,5"), (200, "WH", "0,75"),
                          (320, "DBU", "0,75")):
         _verbindung(c, x, 180, 130, farbe, qs)
     c.setFont("Helvetica", 7)
@@ -108,7 +114,7 @@ def _seite_pumpe(c, anlage, leiste):
     c.drawString(250 * mm, 160 * mm, "-K1 Koppelrelais 24V DC")
     c.drawString(30 * mm, 127 * mm, leiste)
     c.drawString(30 * mm, 112 * mm, "-W1 ÖLFLEX 3G1,5")
-    c.drawString(30 * mm, 80 * mm, "-M1 Pumpe 230V")
+    c.drawString(30 * mm, 80 * mm, "-M1 Pumpe 230V EC, Stelleingang 4-20mA")
 
 
 def _seite_einspeisung(c):
@@ -129,13 +135,18 @@ def _seite_24v(c):
 
 def erzeuge_korpus(ordner: str | Path, anzahl: int = 10, seed: int = 1,
                    jahre: tuple[int, int] = (2021, 2026)) -> list[KorpusPlan]:
-    """Erzeugt `anzahl` Pläne; Jahre gleichmäßig über den Bereich verteilt. Deterministisch über `seed`."""
+    """Erzeugt `anzahl` Pläne; Jahre gleichmäßig über den Bereich verteilt (kaufmännisch gerundet).
+    Bytegleich reproduzierbar über `seed`. Der Bereich muss das WECHSELJAHR einschließen."""
+    if anzahl < 2:
+        raise ValueError("anzahl muss mindestens 2 sein, sonst enthält der Korpus keinen Jahrestrend")
+    if not jahre[0] < WECHSELJAHR <= jahre[1]:
+        raise ValueError(f"Jahresbereich {jahre} muss das Wechseljahr {WECHSELJAHR} einschließen")
     rnd = random.Random(seed)
     ordner = Path(ordner)
     ordner.mkdir(parents=True, exist_ok=True)
     plaene = []
     for i in range(anzahl):
-        jahr = jahre[0] + round(i * (jahre[1] - jahre[0]) / max(1, anzahl - 1))
+        jahr = jahre[0] + int(i * (jahre[1] - jahre[0]) / (anzahl - 1) + 0.5)
         projekt = f"P{1000 + i}"
         datum = f"{rnd.randint(1, 28):02d}.{rnd.randint(1, 12):02d}.{jahr}"
         leiste = "-X20" if jahr < WECHSELJAHR else "-X10"
@@ -147,18 +158,18 @@ def erzeuge_korpus(ordner: str | Path, anzahl: int = 10, seed: int = 1,
         for k in range(n_di):
             a = f"ZD{k + 1:02d}"
             typ["zaehler_di"].append(a)
-            seiten.append((a, f"Zähler {a}", lambda c, a=a, k=k: _seite_zaehler_di(c, a, leiste, 2 * k + 1)))
+            seiten.append((a, f"Zähler {a}", lambda c, a=a, k=k, le=leiste: _seite_zaehler_di(c, a, le, 2 * k + 1)))
         for k in range(n_ai):
             a = f"MA{k + 1:02d}"
             typ["messstelle_ai"].append(a)
-            seiten.append((a, f"Messstelle {a}", lambda c, a=a, k=k: _seite_messstelle_ai(c, a, leiste, 4 + 2 * k)))
+            seiten.append((a, f"Messstelle {a}", lambda c, a=a, k=k, le=leiste: _seite_messstelle_ai(c, a, le, 256 + 2 * k)))
         if mit_pumpe:
             typ["pumpe"].append("PU01")
-            seiten.append(("PU01", "Pumpe PU01", lambda c: _seite_pumpe(c, "PU01", leiste)))
-        seiten.append(("789", "Reserve", lambda c: None))
+            seiten.append(("PU01", "Pumpe PU01", lambda c, le=leiste: _seite_pumpe(c, "PU01", le)))
+        seiten.append(("RES", "Reserve", lambda c: None))
 
         datei = f"{projekt}_{jahr}.pdf"
-        c = Canvas(str(ordner / datei), pagesize=landscape(A3))
+        c = Canvas(str(ordner / datei), pagesize=landscape(A3), invariant=1)   # ohne Zeitstempel
         c.setCreator("slpgen korpus")
         for anlage, titel, zeichne in seiten:
             _rahmen(c, projekt, anlage, "EFS", titel, datum)
@@ -167,6 +178,6 @@ def erzeuge_korpus(ordner: str | Path, anzahl: int = 10, seed: int = 1,
         _rahmen(c, projekt, "KPL", "", "Klemmenplan", datum)
         c.showPage()
         c.save()
-        plaene.append(KorpusPlan(datei, projekt, jahr, leiste, [s[0] for s in seiten],
+        plaene.append(KorpusPlan(datei, projekt, jahr, datum, leiste, [s[0] for s in seiten],
                                  {k: v for k, v in typ.items() if v}))
     return plaene
