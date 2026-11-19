@@ -49,14 +49,39 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         return art[key]
 
     # ---- Feldgeräte -------------------------------------------------------
-    feld = []
+    # Einfaches Gerät: ein Signal laut Artikel. Baustein (Spalte „typical“): mehrere Signale,
+    # Zusatzbauteile und Klemmenbelegung laut Bibliothek `typicals` im Gerätestamm.
+    feld, teilsignale, bauteile = [], [], []
+    typicals = stamm.get("typicals", {})
     for fg in projekt["feldgeraete"]:
         a = artikel(fg["artikel"])
-        bmk = "-" + fg["bmk"].lstrip("-")
+        bmk = "-" + str(fg["bmk"]).lstrip("-")
+        tname = fg.get("typical") or None
         b = Betriebsmittel(bmk=bmk, artikel=fg["artikel"], bezeichnung=a["bezeichnung"],
                            funktion=fg.get("funktion", ""), kategorie=a["kategorie"],
                            daten={"gruppe": fg.get("gruppe", "Allgemein"), "i_A": strom_A(a),
-                                  "signal": a["signal"], "anschluss": a.get("anschluss", [])})
+                                  "signal": a.get("signal"), "anschluss": a.get("anschluss", [])})
+        if tname:
+            if tname not in typicals:
+                raise RegelFehler(f"Baustein (Typical) '{tname}' für {bmk} fehlt in der Bibliothek")
+            tp = typicals[tname]
+            b.daten.update(typical=tname, signal="BAUSTEIN", versorgung=tp.get("versorgung", {}))
+            b.daten["teilsignale"] = []
+            for n, sg in enumerate(tp["signale"], 1):
+                t = Betriebsmittel(bmk=f"{bmk}.{n}", artikel="", bezeichnung=sg["text"],
+                                   funktion=f"{sg['text']} {b.funktion}".strip(), kategorie="teilsignal",
+                                   daten={"signal": sg["art"], "i_A": 0.0, "pin": sg.get("pin", ""),
+                                          "eltern": bmk})
+                teilsignale.append(t)
+                b.daten["teilsignale"].append(t.bmk)
+            for bt in tp.get("bauteile", []):
+                ba = artikel(bt["artikel"])
+                bauteile.append(Betriebsmittel(bmk=f"{bmk}{bt['bmk']}", artikel=bt["artikel"],
+                                               bezeichnung=ba["bezeichnung"], funktion=bt.get("text", ""),
+                                               kategorie="bauteil",
+                                               daten={"eltern": bmk, "lokal": bt["bmk"],
+                                                      "i_A": strom_A(ba) if ("i_mA" in ba or "p_W" in ba) else 0.0,
+                                                      "gruppe": bt.get("gruppe", b.daten["gruppe"])}))
         feld.append(b)
 
     # ---- Motorabgänge (Typical DOL) ------------------------------------------
@@ -73,10 +98,12 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                              seite=SEITE_SPS, spalte=1, daten={"i_A": strom_A(cpu)})]
     modul_nr = 2
     zaehler: dict[str, int] = {}
-    for sig in ("DI", "DO", "AI"):
-        geraete = [b for b in feld + motor_signale if b.daten["signal"] == sig]
+    for sig in ("DI", "DO", "AI", "AO"):
+        geraete = [b for b in feld + motor_signale + teilsignale if b.daten["signal"] == sig]
         if not geraete:
             continue
+        if sig not in sps["module_kandidaten"] or sig not in sps["adressschema"]:
+            raise RegelFehler(f"Für {sig}-Signale ist kein SPS-Modul/Adressschema angegeben (Regeln: modul_{sig})")
         mod_key = sps["module_kandidaten"][sig]
         mod = artikel(mod_key)
         anzahl = math.ceil(len(geraete) / mod["kanaele"])
@@ -112,6 +139,8 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
             do_last.append(b)
         else:
             gruppen.setdefault(b.daten["gruppe"], []).append(b)
+    for b in bauteile:              # z. B. Koppelrelais-Spulen: Gruppe laut Bibliothek
+        (do_last if b.daten["gruppe"] == "DO-Last" else gruppen.setdefault(b.daten["gruppe"], [])).append(b)
     if do_last:
         gruppen["DO-Last"] = do_last
 
@@ -181,7 +210,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         b.spalte = i % SPALTEN_JE_SEITE + 1
         ans = b.daten["anschluss"]
         sig = b.daten["signal"]
-        plan: list[tuple[str, str, str]] = []
+        plan: list[tuple] = []
         if sig == "DI":   # 3-Leiter: L+, L-, Q
             plan = [("+24V", f"{b.daten['absicherung']}:2", ans[0]),
                     ("Signal", b.daten["sps"], ans[2]),
@@ -192,12 +221,26 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         elif sig == "DO":
             plan = [("Signal", b.daten["sps"], ans[0]),
                     ("0V", "0V-Schiene", ans[1])]
+        elif sig == "BAUSTEIN":   # Versorgung + je Teilsignal eine Klemme, Reihenfolge laut Bibliothek
+            vs = b.daten["versorgung"]
+            ts = {t.bmk: t for t in teilsignale if t.daten["eltern"] == b.bmk}
+            if "+24V" in vs:
+                plan.append(("+24V", f"{b.daten['absicherung']}:2", vs["+24V"]))
+            plan += [("Signal", ts[k].daten["sps"], ts[k].daten["pin"], k) for k in b.daten["teilsignale"]]
+            if "0V" in vs:
+                plan.append(("0V", "0V-Schiene", vs["0V"]))
         b.daten["klemmen"] = []
-        for pot, innen, aussen in plan:
-            m.klemmen.append(Klemme("-X1", knr, pot, innen, f"{b.bmk}:{aussen}", b.seite, b.spalte))
+        for eintrag in plan:
+            pot, innen, aussen = eintrag[:3]
+            schluessel = eintrag[3] if len(eintrag) > 3 else (b.bmk if pot == "Signal" else "")
+            m.klemmen.append(Klemme("-X1", knr, pot, innen, f"{b.bmk}:{aussen}", b.seite, b.spalte, schluessel))
             b.daten["klemmen"].append(knr)
             knr += 1
         m.betriebsmittel.append(b)
+    for bt in bauteile:             # Zusatzbauteile stehen beim zugehörigen Gerät
+        eltern = next(f for f in feld if f.bmk == bt.daten["eltern"])
+        bt.seite, bt.spalte = eltern.seite, eltern.spalte
+    m.betriebsmittel.extend(bauteile)
 
     m.betriebsmittel.append(Betriebsmittel("-X1", "RK-2.5", artikel("RK-2.5")["bezeichnung"],
                                            "Klemmleiste Feld", "klemme",

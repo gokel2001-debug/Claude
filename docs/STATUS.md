@@ -6,8 +6,8 @@
 | Aktuelles Paket | P3 erledigt → als Nächstes P4 (Typical-Bibliothek nach Bestand) |
 | Nächster Schritt | P4: Bausteine wie im Bestand – Zähler DI (Impuls + Drahtbruch), Messstelle AI, Pumpe (Motorschutz, Koppelrelais, Stellsignal), 24 V mit Selektivmodul |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
-| **Bitte bestätigen** | **E8–E12** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt) |
-| Tests | 52/52 grün |
+| **Bitte bestätigen** | **E8–E13** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt) |
+| Tests | 57/57 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -17,7 +17,7 @@
 | P2 Hausprofil lernen | erledigt: Menüpunkt 6 lernt aus einem Ordner mit PDFs Ihre Zeichenregeln inkl. Änderungen über die Jahre. **Für Sie:** optional mit echten PDFs ausprobieren, nichts freigeben nötig |
 | P3a Freigabe per Excel | erledigt: Menüpunkt 7 übernimmt JA/NEIN aus `profil_freigabe.xlsx` |
 | P3b Anlagen-Struktur / Layout aus Profil | erledigt: zweite PDF `…_Stromlaufplan_Hausstil.pdf` – eine Anlage je Funktion, Spalten 0–9, Verweise =Anlage/Seite.Spalte |
-| P4 Typical-Bibliothek | offen |
+| P4 Typical-Bibliothek | P4a erledigt: Bausteine mit mehreren Signalen (Zähler DI/AI, Stellantrieb AO), Analogausgänge, Zusatzbauteile. **Offen P4b:** Koppelrelais-Verdrahtung zeichnen, Pumpe mit Leistungsteil; P4c: 24 V mit Selektivmodul |
 | P5 SPS-Kasten, Übersichten, Aderkennzeichnung | offen |
 | P6 Listen im Hausformat + Konsistenzprüfungen | offen |
 | P7 Geometrie-Auslese, Vergleichsmaß | offen |

@@ -18,7 +18,7 @@ import yaml
 from reportlab.lib.pagesizes import A3, landscape
 from reportlab.pdfgen.canvas import Canvas
 
-from .modell import Planmodell, RegelFehler
+from .modell import Planmodell, RegelFehler, eltern_bmk
 from .zeichnen import (X0, X1, Y0, Y1, YL, YS, Blatt, potential_pfeil, s_deckblatt, sym_klemme,
                        sym_schliesser, sym_sicherung, tabelle)
 
@@ -27,10 +27,10 @@ HAUSSTIL_STANDARD = {
     "feldklemmleiste": "-X10",
     "zeichnungsnummer": "{projekt}-{anlage}-1-{art}-{rev}",
     "vorschrift": "",
-    "ader": {"+24V": "DBU", "0V": "DBU/WH", "DI": "DBU", "DO": "DBU", "AI": "WH", "querschnitt": "0,75"},
+    "ader": {"+24V": "DBU", "0V": "DBU/WH", "DI": "DBU", "DO": "DBU", "AI": "WH", "AO": "WH", "querschnitt": "0,75"},
     "feldkabel_typ": "LIYCY",
     "feldkabel_adern": [2, 3, 4, 7, 12],
-    "kartenanlagen": {"CPU": "SA0", "DI": "SA1", "DO": "SA2", "AI": "SA3"},
+    "kartenanlagen": {"CPU": "SA0", "DI": "SA1", "DO": "SA2", "AI": "SA3", "AO": "SA4"},
     "infrastruktur": {"einspeisung": "EIN", "erzeugung": "NT24", "verteilung": "VT24"},
     "ader_ac": {"L": "BK", "N": "LBU", "PE": "GNYE", "querschnitt": "1,5"},
 }
@@ -84,6 +84,7 @@ class Hausplan:
         return f"/{ziel.seite}.{ziel.spalte}" if ziel.anlage == von else f"={ziel.anlage}/{ziel.seite}.{ziel.spalte}"
 
     def voll(self, alt_bmk: str) -> str:
+        alt_bmk = eltern_bmk(alt_bmk)
         a, lok = self.lokal.get(alt_bmk, ("", alt_bmk))
         return f"={a}{self.m.projekt.get('ort', '')}{lok}"
 
@@ -131,14 +132,18 @@ class Hausplan:
             an = self._neu(kenn, f"{g.funktion}".strip() or g.bezeichnung)
             an.seiten.append((g.funktion or g.bezeichnung, self._s_feld))
             self._lokal(g.bmk, kenn, f"-{buchst}1", 1, 4)
-            self.pos[f"kanal:{g.bmk}"] = Ort(kenn, 1, 4)
+            for i, k in enumerate(self._feldklemmen(g.bmk)):        # SPS-Kasten über der Signalklemme
+                if k.signal:
+                    self.pos[f"kanal:{k.signal}"] = Ort(kenn, 1, self._feldspalte(i))
+            for bt in [x for x in m.betriebsmittel if x.kategorie == "bauteil" and x.daten["eltern"] == g.bmk]:
+                self._lokal(bt.bmk, kenn, bt.daten["lokal"], 1, 1)
 
         # SPS-Karten je Signalart als Anlage
         cpu = self._neu(karten["CPU"], "SPS-Steuerung")
         cpu.seiten.append(("SPS-CPU", self._s_cpu))
         self._lokal("-A1", karten["CPU"], "-K1", 1, 1)
         for sig, kenn, titel in (("DI", karten["DI"], "SPS Digitaleingänge"), ("DO", karten["DO"], "SPS Digitalausgänge"),
-                                 ("AI", karten["AI"], "SPS Analogeingänge")):
+                                 ("AI", karten["AI"], "SPS Analogeingänge"), ("AO", karten["AO"], "SPS Analogausgänge")):
             mods = sorted({k.modul_bmk for k in m.sps_kanaele if k.art == sig})
             if not mods:
                 continue
@@ -167,6 +172,14 @@ class Hausplan:
         an = self._neu(kenn, titel, art)
         for i in range(max(1, -(-n // ZEILEN_JE_LISTENSEITE))):
             an.seiten.append((titel, (lambda i: lambda b, a: zeichner(b, a, i))(i)))
+
+    def _feldklemmen(self, geraet: str):
+        return [k for k in self.m.klemmen if k.ziel_aussen.startswith(geraet + ":")]
+
+    @staticmethod
+    def _feldspalte(index: int) -> int:
+        """Klemmen eines Feldgeräts von links nach rechts in den Spalten 1, 3, 5, 7, 9."""
+        return min(1 + 2 * index, 9)
 
     def _kennung(self, bmk: str, buchst: str, laufnr: int) -> str:
         ziffern = "".join(c for c in bmk if c.isdigit())
@@ -314,14 +327,16 @@ class Hausplan:
 
     # ---- Feldgerät ----------------------------------------------------------------
     def _s_feld(self, b: Blatt, a: Anlage):
-        alt = next(k for k, (an, _) in self.lokal.items() if an == a.kennung)
+        alt = next(k for k, (an, lok) in self.lokal.items()
+                   if an == a.kennung and self.m.bm(k).kategorie in ("sensor", "aktor"))
         g, ad, leiste = self.m.bm(alt), self.stil["ader"], self.stil["feldklemmleiste"]
-        kl = [k for k in self.m.klemmen if k.ziel_aussen.startswith(g.bmk + ":")]
-        spalte = {"+24V": 2, "Signal": 4, "0V": 6}
+        kl = self._feldklemmen(g.bmk)
+        if len(kl) > 5:
+            raise RegelFehler(f"{g.bmk}: mehr als 5 Feldklemmen passen nicht auf eine Seite")
         fa = self.pos.get(g.daten.get("absicherung", ""))
         y_k, y_dev = 170, 120
-        for i, k in enumerate(kl, 1):
-            x = self.x(spalte[k.potential])
+        for i, k in enumerate(kl):
+            x = self.x(self._feldspalte(i))
             if k.potential == "+24V":
                 b.text(x - 1, 266, f"24L+ {self.ref(fa, a.kennung)}", 2, ausr="r")
                 b.linie(x, 268, x, y_k + 1.1)
@@ -331,26 +346,32 @@ class Hausplan:
                 b.linie(x, 268, x, y_k + 1.1)
                 farbe = ad["0V"]
             else:
-                self._sps_kasten(b, x, 215, g.bmk, a.kennung, f"{leiste}:{i}")
+                kanal = next(c for c in self.m.sps_kanaele if c.geraet_bmk == k.signal)
+                self._sps_kasten(b, x, 215, k.signal, a.kennung, f"{leiste}:{i + 1}")
                 b.linie(x, 215, x, y_k + 1.1)
-                farbe = ad[g.daten["signal"]]
-            b.text(x + 1, y_k + 12, f"{farbe}", 1.9)
+                farbe = ad[kanal.art]
+            b.text(x + 1, y_k + 12, farbe, 1.9)
             b.text(x + 1, y_k + 9, ad["querschnitt"], 1.9)
-            sym_klemme(b, x, y_k, leiste, i)
+            sym_klemme(b, x, y_k, leiste, i + 1)
             b.linie(x, y_k - 1.1, x, y_dev)
-        b.text(self.x(1), y_k - 0.8, leiste, 2.4, True, "r")
-        n = len(kl)
-        adern = next((z for z in self.stil["feldkabel_adern"] if z >= n), n)
-        b.linie(self.x(2) - 8, 150, self.x(6) + 8, 150, strich=([2, 1], 0))
-        b.text(self.x(1), 151, f"-W1 {self.stil['feldkabel_typ']} {adern}x0,75", 2.2, ausr="r")
-        b.rechteck(self.x(1) - 10, 60, self.x(7) - self.x(1) + 20, 60, strich=([4, 1, 1, 1], 0))
+            b.text(x + 0.8, y_dev + 1, k.ziel_aussen.split(":", 1)[1].split(" ")[0], 1.9)
+        b.text(self.x(0) + 10, y_k - 0.8, leiste, 2.4, True, "r")
+        xr = self.x(self._feldspalte(len(kl) - 1)) if kl else self.x(6)
+        b.linie(self.x(1) - 8, 150, xr + 8, 150, strich=([2, 1], 0))
+        b.text(self.x(0) + 10, 151, f"-W1 {self.stil['feldkabel_typ']} {self._feldkabel_adern(g.bmk)}x0,75", 2.2, ausr="r")
+        bauteile = [x for x in self.m.betriebsmittel if x.kategorie == "bauteil" and x.daten["eltern"] == g.bmk]
+        for j, bt in enumerate(bauteile):                       # Zusatzbauteile im Schrank
+            b.rechteck(self.x(0) - 8, 200 - j * 12, 16, 8)
+            b.text(self.x(0), 203 - j * 12, bt.daten["lokal"], 2.4, True, "m")
+            b.text(self.x(0) - 8, 197 - j * 12, bt.funktion[:30], 1.7)
+        b.rechteck(self.x(1) - 10, 60, xr - self.x(1) + 20, 60, strich=([4, 1, 1, 1], 0))
         b.text(self.x(1) - 8, 114, "Feld", 2.2)
-        b.rechteck(self.x(2) - 8, y_dev - 30, self.x(6) - self.x(2) + 16, 30, 0.4)
-        b.text(self.x(4), y_dev - 10, self.lokal[g.bmk][1], 4, True, "m")
-        b.text(self.x(4), y_dev - 16, g.bezeichnung[:60], 2.1, ausr="m")
-        b.text(self.x(4), y_dev - 21, f"{g.artikel}   I = {g.daten['i_A'] * 1000:.0f} mA", 2, ausr="m")
-        for k, sp in zip(kl, (spalte[k.potential] for k in kl)):
-            b.text(self.x(sp) + 0.8, y_dev - 4, k.ziel_aussen.split(":", 1)[1].split(" ")[0], 1.9)
+        b.rechteck(self.x(1) - 8, y_dev - 30, xr - self.x(1) + 16, 30, 0.4)
+        xm = (self.x(1) + xr) / 2
+        b.text(xm, y_dev - 10, self.lokal[g.bmk][1], 4, True, "m")
+        b.text(xm, y_dev - 16, g.bezeichnung[:60], 2.1, ausr="m")
+        zusatz = f"Baustein {g.daten['typical']}   " if g.daten.get("typical") else ""
+        b.text(xm, y_dev - 21, f"{zusatz}{g.artikel}   I = {g.daten['i_A'] * 1000:.0f} mA", 2, ausr="m")
 
     def _sps_kasten(self, b: Blatt, x: float, y: float, geraet: str, von: str, klemme: str):
         """SPS-Kasten im Hausstil: Kanal, Karte, Verweis, Adresse, Klemme, Funktionstext, Artikel."""
@@ -500,7 +521,6 @@ class Hausplan:
                 self._kabelzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE], [50, 90, 90, 90])
 
     POTENTIAL = {"+24V": "24L+", "0V": "24M", "Signal": "Signal"}
-    FELDSPALTE = {"+24V": 2, "Signal": 4, "0V": 6}
     SCHUETZ_ANSCHLUSS = {"U": "2", "V": "4", "W": "6"}
 
     def _klemmenzeilen(self):
@@ -518,16 +538,17 @@ class Hausplan:
                 ziel = (f"-K1:{self.SCHUETZ_ANSCHLUSS[k.potential]}" if k.potential in self.SCHUETZ_ANSCHLUSS
                         else f"PE ={self.EIN}")
                 seite = self.ref(Ort(kenn, 1, 4), "")
-            elif k.potential == "0V":
-                ziel = f"24M {self.ref(self.pos['24M'], '')}"
-                seite = self.ref(Ort(kenn, 1, self.FELDSPALTE["0V"]), "")
             else:
-                ziel = k.ziel_innen
-                for alt, (an2, lok2) in self.lokal.items():
-                    if ziel.startswith(alt + ":") or ziel == alt:
-                        ziel = ziel.replace(alt, f"={an2}{lok2}", 1)
-                        break
-                seite = self.ref(Ort(kenn, 1, self.FELDSPALTE[k.potential]), "")
+                index = [x.nr for x in self._feldklemmen(geraet)].index(k.nr)
+                seite = self.ref(Ort(kenn, 1, self._feldspalte(index)), "")
+                if k.potential == "0V":
+                    ziel = f"24M {self.ref(self.pos['24M'], '')}"
+                else:
+                    ziel = k.ziel_innen
+                    for alt, (an2, lok2) in self.lokal.items():
+                        if ziel.startswith(alt + ":") or ziel == alt:
+                            ziel = ziel.replace(alt, f"={an2}{lok2}", 1)
+                            break
             z.append((f"={kenn}{leiste}:{nr_je[(kenn, leiste)]}", self.POTENTIAL.get(k.potential, k.potential),
                       ziel, f"{lok}:{k.ziel_aussen.split(':', 1)[1]}", seite))
         return z

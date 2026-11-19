@@ -25,8 +25,8 @@ versorgung_24V:
 
 sps:
   cpu: SPS-CPU
-  module_kandidaten: {DI: SPS-DI16, DO: SPS-DO16, AI: SPS-AI8}
-  adressschema: {DI: "%I{byte}.{bit}", DO: "%Q{byte}.{bit}", AI: "%IW{wort}"}
+  module_kandidaten: {DI: SPS-DI16, DO: SPS-DO16, AI: SPS-AI8, AO: SPS-AO4}
+  adressschema: {DI: "%I{byte}.{bit}", DO: "%Q{byte}.{bit}", AI: "%IW{wort}", AO: "%QW{wort}"}
 
 # Feldgeräte: Typ verweist auf den Gerätestamm; gruppe = gemeinsamer 24-V-Abgang
 # (DO-Aktoren laufen immer über den Abgang der DO-Module, Gruppe "DO-Last")

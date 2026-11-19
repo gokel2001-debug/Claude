@@ -35,6 +35,12 @@ class Klemme:
     ziel_aussen: str              # z. B. "-B3:4 (Q)"
     seite: int | None = None
     spalte: int | None = None
+    signal: str = ""              # Schlüssel des SPS-Kanals (SpsKanal.geraet_bmk), nur bei Signalklemmen
+
+
+def eltern_bmk(signal_schluessel: str) -> str:
+    """Teilsignal "-B7.2" eines Bausteins -> Gerät "-B7"; einfache Geräte bleiben unverändert."""
+    return signal_schluessel.rsplit(".", 1)[0] if "." in signal_schluessel else signal_schluessel
 
 
 @dataclass

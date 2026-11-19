@@ -48,7 +48,7 @@ def test_querverweise_in_beide_richtungen(plan):
     assert "=VT24/1.3" in feld                # Feldgerät -> Absicherung (zweiter Abgang)
     assert "-X10:2" in feld                      # Klemme im SPS-Kasten
     karte = _seite(plan, "SA1")
-    assert "=B01/1.4" in karte and "=M01/2.6" in karte     # Karte -> Feldgerät / Motorsteuerung
+    assert "=B01/1.3" in karte and "=M01/2.6" in karte     # Karte -> Feldgerät (Signalklemme) / Motorsteuerung
 
 
 def test_freigegebenes_profil_wirkt_vorgeschlagenes_nicht(tmp_path):

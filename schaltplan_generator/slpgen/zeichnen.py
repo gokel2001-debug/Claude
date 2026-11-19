@@ -13,7 +13,7 @@ from reportlab.lib.pagesizes import A3, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfgen.canvas import Canvas
 
-from .modell import Planmodell
+from .modell import Planmodell, eltern_bmk
 from .regeln import (SEITE_EINSPEISUNG, SEITE_SPS, SEITE_VERTEILUNG,
                      SPALTEN_JE_SEITE, ZEILEN_JE_SEITE)
 
@@ -268,7 +268,7 @@ def s_sps(b: Blatt, m: Planmodell):
         b.text(x, 250, mb.artikel, 2, ausr="m")
         kan = [k for k in m.sps_kanaele if k.modul_bmk == mb.bmk]
         for i, k in enumerate(kan):
-            g = m.bm(k.geraet_bmk)
+            g = m.bm(eltern_bmk(k.geraet_bmk))
             y = 242 - i * 7
             b.text(x - 18, y, f"{k.kanal}", 2.2)
             b.text(x - 14, y, k.adresse, 2.2, True)
@@ -288,6 +288,13 @@ def s_feld(b: Blatt, m: Planmodell, seite: int, _idx: int = 0):
     lane = {"+24V": -12, "Signal": 0, "0V": 12}
     for g in geraete:
         x = sx(g.spalte)
+        if g.daten.get("typical"):                     # Bausteine mit mehreren Signalen nur im Hausstil
+            b.rechteck(x - 20, y_dev - 35, 40, 35, 0.4)
+            b.text(x, y_dev - 9, g.bmk, 4, True, "m")
+            b.text(x, y_dev - 15, g.funktion[:28], 2.2, ausr="m")
+            b.text(x, y_dev - 21, f"Baustein {g.daten['typical']}", 2, ausr="m")
+            b.text(x, y_dev - 26, "Darstellung: Hausstil-PDF", 1.9, ausr="m")
+            continue
         kl = [k for k in m.klemmen if k.ziel_aussen.startswith(g.bmk + ":")]
         for k in kl:
             xl = x + lane[k.potential]

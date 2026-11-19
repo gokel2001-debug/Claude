@@ -28,13 +28,14 @@ PROJEKT_FELDER = [
 REGEL_FELDER = [
     ("netzteile", "Kandidaten, mit Komma getrennt"), ("gleichzeitigkeit", "0..1"),
     ("reserve", "z. B. 0,25 = 25 %"), ("absicherungsfaktor", "I_Sicherung >= Faktor * I_Gruppe"),
-    ("sps_cpu", ""), ("modul_DI", ""), ("modul_DO", ""), ("modul_AI", ""),
-    ("adresse_DI", "{byte}.{bit}"), ("adresse_DO", "{byte}.{bit}"), ("adresse_AI", "{wort}"),
+    ("sps_cpu", ""), ("modul_DI", ""), ("modul_DO", ""), ("modul_AI", ""), ("modul_AO", "nur nötig bei Analogausgängen"),
+    ("adresse_DI", "{byte}.{bit}"), ("adresse_DO", "{byte}.{bit}"), ("adresse_AI", "{wort}"), ("adresse_AO", "{wort}"),
     ("leitungen_freigegeben", "JA erst nach Prüfung der I_z-Werte"), ("verlegeart", ""),
     ("reduktionsfaktor", ""), ("kappa", "Leitfähigkeit Cu"), ("du_max_prozent", "zul. Spannungsfall"),
 ]
 VORZEICHEN = {"anlage": "=", "ort": "+"}
 FELD_SPALTEN = ["BMK", "Artikel", "Funktion", "Gruppe"]
+BAUSTEIN_SPALTE = "Baustein (optional)"     # Typical aus der Bibliothek, z. B. zaehler_di
 MOTOR_SPALTEN = ["BMK", "Funktion", "P_kW", "I_N_A", "cos_phi", "Laenge_m"]
 FETT = Font(bold=True)
 KOPF = PatternFill("solid", fgColor="DDDDDD")
@@ -103,10 +104,13 @@ def lade_excel(pfad: str | Path) -> dict[str, Any]:
                            "gleichzeitigkeit": z("gleichzeitigkeit"), "reserve": z("reserve"),
                            "absicherungsfaktor": z("absicherungsfaktor")},
         "sps": {"cpu": str(r["sps_cpu"]),
-                "module_kandidaten": {s: str(r[f"modul_{s}"]) for s in ("DI", "DO", "AI")},
-                "adressschema": {s: str(r[f"adresse_{s}"]) for s in ("DI", "DO", "AI")}},
+                "module_kandidaten": {s: str(r[f"modul_{s}"]) for s in ("DI", "DO", "AI", "AO")
+                                      if r.get(f"modul_{s}") not in (None, "")},
+                "adressschema": {s: str(r[f"adresse_{s}"]) for s in ("DI", "DO", "AI", "AO")
+                                 if r.get(f"adresse_{s}") not in (None, "")}},
         "feldgeraete": [{"bmk": str(d["BMK"]), "artikel": str(d["Artikel"]), "funktion": str(d["Funktion"]),
-                         "gruppe": str(d.get("Gruppe") or "Allgemein")}
+                         "gruppe": str(d.get("Gruppe") or "Allgemein"),
+                         **({"typical": str(d[BAUSTEIN_SPALTE]).strip()} if d.get(BAUSTEIN_SPALTE) else {})}
                         for d in _tabelle(wb["Feldgeraete"], FELD_SPALTEN)],
     }
     if "Motoren" in wb.sheetnames:
@@ -145,8 +149,8 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
     v, s, ltg = projekt["versorgung_24V"], projekt["sps"], projekt.get("leitungen", {})
     regel = {"netzteile": ", ".join(v["netzteile"]), "gleichzeitigkeit": v["gleichzeitigkeit"],
              "reserve": v["reserve"], "absicherungsfaktor": v["absicherungsfaktor"], "sps_cpu": s["cpu"],
-             **{f"modul_{x}": s["module_kandidaten"][x] for x in ("DI", "DO", "AI")},
-             **{f"adresse_{x}": s["adressschema"][x] for x in ("DI", "DO", "AI")},
+             **{f"modul_{x}": s["module_kandidaten"].get(x, "") for x in ("DI", "DO", "AI", "AO")},
+             **{f"adresse_{x}": s["adressschema"].get(x, "") for x in ("DI", "DO", "AI", "AO")},
              "leitungen_freigegeben": "JA" if ltg.get("freigegeben") else "NEIN",
              "verlegeart": ltg.get("verlegeart", ""), "reduktionsfaktor": ltg.get("reduktionsfaktor", 1.0),
              "kappa": ltg.get("kappa", 56), "du_max_prozent": ltg.get("du_max_prozent", 3.0)}
@@ -163,9 +167,19 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
         wa.append([k, stamm["artikel"][k]["kategorie"], stamm["artikel"][k]["bezeichnung"]])
 
     wf = wb.create_sheet("Feldgeraete", 2)
-    _kopf(wf, FELD_SPALTEN)
+    _kopf(wf, FELD_SPALTEN + [BAUSTEIN_SPALTE])
     for g in projekt["feldgeraete"]:
-        wf.append([g["bmk"], g["artikel"], g.get("funktion", ""), g.get("gruppe", "")])
+        wf.append([g["bmk"], g["artikel"], g.get("funktion", ""), g.get("gruppe", ""), g.get("typical", "")])
+    typicals = stamm.get("typicals", {})
+    if typicals:
+        wt = wb.create_sheet("Bausteine")
+        _kopf(wt, ["Baustein", "Beschreibung", "Signale"])
+        for k, t in typicals.items():
+            wt.append([k, t.get("beschreibung", ""), ", ".join(f"{sg['art']} {sg['text']}" for sg in t["signale"])])
+        dvb = DataValidation(type="list", formula1=f"=Bausteine!$A$2:$A${len(typicals) + 1}", allow_blank=True,
+                             showErrorMessage=True, errorTitle="Baustein", error="Bitte Baustein aus der Liste wählen")
+        wf.add_data_validation(dvb)
+        dvb.add("E2:E500")
     dv = DataValidation(type="list", formula1=f"=Artikel!$A$2:$A${len(artikel) + 1}", allow_blank=True,
                         showErrorMessage=True, errorTitle="Artikel", error="Bitte Artikel aus der Liste wählen")
     wf.add_data_validation(dv)
@@ -180,4 +194,5 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
     for blatt in wb.worksheets:
         for spalte, breite in zip("ABCDEF", (22, 34, 48, 12, 10, 10)):
             blatt.column_dimensions[spalte].width = breite
+    wf.column_dimensions["E"].width = 22
     wb.save(pfad)
