@@ -30,6 +30,10 @@ def cmd_generieren(a):
     ziel.mkdir(parents=True, exist_ok=True)
     name = m.projekt["nummer"]
     seiten = zeichnen.erzeuge_pdf(m, stamm, str(ziel / f"{name}_Stromlaufplan.pdf"))
+    from .hausstil import erzeuge_hausstil_pdf, lade_hausstil
+    hs = erzeuge_hausstil_pdf(m, stamm, str(ziel / f"{name}_Stromlaufplan_Hausstil.pdf"), lade_hausstil(a.profil))
+    print(f"Hausstil: {len(hs)} Seiten in {len({k for k, _, _ in hs})} Anlagen -> "
+          f"{ziel}/{name}_Stromlaufplan_Hausstil.pdf")
     (ziel / f"{name}_Stueckliste.csv").write_text(zeichnen.stueckliste_csv(m, stamm), encoding="utf-8")
     # Neutrales Modell = Übergabe an Variante A (EPLAN-API)
     (ziel / f"{name}_Planmodell.json").write_text(
@@ -108,6 +112,8 @@ def main(argv=None):
     g.add_argument("projekt")
     g.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
     g.add_argument("--ausgabe", default="ausgabe")
+    g.add_argument("--profil", default="hausprofil/profil.yaml",
+                   help="Hausprofil; nur freigegebene Werte fließen in den Hausstil ein")
     g.set_defaults(f=cmd_generieren)
     an = sub.add_parser("analysieren", help="Bestands-PDFs auswerten (Formate, Jahre, Kennbuchstaben)")
     an.add_argument("ordner")

@@ -60,6 +60,7 @@ goto :menue
 %SLP% generieren beispiele\Projekt_Vorlage.xlsx --ausgabe ausgabe
 if errorlevel 1 goto :fehler_lauf
 start "" "ausgabe\P-2026-001_Stromlaufplan.pdf"
+start "" "ausgabe\P-2026-001_Stromlaufplan_Hausstil.pdf"
 pause
 goto :menue
 

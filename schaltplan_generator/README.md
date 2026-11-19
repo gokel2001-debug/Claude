@@ -24,6 +24,9 @@ python -m pytest tests
 | `slpgen/regeln.py` | Regelwerk: 24-V-Bilanz, Netzteil, Absicherung, SPS-Kanäle, Klemmen, BMK, Seitenplan |
 | `slpgen/motor.py` | Typical Motorabgang Direktstart: Motorschutzschalter, Schütz, Leitungsauslegung (I_z, Spannungsfall), Kabel |
 | `slpgen/zeichnen.py` | PDF-Ausgabe A3 (Rahmen, Schriftfeld, Strompfade, Listen) |
+| `slpgen/hausstil.py` | PDF im Hausstil: Anlage je Funktion, Spalten 0–9, =Anlage/Seite.Spalte, SPS-Kasten, Aderkennzeichnung |
+| `slpgen/profil.py`, `slpgen/freigabe.py` | Hausprofil lernen, Freigabe per Excel |
+| `slpgen/korpus.py` | erfundene Testpläne (ohne Kundendaten) |
 | `slpgen/analyse.py` | Bestandsanalyse (Format, Jahr, Kennbuchstaben je Jahr), Datenblatt-Extraktion (optional lokales LLM über Ollama), Vergleich PDF ↔ Planmodell |
 | `slpgen/excel_eingabe.py` | Excel-Vorlage schreiben/lesen (gleiche Struktur wie YAML) |
 | `slpgen/struktur.py` | Strukturauslese Vektor-PDF: Anlagen, BMK, SPS-Adressen, Adern, Typical-Kandidaten |
