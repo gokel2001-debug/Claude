@@ -18,7 +18,7 @@
 | P3a Freigabe per Excel | erledigt: Menüpunkt 7 übernimmt JA/NEIN aus `profil_freigabe.xlsx` |
 | P3b Anlagen-Struktur / Layout aus Profil | erledigt: zweite PDF `…_Stromlaufplan_Hausstil.pdf` – eine Anlage je Funktion, Spalten 0–9, Verweise =Anlage/Seite.Spalte |
 | P4 Typical-Bibliothek | P4a erledigt: Bausteine mit mehreren Signalen (Zähler DI, Zähler AI 4-Leiter, Stellantrieb mit Koppelrelais/AO/Rückmeldung), Pins werden gegen den Artikel geprüft. P4b erledigt: Pumpe 1~230 V mit Motorschutzschalter, Leitungsprüfung (I_z, Spannungsfall 1~), potentialfreier Start/Stopp über Koppelrelais, Stellsignal, Betriebs-/Störmeldung, Hilfskontakt-Meldung; Netzkette über Motoren und Pumpen. P4c erledigt: 24 V über Selektivmodul wählbar (Kanäle, Sammelmeldung) |
-| P5 SPS-Kasten, Übersichten, Aderkennzeichnung | offen |
+| P5 SPS-Kasten, Übersichten, Aderkennzeichnung | **in Arbeit** P5a: Aderfarben je Potential + Kennbuchstaben über Freigabeliste (Abbruch möglich, Stand im Git) |
 | P6 Listen im Hausformat + Konsistenzprüfungen | offen |
 | P7 Geometrie-Auslese, Vergleichsmaß | offen |
 | P8 Lokale KI (Ollama/GPU) | offen |
