@@ -17,7 +17,7 @@
 | P2 Hausprofil lernen | erledigt: Menüpunkt 6 lernt aus einem Ordner mit PDFs Ihre Zeichenregeln inkl. Änderungen über die Jahre. **Für Sie:** optional mit echten PDFs ausprobieren, nichts freigeben nötig |
 | P3a Freigabe per Excel | erledigt: Menüpunkt 7 übernimmt JA/NEIN aus `profil_freigabe.xlsx` |
 | P3b Anlagen-Struktur / Layout aus Profil | erledigt: zweite PDF `…_Stromlaufplan_Hausstil.pdf` – eine Anlage je Funktion, Spalten 0–9, Verweise =Anlage/Seite.Spalte |
-| P4 Typical-Bibliothek | P4a erledigt: Bausteine mit mehreren Signalen (Zähler DI, Zähler AI 4-Leiter, Stellantrieb mit Koppelrelais/AO/Rückmeldung), Pins werden gegen den Artikel geprüft. P4b erledigt: Pumpe 1~230 V mit Motorschutzschalter, Leitungsprüfung (I_z, Spannungsfall 1~), potentialfreier Start/Stopp über Koppelrelais, Stellsignal, Betriebs-/Störmeldung, Hilfskontakt-Meldung; Netzkette über Motoren und Pumpen. **Offen P4c:** 24 V mit Selektivmodul |
+| P4 Typical-Bibliothek | P4a erledigt: Bausteine mit mehreren Signalen (Zähler DI, Zähler AI 4-Leiter, Stellantrieb mit Koppelrelais/AO/Rückmeldung), Pins werden gegen den Artikel geprüft. P4b erledigt: Pumpe 1~230 V mit Motorschutzschalter, Leitungsprüfung (I_z, Spannungsfall 1~), potentialfreier Start/Stopp über Koppelrelais, Stellsignal, Betriebs-/Störmeldung, Hilfskontakt-Meldung; Netzkette über Motoren und Pumpen. **In Arbeit P4c:** 24 V mit Selektivmodul (Abbruch möglich, Stand im Git) |
 | P5 SPS-Kasten, Übersichten, Aderkennzeichnung | offen |
 | P6 Listen im Hausformat + Konsistenzprüfungen | offen |
 | P7 Geometrie-Auslese, Vergleichsmaß | offen |
