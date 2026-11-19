@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -28,7 +29,7 @@ def _seite(plan, anlage, nr=1):
 def test_anlagen_reihenfolge_und_seitenzaehlung(plan):
     seiten, _ = plan
     anlagen = list(dict.fromkeys(a for a, _, _ in seiten))
-    assert anlagen[:5] == ["DBL", "INH", "AC230.01", "DC24.01", "DC24.02"]
+    assert anlagen[:5] == ["DBL", "INH", "EIN", "NT24", "VT24"]
     assert anlagen[-4:] == ["KAB", "KPL", "STL", "AUS"]
     assert [nr for a, nr, _ in seiten if a == "M01"] == [1, 2]      # Zählung je Anlage
     feld = [a for a in anlagen if a[0] in "BYP" and a[1:].isdigit()]
@@ -44,7 +45,7 @@ def test_spalten_0_bis_9_und_schriftfeld(plan):
 def test_querverweise_in_beide_richtungen(plan):
     feld = _seite(plan, "B01")
     assert "=SA1/1.2" in feld                    # Feldgerät -> SPS-Karte
-    assert "=DC24.02/1.3" in feld                # Feldgerät -> Absicherung (zweiter Abgang)
+    assert "=VT24/1.3" in feld                # Feldgerät -> Absicherung (zweiter Abgang)
     assert "-X10:2" in feld                      # Klemme im SPS-Kasten
     karte = _seite(plan, "SA1")
     assert "=B01/1.4" in karte and "=M01/2.6" in karte     # Karte -> Feldgerät / Motorsteuerung
@@ -61,3 +62,56 @@ def test_freigegebenes_profil_wirkt_vorgeschlagenes_nicht(tmp_path):
             erzeuge_hausstil_pdf(regeln.plane(PROJEKT, STAMM), STAMM, str(tmp_path / "h.pdf"), stil)
             text = "\n".join(s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages)
             assert "-X20:2" in text and "Hausprofil (freigegeben)" in text
+
+
+def _plan_mit(**aenderungen):
+    import copy
+    p = copy.deepcopy(PROJEKT)
+    p.update(aenderungen)
+    return p
+
+
+def test_motornummern_beliebig_und_potentialkette(tmp_path):
+    p = _plan_mit(motoren=[dict(PROJEKT["motoren"][0], bmk="M10"), dict(PROJEKT["motoren"][1], bmk="M2")])
+    seiten = erzeuge_hausstil_pdf(regeln.plane(p, STAMM), STAMM, str(tmp_path / "h.pdf"))
+    texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
+    t = {(a, n): texte[i] for i, (a, n, _) in enumerate(seiten)}
+    assert ("M10", 1) in t and ("M02", 2) in t
+    assert "L1 =M10/1.0" in t[("EIN", 1)]                         # Einspeisung -> erster Motor
+    assert "L1 =M02/1.0" in t[("M10", 1)] and "L1 =EIN/1.9" in t[("M10", 1)]
+    assert "L1 =M10/1.9" in t[("M02", 1)]                         # Rückverweis auf Vorgänger
+    vt = t[("VT24", 1)]
+    assert "-Q1 =M10/2.6" in vt and "-K1 =M10/2.2" in vt          # 24-V-Verbraucher auf der Steuerungsseite
+    steuer = t[("M10", 2)]
+    assert re.search(r"1-2\s+/1\.4", steuer)                         # Kontaktspiegel -> Hauptkontakte
+
+
+def test_doppelte_kennung_klare_meldung(tmp_path):
+    p = _plan_mit(feldgeraete=PROJEKT["feldgeraete"] + [dict(PROJEKT["feldgeraete"][0], bmk="B01")])
+    with pytest.raises(regeln.RegelFehler, match="doppelt"):
+        erzeuge_hausstil_pdf(regeln.plane(p, STAMM), STAMM, str(tmp_path / "h.pdf"))
+
+
+def test_viele_seiten_inhalt_mehrseitig_und_jedes_feldgeraet_in_kabelliste(tmp_path):
+    extra = [{"bmk": f"S{i}", "artikel": "IND-M12-PNP", "funktion": f"Taster {i}", "gruppe": "Sensorik"}
+             for i in range(1, 31)]
+    p = _plan_mit(feldgeraete=PROJEKT["feldgeraete"] + extra)
+    seiten = erzeuge_hausstil_pdf(regeln.plane(p, STAMM), STAMM, str(tmp_path / "h.pdf"))
+    texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
+    inh = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "INH")
+    assert len([s for s in seiten if s[0] == "INH"]) >= 2 and "=AUS" in inh
+    kab = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "KAB")
+    assert "=S30-W1" in kab
+
+
+def test_stueckliste_mit_klemmen_feldkabeln_und_laengen(plan):
+    seiten, texte = plan
+    stl = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "STL")
+    assert "=B01" in stl and "RK-2.5" in stl and "RK-4" in stl and "Länge lt. Feld" in stl
+    assert "12 m" in stl                                           # Motorleitung mit Länge
+
+
+def test_klemmenplan_potentiale_wie_im_stromlaufplan(plan):
+    seiten, texte = plan
+    kpl = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "KPL")
+    assert "24L+" in kpl and "24M =VT24/1.0" in kpl and "-K1:2" in kpl and "+24V" not in kpl

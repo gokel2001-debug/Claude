@@ -76,7 +76,9 @@
         "p_kW": 0.75,
         "i_N_A": 1.9,
         "cos_phi": 0.78,
-        "kabel": "-W1"
+        "kabel": "-W1",
+        "mss": "-Q2",
+        "schuetz": "-K1"
       }
     },
     {
@@ -144,7 +146,9 @@
         "p_kW": 1.5,
         "i_N_A": 3.5,
         "cos_phi": 0.8,
-        "kabel": "-W2"
+        "kabel": "-W2",
+        "mss": "-Q3",
+        "schuetz": "-K2"
       }
     },
     {
@@ -212,7 +216,9 @@
         "p_kW": 2.2,
         "i_N_A": 4.9,
         "cos_phi": 0.82,
-        "kabel": "-W3"
+        "kabel": "-W3",
+        "mss": "-Q4",
+        "schuetz": "-K3"
       }
     },
     {
@@ -280,7 +286,9 @@
         "p_kW": 5.5,
         "i_N_A": 11.2,
         "cos_phi": 0.85,
-        "kabel": "-W4"
+        "kabel": "-W4",
+        "mss": "-Q5",
+        "schuetz": "-K4"
       }
     },
     {

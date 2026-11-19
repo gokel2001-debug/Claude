@@ -26,7 +26,7 @@ from .struktur import lese_struktur
 
 MIN_PLAENE_SICHER = 3          # weniger Belege -> Sicherheit "unsicher"
 MIN_PLAENE_JE_SEITE_TREND = 2  # Trend erst, wenn vor und nach dem Wechsel je so viele Pläne belegen
-INFRASTRUKTUR = ("AC", "DC")   # Anlagen-Präfixe ohne Feldgeräte (Einspeisung, 24 V) – Hausparameter
+INFRASTRUKTUR = ("AC", "DC", "EIN", "NT", "VT")   # Anlagen ohne Feldgeräte (Einspeisung, 24 V) – Hausparameter
 RE_LEISTE = re.compile(r"X[A-Z]?\d+")
 
 

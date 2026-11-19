@@ -18,7 +18,7 @@ import yaml
 from reportlab.lib.pagesizes import A3, landscape
 from reportlab.pdfgen.canvas import Canvas
 
-from .modell import Planmodell
+from .modell import Planmodell, RegelFehler
 from .zeichnen import (X0, X1, Y0, Y1, YL, YS, Blatt, potential_pfeil, s_deckblatt, sym_klemme,
                        sym_schliesser, sym_sicherung, tabelle)
 
@@ -31,6 +31,8 @@ HAUSSTIL_STANDARD = {
     "feldkabel_typ": "LIYCY",
     "feldkabel_adern": [2, 3, 4, 7, 12],
     "kartenanlagen": {"CPU": "SA0", "DI": "SA1", "DO": "SA2", "AI": "SA3"},
+    "infrastruktur": {"einspeisung": "EIN", "erzeugung": "NT24", "verteilung": "VT24"},
+    "ader_ac": {"L": "BK", "N": "LBU", "PE": "GNYE", "querschnitt": "1,5"},
 }
 ZEILEN_JE_LISTENSEITE = 36
 
@@ -52,7 +54,7 @@ def lade_hausstil(profil_pfad: str | Path | None) -> dict:
 # --------------------------------------------------------------------------- #
 @dataclass
 class Anlage:
-    kennung: str                     # ohne "=", z. B. "B01", "DC24.02"
+    kennung: str                     # ohne "=", z. B. "B01", "VT24"
     titel: str
     art: str = "EFS"
     seiten: list[tuple[str, Callable]] = field(default_factory=list)   # (Seitentitel, Zeichner)
@@ -87,39 +89,45 @@ class Hausplan:
 
     # ---- Aufbau ----------------------------------------------------------------
     def _aufbauen(self):
-        m, karten = self.m, self.stil["kartenanlagen"]
+        m, karten, infra = self.m, self.stil["kartenanlagen"], self.stil["infrastruktur"]
+        self.EIN, self.NT, self.VT = infra["einspeisung"], infra["erzeugung"], infra["verteilung"]
         self._neu("DBL", "Deckblatt", "DBL").seiten.append(("Deckblatt", lambda b, a: s_deckblatt(b, m)))
-        self._neu("INH", "Inhaltsverzeichnis", "INH").seiten.append(("Inhaltsverzeichnis", self._s_inhalt))
+        self._neu("INH", "Inhaltsverzeichnis", "INH")             # Seiten erst am Ende (hängt von allem ab)
 
-        ein = self._neu("AC230.01", "Einspeisung")
-        ein.seiten.append(("Einspeisung", self._s_einspeisung))
-        self._lokal("-Q1", "AC230.01", "-Q1", 1, 2)
-        self._lokal("-F1", "AC230.01", "-F1", 1, 5)
-        self._neu("DC24.01", "24 V DC Erzeugung").seiten.append(("Erzeugung 24 V DC", self._s_erzeugung))
-        self._lokal("-G1", "DC24.01", "-T1", 1, 4)
-        vert = self._neu("DC24.02", "24 V DC Verteilung")
-        vert.seiten.append(("Potentialverteilung 24 V DC", self._s_verteilung))
+        self._neu(self.EIN, "Einspeisung").seiten.append(("Einspeisung", self._s_einspeisung))
+        self._lokal("-Q1", self.EIN, "-Q1", 1, 2)
+        self._lokal("-F1", self.EIN, "-F1", 1, 5)
+        self.pos["netz_aus"] = Ort(self.EIN, 1, 9)
+        self._neu(self.NT, "24 V DC Erzeugung").seiten.append(("Erzeugung 24 V DC", self._s_erzeugung))
+        self._lokal("-G1", self.NT, "-T1", 1, 4)
+        self._neu(self.VT, "24 V DC Verteilung").seiten.append(("Potentialverteilung 24 V DC", self._s_verteilung))
+        self.pos["24M"] = Ort(self.VT, 1, 0)
         for i, a in enumerate(m.absicherungen):
-            self._lokal(a.bmk, "DC24.02", f"-F{i + 1}", 1, 1 + 2 * i)
+            self._lokal(a.bmk, self.VT, f"-F{i + 1}", 1, 1 + 2 * i)
 
-        # je Motor eine Anlage (Last + Steuerung)
-        for mot in [b for b in m.betriebsmittel if b.kategorie == "motor"]:
-            nr = int(mot.bmk.lstrip("-M"))
-            kenn = f"M{nr:02d}"
+        # je Motor eine Anlage (Lastkreis + Steuerung); Zuordnung über die Daten, nicht über Nummern
+        self.motoranlagen: list[str] = []
+        for i, mot in enumerate([b for b in m.betriebsmittel if b.kategorie == "motor"], 1):
+            kenn = self._kennung(mot.bmk, "M", i)
             an = self._neu(kenn, f"Motor {mot.bmk} {mot.funktion}".strip())
             an.seiten += [("Lastkreis", self._s_motor_last), ("Steuerung", self._s_motor_steuer)]
+            self.motoranlagen.append(kenn)
+            q, k, w = mot.daten["mss"], mot.daten["schuetz"], mot.daten["kabel"]
             self._lokal(mot.bmk, kenn, "-M1", 1, 4)
-            self._lokal(f"-Q{nr + 1}", kenn, "-Q1", 1, 4)
-            self._lokal(f"-K{nr}", kenn, "-K1", 1, 4)
-            self._lokal(f"-W{nr}", kenn, "-W1", 1, 4)
-            self.pos[f"kanal:-K{nr}"] = Ort(kenn, 2, 2)
-            self.pos[f"kanal:-Q{nr + 1}"] = Ort(kenn, 2, 6)
-            self.pos[f"spule:-K{nr}"] = Ort(kenn, 2, 2)
+            self._lokal(w, kenn, "-W1", 1, 4)
+            self._lokal(q, kenn, "-Q1", 2, 6)          # 24-V-Verbraucher: Hilfskontakt 13/14 (Steuerung)
+            self._lokal(k, kenn, "-K1", 2, 2)          # 24-V-Verbraucher: Spule A1/A2 (Steuerung)
+            self.pos[f"haupt:{q}"] = Ort(kenn, 1, 4)  # Leistungsteil im Lastkreis
+            self.pos[f"haupt:{k}"] = Ort(kenn, 1, 4)
+            self.pos[f"kanal:{k}"] = Ort(kenn, 2, 2)
+            self.pos[f"kanal:{q}"] = Ort(kenn, 2, 6)
+            self.pos[f"netz_ein:{kenn}"] = Ort(kenn, 1, 0)
+            self.pos[f"netz_aus:{kenn}"] = Ort(kenn, 1, 9)
 
         # je Feldgerät eine Anlage
-        for g in [b for b in m.betriebsmittel if b.kategorie in ("sensor", "aktor")]:
-            buchst = "".join(c for c in g.bmk if c.isalpha())
-            kenn = f"{buchst}{int(''.join(c for c in g.bmk if c.isdigit())):02d}"
+        for i, g in enumerate([b for b in m.betriebsmittel if b.kategorie in ("sensor", "aktor")], 1):
+            buchst = "".join(c for c in g.bmk if c.isalpha()) or "F"
+            kenn = self._kennung(g.bmk, buchst, i)
             an = self._neu(kenn, f"{g.funktion}".strip() or g.bezeichnung)
             an.seiten.append((g.funktion or g.bezeichnung, self._s_feld))
             self._lokal(g.bmk, kenn, f"-{buchst}1", 1, 4)
@@ -146,11 +154,28 @@ class Hausplan:
                 ("KPL", "Klemmenplan", "KPL", self._s_klemmen, len(self._klemmenzeilen())),
                 ("STL", "Artikelstückliste", "STL", self._s_stueckliste, len(self._stl_zeilen())),
                 ("AUS", "Auslegungsnachweis", "AUS", self._s_auslegung, 1)):
-            an = self._neu(kenn, titel, art)
-            for i in range(max(1, -(-n // ZEILEN_JE_LISTENSEITE))):
-                an.seiten.append((titel, (lambda z, i=i: lambda b, a: z(b, a, i))(zeichner)))
+            self._listenanlage(kenn, titel, art, zeichner, n)
+
+        # Inhaltsverzeichnis zuletzt: seine Seitenzahl hängt von der Gesamtseitenzahl ab (inkl. eigener Seiten)
+        n_inh = 1
+        while -(-(sum(len(a.seiten) for a in self.anlagen.values()) + n_inh) // ZEILEN_JE_LISTENSEITE) > n_inh:
+            n_inh += 1
+        self.anlagen["INH"].seiten = [("Inhaltsverzeichnis", (lambda i: lambda b, a: self._s_inhalt(b, a, i))(i))
+                                      for i in range(n_inh)]
+
+    def _listenanlage(self, kenn, titel, art, zeichner, n):
+        an = self._neu(kenn, titel, art)
+        for i in range(max(1, -(-n // ZEILEN_JE_LISTENSEITE))):
+            an.seiten.append((titel, (lambda i: lambda b, a: zeichner(b, a, i))(i)))
+
+    def _kennung(self, bmk: str, buchst: str, laufnr: int) -> str:
+        ziffern = "".join(c for c in bmk if c.isdigit())
+        return f"{buchst}{int(ziffern) if ziffern else laufnr:02d}"
 
     def _neu(self, kenn: str, titel: str, art: str = "EFS") -> Anlage:
+        if kenn in self.anlagen:
+            raise RegelFehler(f"Anlagenkennung ={kenn} wäre doppelt (z. B. Feldgeräte B1 und B01) – "
+                              f"bitte Betriebsmittelkennzeichen eindeutig vergeben")
         self.anlagen[kenn] = Anlage(kenn, titel, art)
         return self.anlagen[kenn]
 
@@ -208,22 +233,23 @@ class Hausplan:
         b.text(X1, Y0 - 4, nachher, 2, ausr="r")
 
     # ---- Inhalt ------------------------------------------------------------------
-    def _s_inhalt(self, b: Blatt, a: Anlage):
+    def _s_inhalt(self, b: Blatt, a: Anlage, idx: int = 0):
         zeilen = [(f"={an.kennung}", self.zeichnungsnummer(an), i + 1, f"{an.titel} – {t}"[:70])
-                  for an, i, t in [(an, i, t) for an in self.anlagen.values() for i, (t, _) in enumerate(an.seiten)]]
-        tabelle(b, ["Anlage", "Zeichnungsnummer", "Seite", "Seitenbeschreibung"], zeilen[:ZEILEN_JE_LISTENSEITE],
-                [35, 95, 20, 200])
+                  for an in self.anlagen.values() for i, (t, _) in enumerate(an.seiten)]
+        tabelle(b, ["Anlage", "Zeichnungsnummer", "Seite", "Seitenbeschreibung"],
+                zeilen[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE], [35, 95, 20, 200])
 
     # ---- Einspeisung / 24 V ------------------------------------------------------
     def _s_einspeisung(self, b: Blatt, a: Anlage):
         q1, f1 = self.m.bm("-Q1"), self.m.bm("-F1")
         b.text(X0 + 8, 268, self.m.projekt.get("_netz", ""), 2.5)
-        motoren = [k for k in self.anlagen if k.startswith("M") and k[1:].isdigit()]
-        for i, (lt, y) in enumerate((("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238))):
-            b.linie(X0 + 8, y, X1 - 40, y)
+        ac = self.stil["ader_ac"]
+        erster = self.pos.get(f"netz_ein:{self.motoranlagen[0]}") if self.motoranlagen else None
+        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238)):
+            b.linie(X0 + 8, y, X1 - 30, y)
             b.text(X0 + 2, y + 0.8, lt, 2.5)
-            if motoren and lt != "N":
-                potential_pfeil(b, X1 - 40, y, f"{lt} {self.ref(Ort(motoren[0], 1, 1), a.kennung)}")
+            if erster and lt != "N":
+                potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(erster, a.kennung)}")
         b.rechteck(self.x(2) - 7, 247, 14, 18, strich=([1.5, 1], 0))
         b.text(self.x(2), 270, "-Q1", 3, True, "m")
         b.text(self.x(2), 231, q1.bezeichnung, 2, ausr="m")
@@ -232,11 +258,12 @@ class Hausplan:
         b.linie(x, 262, x, 215)
         yu = sym_sicherung(b, x, 215, "-F1", f1.bezeichnung)
         b.linie(x, yu, x, 170)
-        b.text(x + 1, 185, "BK 1,5", 1.9)
+        b.text(x + 1, 185, f"{ac['L']} {ac['querschnitt']}", 1.9)
         b.linie(x, 170, X1 - 60, 170)
         potential_pfeil(b, X1 - 60, 170, f"L1a {self.ref(self.pos['-G1'], a.kennung)}")
         b.kreis(x + 10, 244, 0.6, True)
         b.linie(x + 10, 244, x + 10, 160)
+        b.text(x + 11, 185, f"{ac['N']} {ac['querschnitt']}", 1.9)
         b.linie(x + 10, 160, X1 - 60, 160)
         potential_pfeil(b, X1 - 60, 160, f"N {self.ref(self.pos['-G1'], a.kennung)}")
 
@@ -251,7 +278,10 @@ class Hausplan:
         b.linie(x + 5, 245, x + 5, 200)
         b.rechteck(x - 15, 160, 30, 40, 0.4)
         b.linie(x - 15, 160, x + 15, 200, 0.2)
-        b.text(x - 17, 196, "-T1", 3.5, True, "r")
+        b.text(x - 17, 196, self.lokal["-G1"][1], 3.5, True, "r")
+        ac = self.stil["ader_ac"]
+        b.text(x - 4, 230, f"{ac['L']} {ac['querschnitt']}", 1.9)
+        b.text(x + 6, 230, f"{ac['N']} {ac['querschnitt']}", 1.9)
         b.text(x - 17, 191, g1.bezeichnung[:34], 1.9, ausr="r")
         b.text(x - 17, 187, f"Artikel {g1.artikel}", 1.9, ausr="r")
         ad = self.stil["ader"]
@@ -259,7 +289,7 @@ class Hausplan:
             b.linie(x + dx, 160, x + dx, y)
             b.linie(x + dx, y, X1 - 60, y)
             b.text(x + dx + 1, y + 1, pot, 1.9)
-            potential_pfeil(b, X1 - 60, y, f"{pot.split()[0]} {self.ref(Ort('DC24.02', 1, 0), a.kennung)}")
+            potential_pfeil(b, X1 - 60, y, f"{pot.split()[0]} {self.ref(self.pos['24M'], a.kennung)}")
         b.text(X0 + 8, 90, f"Auslegung: Σ I = {bil['i_summe_A']} A → Bedarf {bil['i_bedarf_A']} A → "
                            f"{g1.artikel} ({bil['i_nenn_A']} A, Auslastung {bil['auslastung']:.0%})", 2.4)
 
@@ -297,7 +327,7 @@ class Hausplan:
                 b.linie(x, 268, x, y_k + 1.1)
                 farbe = ad["+24V"]
             elif k.potential == "0V":
-                b.text(x - 1, 266, f"24M {self.ref(Ort('DC24.02', 1, 0), a.kennung)}", 2, ausr="r")
+                b.text(x - 1, 266, f"24M {self.ref(self.pos['24M'], a.kennung)}", 2, ausr="r")
                 b.linie(x, 268, x, y_k + 1.1)
                 farbe = ad["0V"]
             else:
@@ -340,35 +370,44 @@ class Hausplan:
     # ---- Motor ------------------------------------------------------------------
     def _motor(self, a: Anlage):
         alt_m = next(k for k, (an, lok) in self.lokal.items() if an == a.kennung and lok == "-M1")
-        nr = int(alt_m.lstrip("-M"))
-        return self.m.bm(alt_m), self.m.bm(f"-Q{nr + 1}"), self.m.bm(f"-K{nr}"), \
-            next(c for c in self.m.kabel if c.nach == alt_m)
+        mot = self.m.bm(alt_m)
+        kabel = next(c for c in self.m.kabel if c.bmk == mot.daten["kabel"])
+        return mot, self.m.bm(mot.daten["mss"]), self.m.bm(mot.daten["schuetz"]), kabel
 
     def _s_motor_last(self, b: Blatt, a: Anlage):
         mot, q, k, w = self._motor(a)
+        ac = self.stil["ader_ac"]
         x = self.x(4)
+        idx = self.motoranlagen.index(a.kennung)
+        quelle = self.pos["netz_aus"] if idx == 0 else self.pos[f"netz_aus:{self.motoranlagen[idx - 1]}"]
+        weiter = self.pos[f"netz_ein:{self.motoranlagen[idx + 1]}"] if idx + 1 < len(self.motoranlagen) else None
+        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("PE", 238)):
+            potential_pfeil(b, X0 + 8, y, f"{lt} {self.ref(quelle, a.kennung)}", False)
+            if weiter:                                          # Potentialkette zum nächsten Motor
+                b.linie(X0 + 8, y, X1 - 30, y)
+                potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(weiter, a.kennung)}")
         for d, (lt, y) in zip((-6, 0, 6), (("L1", 262), ("L2", 256), ("L3", 250))):
-            potential_pfeil(b, X0 + 8, y, f"{lt} {self.ref(self.pos['-Q1'], a.kennung)}", False)
+            b.kreis(x + d, y, 0.6, True)
             b.linie(X0 + 8, y, x + d, y)
             b.linie(x + d, y, x + d, 222)
             b.rechteck(x + d - 1.2, 216, 2.4, 6)
             b.linie(x + d, 216, x + d, 190)
             sym_schliesser(b, x + d, 190, 12)
             b.linie(x + d, 178, x + d, 131.1)
-        potential_pfeil(b, X0 + 8, 238, f"PE {self.ref(self.pos['-Q1'], a.kennung)}", False)
+        b.kreis(x + 12, 238, 0.6, True)
         b.linie(X0 + 8, 238, x + 12, 238)
         b.linie(x + 12, 238, x + 12, 131.1)
         b.rechteck(x - 10, 210, 20, 18, strich=([1.5, 1], 0))
         b.text(x - 11, 222, "-Q1", 3, True, "r")
         b.text(x - 11, 218, f"Ir = {q.daten['i_r_A']:g} A", 2, ausr="r")
-        b.text(x - 11, 214.5, f"13-14 /2.6", 1.9, ausr="r")
+        b.text(x - 11, 214.5, f"13-14 {self.ref(self.pos[f'kanal:{q.bmk}'], a.kennung)}", 1.9, ausr="r")
         b.text(x - 11, 186, "-K1", 3, True, "r")
-        b.text(x - 11, 182.5, "A1-A2 /2.2", 1.9, ausr="r")
+        b.text(x - 11, 182.5, f"A1-A2 {self.ref(self.pos[f'kanal:{k.bmk}'], a.kennung)}", 1.9, ausr="r")
         b.linie(x - 6, 184, x + 6, 184, strich=([1, 1], 0))
         for i, d in enumerate((-6, 0, 6, 12), 1):
             sym_klemme(b, x + d, 130, "-X1", i)
             b.linie(x + d, 128.9, x + d, 100 if d < 12 else 90)
-            b.text(x + d + 1, 160, "BK" if d < 12 else "GNYE", 1.8)
+            b.text(x + d + 1, 160, ac["L"] if d < 12 else ac["PE"], 1.8)
             b.text(x + d + 1, 157, f"{w.querschnitt_mm2:g}".replace(".", ","), 1.8)
         b.text(x - 11, 129.2, "-X1", 2.4, True, "r")
         b.linie(x - 9, 112, x + 15, 118, 0.25)
@@ -390,17 +429,18 @@ class Hausplan:
         b.rechteck(x - 4, 150, 8, 6, 0.4)
         b.text(x - 6, 152, "-K1", 3, True, "r")
         b.linie(x, 150, x, 95)
-        potential_pfeil(b, X1 - 30, 95, f"24M {self.ref(Ort('DC24.02', 1, 0), a.kennung)}")
+        potential_pfeil(b, X1 - 30, 95, f"24M {self.ref(self.pos['24M'], a.kennung)}")
+        b.text(x + 1, 120, f"{ad['0V']} {ad['querschnitt']}", 1.9)
         b.linie(x, 95, X1 - 30, 95)
         for i, kt in enumerate(("1-2", "3-4", "5-6")):
-            b.text(x - 6, 88 - i * 3.5, f"{kt}  /1.4", 1.9)
+            b.text(x - 6, 88 - i * 3.5, f"{kt}  {self.ref(self.pos[f'haupt:{k.bmk}'], a.kennung)}", 1.9)
         xb = self.x(6)
         fa = self.pos.get(q.daten.get("absicherung", ""))
         b.text(xb - 1, 266, f"24L+ {self.ref(fa, a.kennung)}", 2, ausr="r")
         b.linie(xb, 268, xb, 205)
         sym_schliesser(b, xb, 205, 12)
         b.text(xb - 4, 199, "-Q1", 3, True, "r")
-        b.text(xb - 4, 195.5, "/1.4", 1.9, ausr="r")
+        b.text(xb - 4, 195.5, self.ref(self.pos[f"haupt:{q.bmk}"], a.kennung), 1.9, ausr="r")
         b.text(xb + 2, 203, "13", 1.9)
         b.text(xb + 2, 194, "14", 1.9)
         b.linie(xb, 193, xb, 172)
@@ -436,16 +476,19 @@ class Hausplan:
         return zeichne
 
     # ---- Listen ------------------------------------------------------------------
+    def _feldgeraete(self) -> list[str]:
+        return [b.bmk for b in self.m.betriebsmittel if b.kategorie in ("sensor", "aktor")]
+
+    def _feldkabel_adern(self, alt: str) -> int:
+        n = len([k for k in self.m.klemmen if k.ziel_aussen.startswith(alt + ":")])
+        return next((x for x in self.stil["feldkabel_adern"] if x >= n), n)
+
     def _kabelzeilen(self):
         z = []
-        for kenn, an in self.anlagen.items():
-            alt = next((k for k, (a2, lok) in self.lokal.items() if a2 == kenn and lok[1:2] in ("B", "Y", "P")
-                        and self.m.bm(k).kategorie in ("sensor", "aktor")), None)
-            if alt:
-                n = len([k for k in self.m.klemmen if k.ziel_aussen.startswith(alt + ":")])
-                adern = next((x for x in self.stil["feldkabel_adern"] if x >= n), n)
-                z.append((f"={kenn}-W1", f"{self.stil['feldkabel_typ']} {adern}x0,75 mm²",
-                          f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{self.lokal[alt][1]}"))
+        for alt in self._feldgeraete():
+            kenn, lok = self.lokal[alt]
+            z.append((f"={kenn}-W1", f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75 mm²",
+                      f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}"))
         for w in self.m.kabel:
             kenn = self.lokal[w.bmk][0]
             z.append((f"={kenn}-W1", f"{w.adern}G{w.querschnitt_mm2:g} mm² ({w.artikel})".replace(".", ","),
@@ -456,23 +499,37 @@ class Hausplan:
         tabelle(b, ["Kabelnummer", "Kabeltyp", "Quelle", "Ziel"],
                 self._kabelzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE], [50, 90, 90, 90])
 
+    POTENTIAL = {"+24V": "24L+", "0V": "24M", "Signal": "Signal"}
+    FELDSPALTE = {"+24V": 2, "Signal": 4, "0V": 6}
+    SCHUETZ_ANSCHLUSS = {"U": "2", "V": "4", "W": "6"}
+
     def _klemmenzeilen(self):
         z = []
-        nr_je = {}
+        nr_je: dict[tuple[str, str], int] = {}
         for k in self.m.klemmen:
             geraet = k.ziel_aussen.split(":")[0]
             if geraet not in self.lokal:
                 continue
             kenn, lok = self.lokal[geraet]
-            leiste = self.stil["feldklemmleiste"] if k.leiste == "-X1" else "-X1"
+            motor = k.leiste != "-X1"                 # Motorklemmen (U/V/W/PE)
+            leiste = "-X1" if motor else self.stil["feldklemmleiste"]
             nr_je[(kenn, leiste)] = nr_je.get((kenn, leiste), 0) + 1
-            ziel_innen = k.ziel_innen
-            for alt, (an2, lok2) in self.lokal.items():
-                if ziel_innen.startswith(alt + ":") or ziel_innen == alt:
-                    ziel_innen = ziel_innen.replace(alt, f"={an2}{lok2}", 1)
-                    break
-            z.append((f"={kenn}{leiste}:{nr_je[(kenn, leiste)]}", k.potential, ziel_innen,
-                      f"{lok}:{k.ziel_aussen.split(':', 1)[1]}", f"={kenn}/1"))
+            if motor:
+                ziel = (f"-K1:{self.SCHUETZ_ANSCHLUSS[k.potential]}" if k.potential in self.SCHUETZ_ANSCHLUSS
+                        else f"PE ={self.EIN}")
+                seite = self.ref(Ort(kenn, 1, 4), "")
+            elif k.potential == "0V":
+                ziel = f"24M {self.ref(self.pos['24M'], '')}"
+                seite = self.ref(Ort(kenn, 1, self.FELDSPALTE["0V"]), "")
+            else:
+                ziel = k.ziel_innen
+                for alt, (an2, lok2) in self.lokal.items():
+                    if ziel.startswith(alt + ":") or ziel == alt:
+                        ziel = ziel.replace(alt, f"={an2}{lok2}", 1)
+                        break
+                seite = self.ref(Ort(kenn, 1, self.FELDSPALTE[k.potential]), "")
+            z.append((f"={kenn}{leiste}:{nr_je[(kenn, leiste)]}", self.POTENTIAL.get(k.potential, k.potential),
+                      ziel, f"{lok}:{k.ziel_aussen.split(':', 1)[1]}", seite))
         return z
 
     def _s_klemmen(self, b: Blatt, a: Anlage, idx: int):
@@ -482,14 +539,28 @@ class Hausplan:
 
     def _stl_zeilen(self):
         ort = self.m.projekt.get("ort", "")
+        artikel = self.stamm["artikel"]
         zeilen = []
         for bm in self.m.betriebsmittel:
             if bm.bmk not in self.lokal:
                 continue
             kenn, lok = self.lokal[bm.bmk]
-            art = self.stamm["artikel"].get(bm.artikel, {"hersteller": "", "bezeichnung": "Beistellung Kunde"})
-            zeilen.append((f"={kenn}", ort, lok, "1 Stk", art.get("hersteller", ""), bm.artikel,
-                           art["bezeichnung"][:55]))
+            art = artikel.get(bm.artikel, {"hersteller": "", "bezeichnung": "Beistellung Kunde"})
+            menge = f"{bm.daten['laenge_m']:g} m" if bm.kategorie == "kabel" else "1 Stk"
+            zeilen.append((f"={kenn}", ort, lok, menge, art.get("hersteller", ""), bm.artikel, art["bezeichnung"][:55]))
+        klemmen: dict[tuple[str, str], int] = {}
+        for k in self._klemmenzeilen():
+            anlage, rest = k[0][1:].split("-", 1)
+            leiste = "-" + rest.split(":")[0]
+            klemmen[(anlage, leiste)] = klemmen.get((anlage, leiste), 0) + 1
+        for (anlage, leiste), n in klemmen.items():
+            key = "RK-4" if leiste == "-X1" else "RK-2.5"
+            a = artikel.get(key, {"hersteller": "", "bezeichnung": "Reihenklemme"})
+            zeilen.append((f"={anlage}", ort, leiste, f"{n} Stk", a.get("hersteller", ""), key, a["bezeichnung"][:55]))
+        for alt in self._feldgeraete():
+            kenn = self.lokal[alt][0]
+            typ = f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75"
+            zeilen.append((f"={kenn}", ort, "-W1", "Länge lt. Feld", "", typ, "Feldleitung geschirmt"))
         return [(i + 1, *z) for i, z in enumerate(zeilen)]
 
     def _s_stueckliste(self, b: Blatt, a: Anlage, idx: int):
@@ -499,7 +570,7 @@ class Hausplan:
 
     def _s_auslegung(self, b: Blatt, a: Anlage, _idx: int):
         bil = self.m.bilanz
-        zeilen = [(f"=DC24.02{self.lokal[ab.bmk][1]}", ab.gruppe, f"{ab.i_gruppe_A:.3f}", f"{ab.i_nenn_A:g}")
+        zeilen = [(f"={self.VT}{self.lokal[ab.bmk][1]}", ab.gruppe, f"{ab.i_gruppe_A:.3f}", f"{ab.i_nenn_A:g}")
                   for ab in self.m.absicherungen]
         tabelle(b, ["Abgang", "Gruppe", "Σ I [A]", "Sicherung [A]"], zeilen, [50, 40, 30, 30])
         y = YL - 12 - 7 - len(zeilen) * 5.5 - 10

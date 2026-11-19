@@ -40,7 +40,7 @@ Danach erscheint ein Menü:
 
 | Taste | Funktion | Ergebnis |
 |---|---|---|
-| **1** | Beispielplan erzeugen und anzeigen | PDF öffnet sich – so sieht man sofort, ob alles funktioniert |
+| **1** | Beispielplan erzeugen und anzeigen | **zwei PDFs** öffnen sich: der bisherige Plan und derselbe Plan **im Hausstil** (Name endet auf `_Hausstil`) – bitte vor allem den Hausstil ansehen |
 | **2** | Neues Projekt anlegen | Kopie der Excel-Vorlage in `meine_projekte\` öffnet sich in Excel |
 | **3** | Projekt aus Excel erzeugen | Excel-Datei ins Fenster ziehen, Enter → Ordner `ausgabe` öffnet sich |
 | **4** | Bestands-PDF auswerten | PDF ins Fenster ziehen → Struktur und gleichartige Anlagen (Typicals) |
@@ -67,7 +67,8 @@ Im Ordner **`ausgabe`**:
 
 | Datei | Inhalt |
 |---|---|
-| `<Projektnummer>_Stromlaufplan.pdf` | Plan mit Deckblatt, Inhalt, Einspeisung, 24 V, SPS, Motoren, Feldgeräten, Klemmen-/Kabelliste, Stückliste, Auslegung |
+| `<Projektnummer>_Stromlaufplan_Hausstil.pdf` | **neu:** Plan im Hausstil – eine Anlage je Feldgerät/Motor (z. B. `=B01`), Spalten 0–9, Verweise wie `=VT24/1.3` (= Anlage VT24, Seite 1, Spalte 3), SPS-Kasten, Aderfarben |
+| `<Projektnummer>_Stromlaufplan.pdf` | bisheriger Plan (bleibt zum Vergleich, bis Sie den Hausstil freigeben – Entscheidung E11) |
 | `<Projektnummer>_Stueckliste.csv` | Stückliste, mit Excel zu öffnen |
 | `<Projektnummer>_Planmodell.json` | alle Daten maschinenlesbar (für spätere Weiterverarbeitung) |
 

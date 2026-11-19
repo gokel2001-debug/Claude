@@ -35,7 +35,7 @@ echo ==========================================================
 echo   Stromlaufplan-Generator  (Prototyp - nicht freigegeben)
 echo ==========================================================
 echo.
-echo   1  Beispielplan erzeugen und anzeigen
+echo   1  Beispielplan erzeugen und anzeigen (bisher + Hausstil)
 echo   2  Neues Projekt anlegen (Excel-Vorlage kopieren)
 echo   3  Projekt aus Excel erzeugen
 echo   4  Bestands-PDF auswerten (Struktur, Typicals)

@@ -86,7 +86,8 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
                   round(i_z, 2), round(du, 2), s_last, sp + 1)
         mot = Betriebsmittel(mbmk, mo.get("artikel", "KUNDE"), f"Drehstrommotor {mo['p_kW']} kW",
                              mo.get("funktion", ""), "motor", s_last, sp,
-                             {"p_kW": mo["p_kW"], "i_N_A": i_n, "cos_phi": cos_phi, "kabel": w.bmk})
+                             {"p_kW": mo["p_kW"], "i_N_A": i_n, "cos_phi": cos_phi, "kabel": w.bmk,
+                              "mss": q.bmk, "schuetz": k.bmk})
         m.kabel.append(w)
         m.betriebsmittel.append(Betriebsmittel(w.bmk, kab[0], art[kab[0]]["bezeichnung"],
                                                f"Zuleitung {mbmk}", "kabel", s_last, sp + 1,

@@ -17,7 +17,7 @@ from pathlib import Path
 from pypdf import PdfReader
 
 MUSTER = {
-    # Projekt-Anlage-Nr-Dokumentart-Revision, z. B. "P0001-WZ01-0-EFS-00"
+    # Projekt-Anlage-Nr-Dokumentart-Revision, z. B. "P0001-F01-1-EFS-01"
     "zeichnungsnummer": r"(?P<projekt>[A-Z0-9_]+)-(?P<anlage>[A-Za-z0-9.]+)-(?P<nr>\d)-(?P<art>[A-Z]*)-(?P<rev>\d{2})",
     "bmk": r"(?<![\w/.-])-(\d{0,3}[A-Z]{1,4}\d{0,4})\b",
     # Siemens-Mnemonik deutsch (E/A/EW/AW) und IEC (%I/%Q/%IW/%QW)

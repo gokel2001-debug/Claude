@@ -152,8 +152,8 @@ def erzeuge_korpus(ordner: str | Path, anzahl: int = 10, seed: int = 1,
         leiste = "-X20" if jahr < WECHSELJAHR else "-X10"
         n_di, n_ai = rnd.randint(2, 6), rnd.randint(1, 3)
         mit_pumpe = rnd.random() < 0.6
-        seiten = [("AC230.01", "Einspeisung 230V", _seite_einspeisung),
-                  ("DC24.01", "24V DC Erzeugung", _seite_24v)]
+        seiten = [("EIN", "Einspeisung 230V", _seite_einspeisung),
+                  ("NT24", "24V DC Erzeugung", _seite_24v)]
         typ = {"zaehler_di": [], "messstelle_ai": [], "pumpe": []}
         for k in range(n_di):
             a = f"ZD{k + 1:02d}"

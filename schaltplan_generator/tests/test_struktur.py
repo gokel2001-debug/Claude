@@ -21,9 +21,9 @@ def test_struktur_synthetisch(tmp_path):
     for anlage, zeilen in SEITEN.items():
         for i, z in enumerate(zeilen):
             c.drawString(50, 700 - 20 * i, z)
-        c.drawString(800, 30, f"P0001-{anlage}-0-EFS-00")
+        c.drawString(800, 30, f"P0001-{anlage}-1-EFS-01")
         c.showPage()
-    c.drawString(800, 30, "P0001-KPL-0--00")
+    c.drawString(800, 30, "P0001-KPL-1--01")
     c.showPage()
     c.save()
     e = lese_struktur(pdf)
