@@ -440,7 +440,8 @@ def s_klemmen(b: Blatt, m: Planmodell, _seite: int, idx: int):
 
 
 def s_kabel(b: Blatt, m: Planmodell, _seite: int, idx: int):
-    zeilen = [(c.bmk, c.von, c.nach, c.artikel, f"{c.adern} x {c.querschnitt_mm2:g} mm²", f"{c.laenge_m:g} m",
+    zeilen = [(c.bmk, c.von, c.nach, c.artikel, f"{c.adern} x {c.querschnitt_mm2:g} mm²",
+               f"{c.laenge_m:g} m" if c.laenge_m else "lt. Feld",
                f"{c.i_b_A:g}", f"{c.i_z_A:g}", f"{c.du_prozent:.2f}" if c.du_prozent >= 0 else "nicht geprüft",
                verweis(c.seite, c.spalte)) for c in m.kabel]
     tabelle(b, ["Kabel", "von", "nach", "Artikel", "Adern x Querschnitt", "Länge", "I_r [A]", "I_z·f [A]",
@@ -460,6 +461,8 @@ def stueckliste_zeilen(m: Planmodell, stamm: dict) -> list[tuple]:
         elif a["kategorie"] == "kabel":
             menge = sum(m.bm(x).daten.get("laenge_m", 0) for x in bmks)
         einheit = "m" if a["kategorie"] == "kabel" else "Stk"
+        if a["kategorie"] == "kabel" and any(not m.bm(x).daten.get("laenge_m") for x in bmks):
+            einheit += " + Länge lt. Feld"
         zeilen.append((pos, f"{menge:g} {einheit}", art, a.get("hersteller", ""), a["bezeichnung"][:60],
                        ", ".join(bmks)[:45]))
     return zeilen

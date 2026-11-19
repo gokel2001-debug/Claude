@@ -35,6 +35,7 @@ HAUSSTIL_STANDARD = {
     "ader_ac": {"L": "BK", "N": "LBU", "PE": "GNYE", "querschnitt": "1,5"},
 }
 ZEILEN_JE_LISTENSEITE = 36
+LEITER_Y = {"L1": 262, "L2": 256, "L3": 250, "N": 244, "PE": 238}   # Lage der Netzleiter auf Lastseiten
 
 
 def lade_hausstil(profil_pfad: str | Path | None) -> dict:
@@ -108,11 +109,13 @@ class Hausplan:
 
         # je Motor eine Anlage (Lastkreis + Steuerung); Zuordnung über die Daten, nicht über Nummern
         self.netzkette: list[str] = []                 # Anlagen an L1-L3/N/PE in Reihenfolge (Motoren, Netzgeräte)
+        self.netzbedarf: dict[str, set[str]] = {}       # je Kettenglied benötigte Leiter
         for i, mot in enumerate([b for b in m.betriebsmittel if b.kategorie == "motor"], 1):
             kenn = self._kennung(mot.bmk, "M", i)
             an = self._neu(kenn, f"Motor {mot.bmk} {mot.funktion}".strip())
             an.seiten += [("Lastkreis", self._s_motor_last), ("Steuerung", self._s_motor_steuer)]
             self.netzkette.append(kenn)
+            self.netzbedarf[kenn] = {"L1", "L2", "L3", "PE"}
             q, k, w = mot.daten["mss"], mot.daten["schuetz"], mot.daten["kabel"]
             self._lokal(mot.bmk, kenn, "-M1", 1, 4)
             self._lokal(w, kenn, "-W1", 1, 4)
@@ -142,6 +145,7 @@ class Hausplan:
             if g.daten.get("leistung"):                              # Netzgerät: zweite Seite Leistungsteil
                 an.seiten.append(("Leistungsteil", self._s_leistung))
                 self.netzkette.append(kenn)
+                self.netzbedarf[kenn] = {g.daten["leistung"].get("aussenleiter", "L1"), "N", "PE"}
                 self.pos[f"netz_ein:{kenn}"] = Ort(kenn, 2, 0)
                 self.pos[f"netz_aus:{kenn}"] = Ort(kenn, 2, 9)
                 le = g.daten["leistung"]
@@ -272,10 +276,11 @@ class Hausplan:
         b.text(X0 + 8, 268, self.m.projekt.get("_netz", ""), 2.5)
         ac = self.stil["ader_ac"]
         erster = self.pos.get(f"netz_ein:{self.netzkette[0]}") if self.netzkette else None
-        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238)):
+        benoetigt = self._leiter_ab(0)
+        for lt, y in LEITER_Y.items():
             b.linie(X0 + 8, y, X1 - 30, y)
             b.text(X0 + 2, y + 0.8, lt, 2.5)
-            if erster:
+            if erster and lt in benoetigt:
                 potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(erster, a.kennung)}")
         b.rechteck(self.x(2) - 7, 247, 14, 18, strich=([1.5, 1], 0))
         b.text(self.x(2), 270, "-Q1", 3, True, "m")
@@ -431,6 +436,23 @@ class Hausplan:
                  else f"I = {g.daten['i_A'] * 1000:.0f} mA")
         b.text(xm, y_dev - 21, f"{zusatz}{g.artikel}   {strom}", 2, ausr="m")
 
+    def _leiter_ab(self, idx: int) -> list[str]:
+        """Leiter, die Kettenglied idx oder ein späteres Glied braucht (in fester Reihenfolge)."""
+        bedarf = set().union(*(self.netzbedarf[k] for k in self.netzkette[idx:])) if idx < len(self.netzkette) else set()
+        return [lt for lt in LEITER_Y if lt in bedarf]
+
+    def _kette(self, b: Blatt, a: Anlage):
+        """Netzleiter auf einer Lastseite: hereinkommend links, weiterführend rechts (nur was später gebraucht wird)."""
+        idx = self.netzkette.index(a.kennung)
+        quelle, weiter = self._netz_nachbarn(a.kennung)
+        weiterfuehren = self._leiter_ab(idx + 1)
+        for lt in self._leiter_ab(idx):
+            y = LEITER_Y[lt]
+            potential_pfeil(b, X0 + 8, y, f"{lt} {self.ref(quelle, a.kennung)}", False)
+            if lt in weiterfuehren:
+                b.linie(X0 + 8, y, X1 - 30, y)
+                potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(weiter, a.kennung)}")
+
     def _netz_nachbarn(self, kenn: str):
         idx = self.netzkette.index(kenn)
         quelle = self.pos["netz_aus"] if idx == 0 else self.pos[f"netz_aus:{self.netzkette[idx - 1]}"]
@@ -444,29 +466,29 @@ class Hausplan:
         g, ac, ad = self.m.bm(alt), self.stil["ader_ac"], self.stil["ader"]
         le = g.daten["leistung"]
         q, w = self.m.bm(le["mss"]), next(c for c in self.m.kabel if c.bmk == le["kabel"])
-        quelle, weiter = self._netz_nachbarn(a.kennung)
         x = self.x(3)
-        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238)):
-            if not weiter and lt in ("L2", "L3"):
-                continue                                          # 1~-Gerät am Kettenende: nur L1, N, PE
-            potential_pfeil(b, X0 + 8, y, f"{lt} {self.ref(quelle, a.kennung)}", False)
-            b.linie(X0 + 8, y, X1 - 30 if weiter else x + 14, y)
-            if weiter:
-                potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(weiter, a.kennung)}")
-        for d, (lt, y) in zip((-4, 4), (("L", 262), ("N", 244))):
+        self._kette(b, a)
+        y_l = LEITER_Y[le.get("aussenleiter", "L1")]
+        for d, (lt, y) in zip((-4, 4), (("L", y_l), ("N", LEITER_Y["N"]))):
+            b.linie(X0 + 8, y, x + d, y)                       # Abgriff aus der Kette
             b.kreis(x + d, y, 0.6, True)
             b.linie(x + d, y, x + d, 222)
             b.rechteck(x + d - 1.2, 216, 2.4, 6)
             b.linie(x + d, 216, x + d, 131.1)
             b.text(x + d + 1, 160, ac["L"] if lt == "L" else ac["N"], 1.8)
             b.text(x + d + 1, 157, f"{w.querschnitt_mm2:g}".replace(".", ","), 1.8)
+        b.linie(X0 + 8, LEITER_Y["PE"], x + 12, LEITER_Y["PE"])
         b.kreis(x + 12, 238, 0.6, True)
         b.linie(x + 12, 238, x + 12, 131.1)
         b.text(x + 13, 160, ac["PE"], 1.8)
         b.rechteck(x - 9, 210, 18, 18, strich=([1.5, 1], 0))
         b.text(x - 10, 222, "-Q1", 3, True, "r")
-        b.text(x - 10, 218, f"Ir = {q.daten['i_r_A']:g} A", 2, ausr="r")
+        b.text(x - 10, 218, f"Ir = {q.daten['i_r_A']:g} A".replace(".", ","), 2, ausr="r")
         b.text(x - 10, 214.5, f"13-14 {self.ref(Ort(a.kennung, 2, 6), a.kennung)}", 1.9, ausr="r")
+        for d, (o, u) in zip((-4, 4), (("1", "2"), ("3", "4"))):          # Polnummern der benutzten Strompfade
+            b.text(x + d + 1.4, 223, o, 1.6)
+            b.text(x + d + 1.4, 213, u, 1.6)
+        b.text(x - 9, 206.5, "1~: Strompfade nach Herstellerangabe", 1.6)
         for i, (d, pin) in enumerate(((-4, "L"), (4, "N"), (12, "PE")), 1):
             sym_klemme(b, x + d, 130, "-X1", i)
             b.linie(x + d, 128.9, x + d, 100)
@@ -521,16 +543,7 @@ class Hausplan:
         mot, q, k, w = self._motor(a)
         ac = self.stil["ader_ac"]
         x = self.x(4)
-        idx = self.netzkette.index(a.kennung)
-        quelle = self.pos["netz_aus"] if idx == 0 else self.pos[f"netz_aus:{self.netzkette[idx - 1]}"]
-        weiter = self.pos[f"netz_ein:{self.netzkette[idx + 1]}"] if idx + 1 < len(self.netzkette) else None
-        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238)):
-            if lt == "N" and not weiter:
-                continue                                        # N wird nur durchgereicht
-            potential_pfeil(b, X0 + 8, y, f"{lt} {self.ref(quelle, a.kennung)}", False)
-            if weiter:                                          # Potentialkette zum nächsten Verbraucher
-                b.linie(X0 + 8, y, X1 - 30, y)
-                potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(weiter, a.kennung)}")
+        self._kette(b, a)
         for d, (lt, y) in zip((-6, 0, 6), (("L1", 262), ("L2", 256), ("L3", 250))):
             b.kreis(x + d, y, 0.6, True)
             b.linie(X0 + 8, y, x + d, y)
@@ -544,7 +557,7 @@ class Hausplan:
         b.linie(x + 12, 238, x + 12, 131.1)
         b.rechteck(x - 10, 210, 20, 18, strich=([1.5, 1], 0))
         b.text(x - 11, 222, "-Q1", 3, True, "r")
-        b.text(x - 11, 218, f"Ir = {q.daten['i_r_A']:g} A", 2, ausr="r")
+        b.text(x - 11, 218, f"Ir = {q.daten['i_r_A']:g} A".replace(".", ","), 2, ausr="r")
         b.text(x - 11, 214.5, f"13-14 {self.ref(self.pos[f'kanal:{q.bmk}'], a.kennung)}", 1.9, ausr="r")
         b.text(x - 11, 186, "-K1", 3, True, "r")
         b.text(x - 11, 182.5, f"A1-A2 {self.ref(self.pos[f'kanal:{k.bmk}'], a.kennung)}", 1.9, ausr="r")
@@ -670,7 +683,7 @@ class Hausplan:
                     ziel = f"-Q1:{k.ziel_innen.split(':')[-1]}"
                 else:
                     ziel = f"PE ={self.EIN}"
-                seite = self.ref(Ort(kenn, 2 if k.potential in ("L", "N") or kenn not in self._motoren() else 1, 4), "")
+                seite = self.ref(Ort(kenn, 1, 4) if kenn in self._motoren() else Ort(kenn, 2, 3), "")
             else:
                 eigene = [x.nr for x in self._feldklemmen(geraet)]
                 seite = self.ref(Ort(kenn, 1, self._feldspalte(eigene.index(k.nr), len(eigene))), "")

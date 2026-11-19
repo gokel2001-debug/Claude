@@ -127,17 +127,51 @@ def test_pumpe_leistungsteil_und_meldungen(tmp_path):
     assert [(k.potential, k.ziel_aussen.split(":")[1]) for k in m.klemmen if k.leiste == "-X2" and "-M9" in k.ziel_aussen] \
         == [("L", "L"), ("N", "N"), ("PE", "PE")]
     assert ("Kontakt-Rück", "GND") in _klemmen(m, "-M9")                     # Start/Stopp potentialfrei
-    msmeldung = next(k for k in m.sps_kanaele if k.funktion.startswith("Störung Motorschutz"))
+    msmeldung = next(k for k in m.sps_kanaele if k.funktion.startswith("Motorschutz eingeschaltet"))
     assert not any(k.signal == msmeldung.geraet_bmk for k in m.klemmen)      # Hilfskontakt: keine Feldklemme
     assert m.bilanz["i_netzgeraete_A"] == pytest.approx(1.19)
     seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
     assert [(a, n) for a, n, _ in seiten if a == "M09"] == [("M09", 1), ("M09", 2)]
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     seite2 = texte[seiten.index(("M09", 2, "Leistungsteil"))]
-    assert "-Q1" in seite2 and msmeldung.adresse in seite2 and "L1 =M04/1.9" in seite2   # Netzkette nach Motor 4
+    assert m.bm("-M9").daten["leistung"]["aussenleiter"] == "L2"           # L1 trägt schon das Netzteil
+    assert "-Q1" in seite2 and msmeldung.adresse in seite2 and "L2 =M04/1.9" in seite2   # Netzkette nach Motor 4
+    assert m.bilanz["i_je_aussenleiter_A"]["L2"] == pytest.approx(m.bilanz["i_motoren_A"] + 1.19, abs=0.01)
     erzeuge_pdf(m, STAMM, str(tmp_path / "alt.pdf"))
 
 
 def test_pumpe_ohne_laenge_warnt():
     m = regeln.plane(_projekt(dict(PUMPE, laenge_m=None)), STAMM)
     assert any("Spannungsfall nicht geprüft" in w for w in m.warnungen)
+
+
+def _pfeile(text, richtung_rechts=True):
+    """Leiter mit Verweis aus Seitentext, z. B. 'L1 =M02/1.0'."""
+    return set(re.findall(r"\b(L1|L2|L3|N|PE) (=[A-Z0-9.]+/\d\.\d)", text))
+
+
+def test_netzkette_konsistent(tmp_path):
+    """Jeder weiterführende Leiter kommt beim Nachfolger an, und nichts zeigt ins Leere."""
+    for geraete in ((), (PUMPE, dict(PUMPE, bmk="M8"))):
+        m = regeln.plane(_projekt(*geraete), STAMM)
+        seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+        texte = {(a, n): t for (a, n, _), t in zip(seiten, [p.extract_text() for p in PdfReader(str(tmp_path / "h.pdf")).pages])}
+        for (a, n), t in texte.items():
+            for leiter, ziel in _pfeile(t):
+                z_anlage, z_seite = ziel[1:].split("/")[0], int(ziel.split("/")[1][0])
+                spalte = ziel.split(".")[-1]
+                if spalte == "0":                       # weiterführend -> beim Ziel muss der Leiter ankommen
+                    assert f"{leiter} ={a}/{n}.9" in texte[(z_anlage, z_seite)], (a, n, leiter, ziel)
+        if not geraete:
+            assert "N =M01/1.0" not in texte[("EIN", 1)]       # reine Motorkette braucht kein N
+
+
+def test_bisheriger_plan_mit_pumpen_stueckliste_und_warnungen():
+    m = regeln.plane(_projekt(PUMPE, dict(PUMPE, bmk="M8", laenge_m=None)), STAMM)
+    assert m.bm("-X2").daten["anzahl"] == len([k for k in m.klemmen if k.leiste == "-X2"]) == 16 + 6
+    assert all(k.seite for k in m.klemmen) and all(w.seite for w in m.kabel)
+    assert len(m.warnungen) == len(set(m.warnungen))
+    nur_pumpe = _projekt(PUMPE)
+    nur_pumpe.pop("motoren"), nur_pumpe.pop("leitungen")
+    with pytest.raises(regeln.RegelFehler, match="-M9: Keine Strombelastbarkeitstabelle"):
+        regeln.plane(nur_pumpe, STAMM)

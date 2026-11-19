@@ -672,157 +672,14 @@
   ],
   "klemmen": [
     {
-      "leiste": "-X2",
-      "nr": 1,
-      "potential": "U",
-      "ziel_innen": "-K1",
-      "ziel_aussen": "-M1:U1",
-      "seite": 6,
-      "spalte": 1
-    },
-    {
-      "leiste": "-X2",
-      "nr": 2,
-      "potential": "V",
-      "ziel_innen": "-K1",
-      "ziel_aussen": "-M1:V1",
-      "seite": 6,
-      "spalte": 1
-    },
-    {
-      "leiste": "-X2",
-      "nr": 3,
-      "potential": "W",
-      "ziel_innen": "-K1",
-      "ziel_aussen": "-M1:W1",
-      "seite": 6,
-      "spalte": 1
-    },
-    {
-      "leiste": "-X2",
-      "nr": 4,
-      "potential": "PE",
-      "ziel_innen": "PE-Schiene",
-      "ziel_aussen": "-M1:PE",
-      "seite": 6,
-      "spalte": 1
-    },
-    {
-      "leiste": "-X2",
-      "nr": 5,
-      "potential": "U",
-      "ziel_innen": "-K2",
-      "ziel_aussen": "-M2:U1",
-      "seite": 6,
-      "spalte": 3
-    },
-    {
-      "leiste": "-X2",
-      "nr": 6,
-      "potential": "V",
-      "ziel_innen": "-K2",
-      "ziel_aussen": "-M2:V1",
-      "seite": 6,
-      "spalte": 3
-    },
-    {
-      "leiste": "-X2",
-      "nr": 7,
-      "potential": "W",
-      "ziel_innen": "-K2",
-      "ziel_aussen": "-M2:W1",
-      "seite": 6,
-      "spalte": 3
-    },
-    {
-      "leiste": "-X2",
-      "nr": 8,
-      "potential": "PE",
-      "ziel_innen": "PE-Schiene",
-      "ziel_aussen": "-M2:PE",
-      "seite": 6,
-      "spalte": 3
-    },
-    {
-      "leiste": "-X2",
-      "nr": 9,
-      "potential": "U",
-      "ziel_innen": "-K3",
-      "ziel_aussen": "-M3:U1",
-      "seite": 6,
-      "spalte": 5
-    },
-    {
-      "leiste": "-X2",
-      "nr": 10,
-      "potential": "V",
-      "ziel_innen": "-K3",
-      "ziel_aussen": "-M3:V1",
-      "seite": 6,
-      "spalte": 5
-    },
-    {
-      "leiste": "-X2",
-      "nr": 11,
-      "potential": "W",
-      "ziel_innen": "-K3",
-      "ziel_aussen": "-M3:W1",
-      "seite": 6,
-      "spalte": 5
-    },
-    {
-      "leiste": "-X2",
-      "nr": 12,
-      "potential": "PE",
-      "ziel_innen": "PE-Schiene",
-      "ziel_aussen": "-M3:PE",
-      "seite": 6,
-      "spalte": 5
-    },
-    {
-      "leiste": "-X2",
-      "nr": 13,
-      "potential": "U",
-      "ziel_innen": "-K4",
-      "ziel_aussen": "-M4:U1",
-      "seite": 6,
-      "spalte": 7
-    },
-    {
-      "leiste": "-X2",
-      "nr": 14,
-      "potential": "V",
-      "ziel_innen": "-K4",
-      "ziel_aussen": "-M4:V1",
-      "seite": 6,
-      "spalte": 7
-    },
-    {
-      "leiste": "-X2",
-      "nr": 15,
-      "potential": "W",
-      "ziel_innen": "-K4",
-      "ziel_aussen": "-M4:W1",
-      "seite": 6,
-      "spalte": 7
-    },
-    {
-      "leiste": "-X2",
-      "nr": 16,
-      "potential": "PE",
-      "ziel_innen": "PE-Schiene",
-      "ziel_aussen": "-M4:PE",
-      "seite": 6,
-      "spalte": 7
-    },
-    {
       "leiste": "-X1",
       "nr": 1,
       "potential": "+24V",
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B1:1 (L+)",
       "seite": 8,
-      "spalte": 1
+      "spalte": 1,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -831,7 +688,8 @@
       "ziel_innen": "-A2:0 (%I0.0)",
       "ziel_aussen": "-B1:4 (Q)",
       "seite": 8,
-      "spalte": 1
+      "spalte": 1,
+      "signal": "-B1"
     },
     {
       "leiste": "-X1",
@@ -840,7 +698,8 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B1:3 (L-)",
       "seite": 8,
-      "spalte": 1
+      "spalte": 1,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -849,7 +708,8 @@
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B2:1 (L+)",
       "seite": 8,
-      "spalte": 2
+      "spalte": 2,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -858,7 +718,8 @@
       "ziel_innen": "-A2:1 (%I0.1)",
       "ziel_aussen": "-B2:4 (Q)",
       "seite": 8,
-      "spalte": 2
+      "spalte": 2,
+      "signal": "-B2"
     },
     {
       "leiste": "-X1",
@@ -867,7 +728,8 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B2:3 (L-)",
       "seite": 8,
-      "spalte": 2
+      "spalte": 2,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -876,7 +738,8 @@
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B3:1 (L+)",
       "seite": 8,
-      "spalte": 3
+      "spalte": 3,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -885,7 +748,8 @@
       "ziel_innen": "-A2:2 (%I0.2)",
       "ziel_aussen": "-B3:4 (Q)",
       "seite": 8,
-      "spalte": 3
+      "spalte": 3,
+      "signal": "-B3"
     },
     {
       "leiste": "-X1",
@@ -894,7 +758,8 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B3:3 (L-)",
       "seite": 8,
-      "spalte": 3
+      "spalte": 3,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -903,7 +768,8 @@
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B4:1 (L+)",
       "seite": 8,
-      "spalte": 4
+      "spalte": 4,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -912,7 +778,8 @@
       "ziel_innen": "-A2:3 (%I0.3)",
       "ziel_aussen": "-B4:4 (Q)",
       "seite": 8,
-      "spalte": 4
+      "spalte": 4,
+      "signal": "-B4"
     },
     {
       "leiste": "-X1",
@@ -921,7 +788,8 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-B4:3 (L-)",
       "seite": 8,
-      "spalte": 4
+      "spalte": 4,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -930,7 +798,8 @@
       "ziel_innen": "-F3:2",
       "ziel_aussen": "-B5:1 (+)",
       "seite": 8,
-      "spalte": 5
+      "spalte": 5,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -939,7 +808,8 @@
       "ziel_innen": "-A4:0 (%IW0)",
       "ziel_aussen": "-B5:2 (I)",
       "seite": 8,
-      "spalte": 5
+      "spalte": 5,
+      "signal": "-B5"
     },
     {
       "leiste": "-X1",
@@ -948,7 +818,8 @@
       "ziel_innen": "-A3:0 (%Q0.0)",
       "ziel_aussen": "-Y1:1 (+)",
       "seite": 8,
-      "spalte": 6
+      "spalte": 6,
+      "signal": "-Y1"
     },
     {
       "leiste": "-X1",
@@ -957,7 +828,8 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-Y1:2 (-)",
       "seite": 8,
-      "spalte": 6
+      "spalte": 6,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -966,7 +838,8 @@
       "ziel_innen": "-A3:1 (%Q0.1)",
       "ziel_aussen": "-Y2:1 (+)",
       "seite": 8,
-      "spalte": 7
+      "spalte": 7,
+      "signal": "-Y2"
     },
     {
       "leiste": "-X1",
@@ -975,7 +848,8 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-Y2:2 (-)",
       "seite": 8,
-      "spalte": 7
+      "spalte": 7,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -984,7 +858,8 @@
       "ziel_innen": "-A3:2 (%Q0.2)",
       "ziel_aussen": "-Y3:1 (+)",
       "seite": 8,
-      "spalte": 8
+      "spalte": 8,
+      "signal": "-Y3"
     },
     {
       "leiste": "-X1",
@@ -993,7 +868,8 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-Y3:2 (-)",
       "seite": 8,
-      "spalte": 8
+      "spalte": 8,
+      "signal": ""
     },
     {
       "leiste": "-X1",
@@ -1002,7 +878,8 @@
       "ziel_innen": "-A3:3 (%Q0.3)",
       "ziel_aussen": "-P1:X1 (+)",
       "seite": 9,
-      "spalte": 1
+      "spalte": 1,
+      "signal": "-P1"
     },
     {
       "leiste": "-X1",
@@ -1011,7 +888,168 @@
       "ziel_innen": "0V-Schiene",
       "ziel_aussen": "-P1:X2 (-)",
       "seite": 9,
-      "spalte": 1
+      "spalte": 1,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 1,
+      "potential": "U",
+      "ziel_innen": "-K1",
+      "ziel_aussen": "-M1:U1",
+      "seite": 6,
+      "spalte": 1,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 2,
+      "potential": "V",
+      "ziel_innen": "-K1",
+      "ziel_aussen": "-M1:V1",
+      "seite": 6,
+      "spalte": 1,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 3,
+      "potential": "W",
+      "ziel_innen": "-K1",
+      "ziel_aussen": "-M1:W1",
+      "seite": 6,
+      "spalte": 1,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 4,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M1:PE",
+      "seite": 6,
+      "spalte": 1,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 5,
+      "potential": "U",
+      "ziel_innen": "-K2",
+      "ziel_aussen": "-M2:U1",
+      "seite": 6,
+      "spalte": 3,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 6,
+      "potential": "V",
+      "ziel_innen": "-K2",
+      "ziel_aussen": "-M2:V1",
+      "seite": 6,
+      "spalte": 3,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 7,
+      "potential": "W",
+      "ziel_innen": "-K2",
+      "ziel_aussen": "-M2:W1",
+      "seite": 6,
+      "spalte": 3,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 8,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M2:PE",
+      "seite": 6,
+      "spalte": 3,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 9,
+      "potential": "U",
+      "ziel_innen": "-K3",
+      "ziel_aussen": "-M3:U1",
+      "seite": 6,
+      "spalte": 5,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 10,
+      "potential": "V",
+      "ziel_innen": "-K3",
+      "ziel_aussen": "-M3:V1",
+      "seite": 6,
+      "spalte": 5,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 11,
+      "potential": "W",
+      "ziel_innen": "-K3",
+      "ziel_aussen": "-M3:W1",
+      "seite": 6,
+      "spalte": 5,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 12,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M3:PE",
+      "seite": 6,
+      "spalte": 5,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 13,
+      "potential": "U",
+      "ziel_innen": "-K4",
+      "ziel_aussen": "-M4:U1",
+      "seite": 6,
+      "spalte": 7,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 14,
+      "potential": "V",
+      "ziel_innen": "-K4",
+      "ziel_aussen": "-M4:V1",
+      "seite": 6,
+      "spalte": 7,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 15,
+      "potential": "W",
+      "ziel_innen": "-K4",
+      "ziel_aussen": "-M4:W1",
+      "seite": 6,
+      "spalte": 7,
+      "signal": ""
+    },
+    {
+      "leiste": "-X2",
+      "nr": 16,
+      "potential": "PE",
+      "ziel_innen": "PE-Schiene",
+      "ziel_aussen": "-M4:PE",
+      "seite": 6,
+      "spalte": 7,
+      "signal": ""
     }
   ],
   "sps_kanaele": [
@@ -1361,9 +1399,16 @@
       "DO-Last": 1.085
     },
     "i_motoren_A": 21.5,
+    "i_netzgeraete_A": 0,
+    "i_je_aussenleiter_A": {
+      "L1": 22.08,
+      "L2": 21.5,
+      "L3": 21.5
+    },
     "i_400V_max_A": 22.08
   },
   "warnungen": [
+    "Motorabgänge: Kurzschluss-/Abschaltbedingung der Leitungen (Schleifenimpedanz, Schaltvermögen) nicht geprüft",
     "Strombelastbarkeitstabelle (leitungen.i_z_A) nicht freigegeben – Querschnitte vorläufig"
   ]
 }

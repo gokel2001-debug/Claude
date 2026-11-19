@@ -200,11 +200,18 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         "gruppen": {k: round(sum(b.daten["i_A"] for b in v), 3) for k, v in gruppen.items()},
     }
     # 400-V-Summenstrom gegen Hauptschalter (Netzteil vereinfacht auf einem Außenleiter addiert)
+    # Außenleiterströme: Motoren auf allen drei, Netzteil auf L1, 1~-Geräte reihum L1/L2/L3
     i_mot = sum(float(x["i_N_A"]) for x in projekt.get("motoren", []))
-    i_netz = sum(b.daten["leistung"]["i_N_A"] for b in feld if b.daten.get("leistung"))
+    je_leiter = {"L1": i_mot + i_primaer, "L2": i_mot, "L3": i_mot}
+    netzgeraete = [b for b in feld if b.daten.get("leistung")]
+    for i, b in enumerate(netzgeraete):
+        leiter = ("L2", "L3", "L1")[i % 3]          # L1 trägt bereits das Netzteil
+        b.daten["leistung"]["aussenleiter"] = leiter
+        je_leiter[leiter] += b.daten["leistung"]["i_N_A"]
     m.bilanz["i_motoren_A"] = round(i_mot, 2)
-    m.bilanz["i_netzgeraete_A"] = round(i_netz, 2)
-    m.bilanz["i_400V_max_A"] = round(i_mot + i_netz + i_primaer, 2)   # 1~-Geräte vereinfacht auf einem Außenleiter
+    m.bilanz["i_netzgeraete_A"] = round(sum(b.daten["leistung"]["i_N_A"] for b in netzgeraete), 2)
+    m.bilanz["i_je_aussenleiter_A"] = {k: round(v, 2) for k, v in je_leiter.items()}
+    m.bilanz["i_400V_max_A"] = round(max(je_leiter.values()), 2)          # höchstbelasteter Außenleiter
 
     # ---- Einspeisung -----------------------------------------------------------
     hs_key = projekt["einspeisung"]["hauptschalter"]
@@ -301,6 +308,22 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     naechste = max([k.nr for k in m.klemmen if k.leiste == "-X2"] + [0]) + 1
     for k in [k for k in m.klemmen if k.leiste == "-X2" and k.nr == 0]:
         k.nr, naechste = naechste, naechste + 1
+        eltern = next(f for f in feld if k.ziel_aussen.startswith(f.bmk + ":"))
+        k.seite, k.spalte = eltern.seite, eltern.spalte
+    for w in m.kabel:                # Leitungen der Netzgeräte: Seite des Geräts (bisheriger Plan)
+        if w.seite is None:
+            eltern = next((f for f in feld if f.bmk == w.nach), None)
+            if eltern:
+                w.seite, w.spalte = eltern.seite, eltern.spalte
+    m.klemmen.sort(key=lambda k: (k.leiste, k.nr))
+    n_x2 = len([k for k in m.klemmen if k.leiste == "-X2"])
+    if n_x2:                         # Stückliste: tatsächliche Zahl der Leistungsklemmen
+        x2 = next((b for b in m.betriebsmittel if b.bmk == "-X2"), None)
+        if x2 is None:
+            x2 = Betriebsmittel("-X2", "RK-4", artikel("RK-4")["bezeichnung"], "Klemmleiste Leistung", "klemme")
+            m.betriebsmittel.append(x2)
+        x2.daten["anzahl"] = n_x2
+    m.warnungen = list(dict.fromkeys(m.warnungen))   # gleiche Hinweise nur einmal
 
     m.betriebsmittel.append(Betriebsmittel("-X1", "RK-2.5", artikel("RK-2.5")["bezeichnung"],
                                            "Klemmleiste Feld", "klemme",
@@ -337,18 +360,28 @@ def _leistungsteil(m: Planmodell, b: Betriebsmittel, a: dict, lst: dict, fg: dic
         raise RegelFehler(f"{b.bmk}: kein Motorschutzschalter mit Einstellbereich für {i_n} A")
     mss_key = min(mss, key=lambda k: art[k]["bereich_A"][1])
     laenge = fg.get("laenge_m")
-    if laenge in (None, ""):
-        a_mm2, i_z, du = waehle_querschnitt(i_n, 0.0, cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))
-        du = None
-        m.warnungen.append(f"{b.bmk}: Spannungsfall nicht geprüft – Leitungslänge fehlt (Excel-Spalte Länge)")
-    else:
-        a_mm2, i_z, du = waehle_querschnitt(i_n, float(laenge), cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))
+    if laenge not in (None, ""):
+        try:
+            laenge = float(str(laenge).replace(",", "."))
+        except ValueError:
+            raise RegelFehler(f"{b.bmk}: Leitungslänge '{fg.get('laenge_m')}' ist keine Zahl") from None
+    try:
+        if laenge in (None, ""):
+            a_mm2, i_z, du = waehle_querschnitt(i_n, 0.0, cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))
+            du = None
+            m.warnungen.append(f"{b.bmk}: Spannungsfall nicht geprüft – Leitungslänge fehlt (Excel-Spalte Länge)")
+        else:
+            a_mm2, i_z, du = waehle_querschnitt(i_n, laenge, cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))
+    except RegelFehler as e:
+        raise RegelFehler(f"{b.bmk}: {e}") from None
     adern = lst.get("kabel_adern", 3)
     kab = [k for k, d in art.items() if d["kategorie"] == "kabel" and d["adern"] == adern and d["querschnitt_mm2"] == a_mm2]
     if not kab:
         raise RegelFehler(f"{b.bmk}: kein Kabel {adern} x {a_mm2} mm² im Gerätestamm")
     if not ltg.get("freigegeben", False):
-        m.warnungen.append(f"{b.bmk}: Strombelastbarkeitstabelle nicht freigegeben – Querschnitt vorläufig")
+        m.warnungen.append("Strombelastbarkeitstabelle (leitungen.i_z_A) nicht freigegeben – Querschnitte vorläufig")
+    m.warnungen.append(f"{b.bmk}: 1~-Anschluss am Motorschutzschalter nach Herstellerangabe verdrahten "
+                       f"(Strompfade ggf. in Reihe); Kurzschluss-/Abschaltbedingung der Leitung nicht geprüft")
     b.daten["leistung"] = {"i_N_A": i_n, "mss": f"{b.bmk}-Q1", "kabel": f"{b.bmk}-W2", "pins": lst.get("pins", {})}
     w = Kabel(f"{b.bmk}-W2", kab[0], f"{b.bmk}-Q1", b.bmk, adern, a_mm2, float(laenge or 0), i_n, round(i_z, 2),
               round(du, 2) if du is not None else -1.0)

@@ -46,6 +46,9 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
     """Legt alle Motorabgänge an. Liefert die Signal-Betriebsmittel (Schütz = DO, MSS = DI)."""
     motoren = projekt.get("motoren", [])
     ltg = projekt.get("leitungen", {})
+    if motoren:
+        m.warnungen.append("Motorabgänge: Kurzschluss-/Abschaltbedingung der Leitungen (Schleifenimpedanz, "
+                           "Schaltvermögen) nicht geprüft")
     if motoren and not ltg.get("freigegeben", False):
         m.warnungen.append("Strombelastbarkeitstabelle (leitungen.i_z_A) nicht freigegeben – "
                            "Querschnitte vorläufig")

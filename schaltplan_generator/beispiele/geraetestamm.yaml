@@ -215,6 +215,6 @@ typicals:
       - {art: AO, text: Stellsignal 4-20mA, pin: IN+, rueckleiter: IN-}
       - {art: DI, text: Betrieb, pin: NO1, speisung: C1}
       - {art: DI, text: Störung, pin: NO2, speisung: C2}
-      - {art: DI, text: Störung Motorschutz, quelle: "-Q1"}
+      - {art: DI, text: Motorschutz eingeschaltet, quelle: "-Q1"}   # 13/14 = Schließer: 0 = ausgelöst/AUS
     bauteile:
       - {bmk: "-K1", artikel: KR-24DC, text: Koppelrelais Start/Stopp, gruppe: DO-Last}
