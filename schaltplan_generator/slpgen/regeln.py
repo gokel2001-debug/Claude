@@ -22,6 +22,8 @@ ERSTE_DYN_SEITE = 6
 SPALTEN_JE_SEITE = 8
 ZEILEN_JE_SEITE = 36          # Listen (Klemmen, Kabel, Stückliste)
 MAX_FELDKLEMMEN = 9           # je Feldgerät/Baustein (eine Seite, Spalten 1..9)
+SAMMELMELDUNG = "-F2.S"       # Sammelmeldung der Selektivmodule (gehört zum ersten Modul -F2)
+VERTEILUNGEN = ("einzelsicherungen", "selektivmodul")
 RE_GERAETE_BMK = re.compile(r"[A-Z]{1,3}\d{1,4}")
 
 
@@ -135,10 +137,14 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     modul_nr = 2
     zaehler: dict[str, int] = {}
     meldungen = []
-    if v24.get("verteilung") == "selektivmodul":    # Sammelmeldung aller Selektivmodule (Kontakte in Reihe) auf 1 DI
-        meldungen.append(Betriebsmittel("-F2.S", "", "Sammelmeldung 24-V-Selektivmodul",
-                                        "Sammelstörung 24 V Selektivmodul", "meldung",
-                                        daten={"signal": "DI", "i_A": 0.0, "eltern": "-F2"}))
+    verteilung = str(v24.get("verteilung") or "einzelsicherungen").strip().lower()
+    if verteilung not in VERTEILUNGEN:
+        raise RegelFehler(f"verteilung '{v24.get('verteilung')}' unbekannt – erlaubt: {', '.join(VERTEILUNGEN)}")
+    v24 = {**v24, "verteilung": verteilung}
+    if verteilung == "selektivmodul":   # Meldekontakte aller Module in Reihe (Ruhestrom) auf 1 DI: 0 = Störung
+        meldungen.append(Betriebsmittel(SAMMELMELDUNG, "", "Sammelmeldung 24-V-Selektivmodule",
+                                        "Selektivmodule in Ordnung (0 = Störung)", "meldung",
+                                        SEITE_VERTEILUNG, 8, daten={"signal": "DI", "i_A": 0.0, "eltern": "-F2"}))
     for sig in ("DI", "DO", "AI", "AO"):
         geraete = [b for b in feld + motor_signale + teilsignale + meldungen if b.daten["signal"] == sig]
         if not geraete:
@@ -333,6 +339,11 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
             x2 = Betriebsmittel("-X2", "RK-4", artikel("RK-4")["bezeichnung"], "Klemmleiste Leistung", "klemme")
             m.betriebsmittel.append(x2)
         x2.daten["anzahl"] = n_x2
+    m.betriebsmittel.extend(meldungen)
+    doppelt = sorted({b.bmk for b in m.betriebsmittel if [x.bmk for x in m.betriebsmittel].count(b.bmk) > 1})
+    if doppelt:
+        raise RegelFehler(f"Kennzeichen doppelt vergeben: {', '.join(doppelt)} – vom Programm vergebene "
+                          f"Kennzeichen (z. B. -F…, -K…, -Q…, -A…) nicht für Feldgeräte verwenden")
     m.warnungen = list(dict.fromkeys(m.warnungen))   # gleiche Hinweise nur einmal
 
     m.betriebsmittel.append(Betriebsmittel("-X1", "RK-2.5", artikel("RK-2.5")["bezeichnung"],
@@ -421,7 +432,11 @@ def _selektivmodule(m: Planmodell, gruppen: "OrderedDict[str, list[Betriebsmitte
         mbmk = f"-F{2 + mi}"
         m.betriebsmittel.append(Betriebsmittel(mbmk, mod_key, mod["bezeichnung"], "24 V Selektivmodul",
                                                "selektivmodul", SEITE_VERTEILUNG, 1 + mi * kmax))
-        for k, (gname, gl) in enumerate(items[mi * kmax:(mi + 1) * kmax], 1):
+        teil = items[mi * kmax:(mi + 1) * kmax]
+        summe = sum(b.daten["i_A"] for _, gl in teil for b in gl)
+        if "i_summe_A" in mod and summe > mod["i_summe_A"]:
+            raise RegelFehler(f"{mbmk}: Summenstrom {summe:.2f} A > zulässiger Modulstrom {mod['i_summe_A']} A")
+        for k, (gname, gl) in enumerate(teil, 1):
             i_g = sum(b.daten["i_A"] for b in gl)
             wert = _selektivmodul_kanalwert(mod["einstellwerte_A"], i_g * fak)
             if wert is None:

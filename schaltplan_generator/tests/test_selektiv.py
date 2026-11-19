@@ -56,7 +56,7 @@ def test_ausgaben_und_stueckliste(tmp_path):
     seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     vt = texte[[a for a, _, _ in seiten].index("VT24")]
-    assert "-F1:K2" in vt and "Sammelmeldung" in vt
+    assert "-F1:K2" in vt and "0 = Störung" in vt and "geschlossen = in Ordnung" in vt   # Ruhestromprinzip
     feld = texte[[a for a, _, _ in seiten].index("B01")]
     assert "=VT24/1.3" in feld                                       # Kanal K2 in Spalte 3
     erzeuge_pdf(m, STAMM, str(tmp_path / "alt.pdf"))
@@ -68,3 +68,34 @@ def test_excel_felder(tmp_path):
     assert (v["verteilung"], v["selektivmodul"]) == ("selektivmodul", "SEL-24-4K")
     schreibe_vorlage(PROJEKT, STAMM, tmp_path / "q.xlsx")
     assert "verteilung" not in lade_excel(tmp_path / "q.xlsx")["versorgung_24V"]
+
+
+def _gruppen(n):
+    p = _selektiv()
+    p["feldgeraete"] += [{"bmk": f"S{i}", "artikel": "IND-M12-PNP", "funktion": f"T{i}", "gruppe": f"G{i}"}
+                         for i in range(1, n + 1)]
+    return p
+
+
+def test_viele_gruppen_bleiben_im_blatt_oder_klare_meldung(tmp_path):
+    from slpgen.hausstil import Hausplan, lade_hausstil
+    m = regeln.plane(_gruppen(4), STAMM)                    # 3 + 4 = 7 Gruppen, 2 Module, Meldung
+    hp = Hausplan(m, STAMM, lade_hausstil(None))
+    spalten = [hp.pos[a.bmk].spalte for a in m.absicherungen] + [hp.pos["-F2.S"].spalte]
+    assert max(spalten) <= 9 and len(set(spalten)) == len(spalten)
+    erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+    with pytest.raises(regeln.RegelFehler, match="Verteilseite"):
+        erzeuge_hausstil_pdf(regeln.plane(_gruppen(7), STAMM), STAMM, str(tmp_path / "h2.pdf"))
+
+
+def test_verteilung_eingabe_und_doppelte_kennzeichen():
+    p = _selektiv()
+    p["versorgung_24V"]["verteilung"] = " Selektivmodul "
+    assert regeln.plane(p, STAMM).absicherungen[0].bmk == "-F2.1"          # Schreibweise vereinheitlicht
+    p["versorgung_24V"]["verteilung"] = "selektiv"
+    with pytest.raises(regeln.RegelFehler, match="unbekannt"):
+        regeln.plane(p, STAMM)
+    p = _selektiv()
+    p["feldgeraete"].append({"bmk": "F2", "artikel": "IND-M12-PNP", "funktion": "x", "gruppe": "Sensorik"})
+    with pytest.raises(regeln.RegelFehler, match="doppelt"):
+        regeln.plane(p, STAMM)

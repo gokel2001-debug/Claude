@@ -19,6 +19,7 @@ from reportlab.lib.pagesizes import A3, landscape
 from reportlab.pdfgen.canvas import Canvas
 
 from .modell import Planmodell, RegelFehler, eltern_bmk
+from .regeln import SAMMELMELDUNG
 from .zeichnen import (X0, X1, Y0, Y1, YL, YS, Blatt, potential_pfeil, s_deckblatt, sym_klemme,
                        sym_schliesser, sym_sicherung, tabelle)
 
@@ -107,13 +108,19 @@ class Hausplan:
         module = [b for b in m.betriebsmittel if b.kategorie == "selektivmodul"]
         for j, mod in enumerate(module):                    # Selektivmodule: lokal -F1, -F2 …
             self._lokal(mod.bmk, self.VT, f"-F{j + 1}", 1, 1)
+        sammel = any(k.geraet_bmk == SAMMELMELDUNG for k in m.sps_kanaele)
+        n = len(m.absicherungen) + (1 if sammel else 0)
+        if n > 9:
+            raise RegelFehler(f"{n} Abgänge passen nicht auf die 24-V-Verteilseite (höchstens 9) – Gruppen zusammenlegen")
+        schritt = 2 if n <= 4 else 1
         for i, a in enumerate(m.absicherungen):
             kanal = m.bm(a.bmk)
             lok = (f"{self.lokal[kanal.daten['modul']][1]}:K{kanal.daten['kanal']}" if kanal.kategorie == "selektivkanal"
                    else f"-F{i + 1}")
-            self._lokal(a.bmk, self.VT, lok, 1, 1 + 2 * i)
-        if any(k.geraet_bmk == "-F2.S" for k in m.sps_kanaele):
-            self.pos["kanal:-F2.S"] = Ort(self.VT, 1, 9)        # Sammelmeldung Selektivmodul
+            self._lokal(a.bmk, self.VT, lok, 1, 1 + schritt * i)
+        if sammel:                                          # Meldekontakte in der Spalte nach dem letzten Abgang
+            self._lokal(SAMMELMELDUNG, self.VT, "Meldung", 1, 1 + schritt * len(m.absicherungen))
+            self.pos[f"kanal:{SAMMELMELDUNG}"] = self.pos[SAMMELMELDUNG]
 
         # je Motor eine Anlage (Lastkreis + Steuerung); Zuordnung über die Daten, nicht über Nummern
         self.netzkette: list[str] = []                 # Anlagen an L1-L3/N/PE in Reihenfolge (Motoren, Netzgeräte)
@@ -346,14 +353,20 @@ class Hausplan:
                 b.rechteck(xa, 205, xe - xa, 28, strich=([3, 1], 0))
                 b.text(xa, 235, f"{self.lokal[mod.bmk][1]}  {mod.bezeichnung}"[:70], 2.2, True)
                 b.text(xa, 201, mod.artikel, 1.9)
-        if "kanal:-F2.S" in self.pos:
-            xm = self.x(9)
-            b.text(xm - 1, 266, f"24L+ {self.ref(self.pos.get(self.m.absicherungen[0].bmk), a.kennung)}", 1.9, ausr="r")
-            b.linie(xm, 268, xm, 230)
-            sym_schliesser(b, xm, 230, 12)
-            b.text(xm - 3, 224, "Meldekontakt", 1.7, ausr="r")
-            b.linie(xm, 218, xm, 200)
-            self._sps_kasten(b, xm, 168, "-F2.S", a.kennung, "Sammelmeldung", 34)
+        if f"kanal:{SAMMELMELDUNG}" in self.pos:           # Meldekontakte aller Module in Reihe, Ruhestrom
+            xm = self.x(self.pos[SAMMELMELDUNG].spalte)
+            sps = next((ab for ab in self.m.absicherungen if ab.gruppe == "SPS"), self.m.absicherungen[0])
+            b.text(xm - 1, 266, f"24L+ {self.ref(self.pos.get(sps.bmk), a.kennung)}", 1.9, ausr="r")
+            module = [x for x in self.m.betriebsmittel if x.kategorie == "selektivmodul"]
+            y = 262
+            for mod in module:
+                b.linie(xm, y, xm, y - 4)
+                sym_schliesser(b, xm, y - 4, 10)
+                b.text(xm - 3, y - 10, f"{self.lokal[mod.bmk][1]} 13/14", 1.7, ausr="r")
+                y -= 16
+            b.linie(xm, y, xm, 200)
+            b.text(xm + 1, y - 4, "geschlossen = in Ordnung", 1.6)
+            self._sps_kasten(b, xm, 168, SAMMELMELDUNG, a.kennung, "0 = Störung", 34)
         for i, ab in enumerate(self.m.absicherungen):
             o = self.pos[ab.bmk]
             x = self.x(o.spalte)
@@ -732,7 +745,7 @@ class Hausplan:
         artikel = self.stamm["artikel"]
         zeilen = []
         for bm in self.m.betriebsmittel:
-            if bm.bmk not in self.lokal or bm.kategorie == "selektivkanal":
+            if bm.bmk not in self.lokal or bm.kategorie in ("selektivkanal", "meldung"):
                 continue
             kenn, lok = self.lokal[bm.bmk]
             art = artikel.get(bm.artikel, {"hersteller": "", "bezeichnung": "Beistellung Kunde"})
