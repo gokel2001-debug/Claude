@@ -140,7 +140,8 @@ def vergleiche(pdf: Path, modell: dict) -> dict:
     text = "\n".join((s.extract_text() or "") for s in PdfReader(str(pdf)).pages)
     im_pdf = {f"-{mt.group(1)}{mt.group(2)}{mt.group(3)}" for mt in RE_BMK.finditer(text)}
     # Zusatzbauteile (z. B. "-P7-R1") stehen im Plan nur mit lokalem BMK -> nicht vergleichbar
-    im_modell = {b["bmk"] for b in modell["betriebsmittel"] if b.get("kategorie") not in ("bauteil", "teilsignal")}
+    im_modell = {b["bmk"] for b in modell["betriebsmittel"]
+                 if b.get("kategorie") not in ("bauteil", "teilsignal", "selektivkanal")}
     artikel = sorted({b["artikel"] for b in modell["betriebsmittel"]})
     return {
         "pdf": pdf.name,

@@ -134,8 +134,13 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                              seite=SEITE_SPS, spalte=1, daten={"i_A": strom_A(cpu)})]
     modul_nr = 2
     zaehler: dict[str, int] = {}
+    meldungen = []
+    if v24.get("verteilung") == "selektivmodul":    # Sammelmeldung aller Selektivmodule (Kontakte in Reihe) auf 1 DI
+        meldungen.append(Betriebsmittel("-F2.S", "", "Sammelmeldung 24-V-Selektivmodul",
+                                        "Sammelstörung 24 V Selektivmodul", "meldung",
+                                        daten={"signal": "DI", "i_A": 0.0, "eltern": "-F2"}))
     for sig in ("DI", "DO", "AI", "AO"):
-        geraete = [b for b in feld + motor_signale + teilsignale if b.daten["signal"] == sig]
+        geraete = [b for b in feld + motor_signale + teilsignale + meldungen if b.daten["signal"] == sig]
         if not geraete:
             continue
         if sig not in sps["module_kandidaten"] or sig not in sps["adressschema"]:
@@ -232,6 +237,11 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     # ---- Absicherung der 24-V-Gruppen ----------------------------------------
     es_kand = [k for k, a in art.items() if a["kategorie"] == "schutz_dc"]
     fak = v24.get("absicherungsfaktor", 1.25)
+    if v24.get("verteilung") == "selektivmodul":
+        if not v24.get("selektivmodul"):
+            raise RegelFehler("verteilung = selektivmodul, aber kein Artikel im Feld 'selektivmodul' angegeben")
+        _selektivmodule(m, gruppen, v24, artikel(v24["selektivmodul"]), v24["selektivmodul"], fak, nt)
+        gruppen = OrderedDict()                       # bereits abgesichert
     for n, (gname, gl) in enumerate(gruppen.items(), start=2):
         i_g = sum(b.daten["i_A"] for b in gl)
         es_key = waehle_kleinste(art, es_kand, i_g * fak)
@@ -395,3 +405,33 @@ def _leistungsteil(m: Planmodell, b: Betriebsmittel, a: dict, lst: dict, fg: dic
             Betriebsmittel(f"{b.bmk}-W2", kab[0], art[kab[0]]["bezeichnung"], f"Zuleitung {b.bmk}", "kabel",
                            daten={"eltern": b.bmk, "lokal": "-W2", "laenge_m": float(laenge or 0), "i_A": 0.0,
                                   "gruppe": "-"})]
+
+
+def _selektivmodul_kanalwert(einstellwerte: list[float], i_min: float) -> float | None:
+    passend = [w for w in sorted(einstellwerte) if w >= i_min]
+    return passend[0] if passend else None
+
+
+def _selektivmodule(m: Planmodell, gruppen: "OrderedDict[str, list[Betriebsmittel]]", v24: dict, mod: dict,
+                    mod_key: str, fak: float, nt: dict) -> None:
+    """24-V-Verteilung über Selektivmodule: je Gruppe ein Kanal mit einstellbarem Strom, Module -F2, -F3, …"""
+    kmax = mod["kanaele"]
+    items = list(gruppen.items())
+    for mi in range(math.ceil(len(items) / kmax)):
+        mbmk = f"-F{2 + mi}"
+        m.betriebsmittel.append(Betriebsmittel(mbmk, mod_key, mod["bezeichnung"], "24 V Selektivmodul",
+                                               "selektivmodul", SEITE_VERTEILUNG, 1 + mi * kmax))
+        for k, (gname, gl) in enumerate(items[mi * kmax:(mi + 1) * kmax], 1):
+            i_g = sum(b.daten["i_A"] for b in gl)
+            wert = _selektivmodul_kanalwert(mod["einstellwerte_A"], i_g * fak)
+            if wert is None:
+                raise RegelFehler(f"Gruppe {gname}: {i_g * fak:.2f} A übersteigt den größten Kanalwert des "
+                                  f"Selektivmoduls ({max(mod['einstellwerte_A'])} A) – Gruppe teilen")
+            if wert > nt["i_nenn_A"]:
+                m.warnungen.append(f"{mbmk} Kanal {k}: {wert} A > Netzteil-Nennstrom")
+            kanal = f"{mbmk}.{k}"
+            m.betriebsmittel.append(Betriebsmittel(kanal, mod_key, f"Kanal {k}", f"24 V {gname}", "selektivkanal",
+                                                   SEITE_VERTEILUNG, mi * kmax + k, {"modul": mbmk, "kanal": k}))
+            m.absicherungen.append(Absicherung(kanal, mod_key, wert, gname, round(i_g, 3), [b.bmk for b in gl]))
+            for b in gl:
+                b.daten["absicherung"] = kanal

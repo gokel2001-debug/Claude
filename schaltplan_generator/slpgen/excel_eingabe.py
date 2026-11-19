@@ -28,6 +28,7 @@ PROJEKT_FELDER = [
 REGEL_FELDER = [
     ("netzteile", "Kandidaten, mit Komma getrennt"), ("gleichzeitigkeit", "0..1"),
     ("reserve", "z. B. 0,25 = 25 %"), ("absicherungsfaktor", "I_Sicherung >= Faktor * I_Gruppe"),
+    ("verteilung", "einzelsicherungen oder selektivmodul"), ("selektivmodul", "Artikel, nur bei verteilung = selektivmodul"),
     ("sps_cpu", ""), ("modul_DI", ""), ("modul_DO", ""), ("modul_AI", ""), ("modul_AO", "nur nötig bei Analogausgängen"),
     ("adresse_DI", "{byte}.{bit}"), ("adresse_DO", "{byte}.{bit}"), ("adresse_AI", "{wort}"), ("adresse_AO", "{wort}"),
     ("leitungen_freigegeben", "JA erst nach Prüfung der I_z-Werte"), ("verlegeart", ""),
@@ -103,7 +104,9 @@ def lade_excel(pfad: str | Path) -> dict[str, Any]:
         "einspeisung": {"netz": str(p.get("netz", "")), "hauptschalter": str(p["hauptschalter"])},
         "versorgung_24V": {"netzteile": [s.strip() for s in str(r["netzteile"]).split(",")],
                            "gleichzeitigkeit": z("gleichzeitigkeit"), "reserve": z("reserve"),
-                           "absicherungsfaktor": z("absicherungsfaktor")},
+                           "absicherungsfaktor": z("absicherungsfaktor"),
+                           **({"verteilung": "selektivmodul", "selektivmodul": str(r.get("selektivmodul") or "").strip()}
+                              if str(r.get("verteilung") or "").strip().lower() == "selektivmodul" else {})},
         "sps": {"cpu": str(r["sps_cpu"]),
                 "module_kandidaten": {s: str(r[f"modul_{s}"]) for s in ("DI", "DO", "AI", "AO")
                                       if r.get(f"modul_{s}") not in (None, "")},
@@ -152,6 +155,7 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
     v, s, ltg = projekt["versorgung_24V"], projekt["sps"], projekt.get("leitungen", {})
     regel = {"netzteile": ", ".join(v["netzteile"]), "gleichzeitigkeit": v["gleichzeitigkeit"],
              "reserve": v["reserve"], "absicherungsfaktor": v["absicherungsfaktor"], "sps_cpu": s["cpu"],
+             "verteilung": v.get("verteilung", "einzelsicherungen"), "selektivmodul": v.get("selektivmodul", ""),
              **{f"modul_{x}": s["module_kandidaten"].get(x, "") for x in ("DI", "DO", "AI", "AO")},
              **{f"adresse_{x}": s["adressschema"].get(x, "") for x in ("DI", "DO", "AI", "AO")},
              "leitungen_freigegeben": "JA" if ltg.get("freigegeben") else "NEIN",

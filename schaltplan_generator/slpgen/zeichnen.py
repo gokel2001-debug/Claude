@@ -451,6 +451,8 @@ def s_kabel(b: Blatt, m: Planmodell, _seite: int, idx: int):
 def stueckliste_zeilen(m: Planmodell, stamm: dict) -> list[tuple]:
     gruppen: "OrderedDict[str, list[str]]" = OrderedDict()
     for x in m.betriebsmittel:
+        if x.kategorie == "selektivkanal":            # Kanal eines Selektivmoduls, kein eigener Artikel
+            continue
         gruppen.setdefault(x.artikel, []).append(x.bmk)
     zeilen = []
     for pos, (art, bmks) in enumerate(gruppen.items(), 1):

@@ -52,6 +52,12 @@ artikel:
   ES-24-04: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 4 A, i_nenn_A: 4}
   ES-24-06: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 6 A, i_nenn_A: 6}
   ES-24-10: {kategorie: schutz_dc, hersteller: Beispiel GmbH, bezeichnung: Elektronische Sicherung 24 V 10 A, i_nenn_A: 10}
+  SEL-24-4K:
+    kategorie: selektivmodul
+    hersteller: Beispiel GmbH
+    bezeichnung: Selektivmodul 24 V DC, 4 Kanäle einstellbar 0,5–10 A, Sammelmeldung
+    kanaele: 4
+    einstellwerte_A: [0.5, 1, 2, 3, 4, 5, 6, 8, 10]
   RK-2.5: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: Reihenklemme 2,5 mm² grau}
   RK-4: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: Reihenklemme 4 mm² grau}
 
