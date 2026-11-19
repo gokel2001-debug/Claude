@@ -2,16 +2,16 @@
 
 | Feld | Inhalt |
 |---|---|
-| Stand | 19.11.2026, manuelle Sitzung |
+| Stand | 19.11.2026, Autostart (Testlauf) |
 | Aktuelles Paket | P1 – Steuerdateien + synthetischer Testkorpus |
-| Nächster Schritt | P1b: Generator für synthetische Hausstil-PDFs (`tests/korpus/`), damit P2 (Hausprofil lernen) ohne Kundendaten getestet werden kann |
-| Tests | 15/15 grün (Stand Commit 7147037) |
+| Nächster Schritt | P1b: Prüfung durch Prüfer-Agenten, Nacharbeit; danach P2 (Hausprofil lernen) |
+| Tests | 19/19 grün |
 
 ## Paketübersicht
 | Paket | Status |
 |---|---|
 | P1 Steuerdateien | erledigt (ROADMAP, STATUS, ENTSCHEIDUNGEN) |
-| P1b Synthetischer Testkorpus | offen |
+| P1b Synthetischer Testkorpus | umgesetzt (`slpgen/korpus.py`, `slpgen korpus`), Prüfung läuft |
 | P2 Hausprofil lernen | offen |
 | P3 Anlagen-Struktur / Layout aus Profil | offen |
 | P4 Typical-Bibliothek | offen |

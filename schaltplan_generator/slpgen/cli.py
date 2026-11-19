@@ -70,6 +70,13 @@ def cmd_vorlage(a):
     print(f"Excel-Vorlage -> {a.ziel}")
 
 
+def cmd_korpus(a):
+    from .korpus import erzeuge_korpus
+    plaene = erzeuge_korpus(a.ordner, anzahl=a.anzahl, seed=a.seed)
+    for pl in plaene:
+        print(f"{pl.datei}  Jahr {pl.jahr}  Feldleiste {pl.feldleiste}  Typicals {pl.typicals}")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="slpgen", description="Stromlaufplan-Generator (Prototyp)")
     sub = p.add_subparsers(dest="befehl", required=True)
@@ -101,6 +108,11 @@ def main(argv=None):
     vo.add_argument("--beispiel", default="beispiele/projekt_beispiel.yaml")
     vo.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
     vo.set_defaults(f=cmd_vorlage)
+    ko = sub.add_parser("korpus", help="Synthetische Testpläne im Hausstil erzeugen (ohne Kundendaten)")
+    ko.add_argument("ordner")
+    ko.add_argument("--anzahl", type=int, default=10)
+    ko.add_argument("--seed", type=int, default=1)
+    ko.set_defaults(f=cmd_korpus)
     a = p.parse_args(argv)
     try:
         a.f(a)

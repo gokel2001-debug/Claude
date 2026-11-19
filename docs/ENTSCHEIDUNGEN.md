@@ -11,3 +11,4 @@ Status: **bestätigt** = vom Nutzer entschieden · **vorläufig – bitte bestä
 | E5 | 19.11.2026 | Arbeitsweise | Langläufer, mehrere Prüfer-Agenten, Autostart Fr 22:07 / Sa 03:12 / Sa 08:17, im Autostart keine Fragen | bestätigt |
 | E6 | 24.10.2026 | Hausprofil (Schriftfeld, Logo, Farbtabelle) | nur lokal in `hausprofil/` (gitignored), im Repo neutrales Musterprofil | bestätigt (19.11.2026) |
 | E7 | 19.11.2026 | Testdaten | nur synthetische Pläne im Repo; echte Pläne ausschließlich lokal | bestätigt (19.11.2026) |
+| E8 | 19.11.2026 | Wie wird „Lernen über die Jahre“ ohne Kundendaten testbar? | Synthetischer Korpus mit eingebautem Trend: Feldklemmleiste bis 2024 `-X20`, ab 2025 `-X10` (an beobachtetem Unterschied der zwei Referenzpläne angelehnt). Alternative: Trend nur in Schriftfeld/Layout – verworfen, da BMK-Muster die wichtigere Lernaufgabe ist | vorläufig – bitte bestätigen |
