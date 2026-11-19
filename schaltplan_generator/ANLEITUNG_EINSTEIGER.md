@@ -53,7 +53,7 @@ Danach erscheint ein Menü:
 | Blatt | Was eintragen | Hinweise |
 |---|---|---|
 | **Projekt** | Nummer, Bezeichnung, Kunde, Anlage, Ort, Datum … | Anlage/Ort **ohne** `=`/`+` eingeben (sonst hält Excel es für eine Formel) |
-| **Feldgeraete** | je Zeile ein Gerät: BMK (z. B. `B7`), Artikel, Funktion, Gruppe, optional **Baustein** | Artikel aus der **Auswahlliste** wählen (Liste = Blatt *Artikel*). Für Geräte mit mehreren Signalen (z. B. Zähler mit Impuls + Drahtbruch) in Spalte „Baustein“ einen Eintrag aus Blatt *Bausteine* wählen |
+| **Feldgeraete** | je Zeile ein Gerät: BMK (z. B. `B7`), Artikel, Funktion, Gruppe, optional **Baustein** | Artikel aus der **Auswahlliste** wählen (Liste = Blatt *Artikel*). Für Geräte mit mehreren Signalen (z. B. Zähler mit Impuls + Drahtbruch, Pumpe) in Spalte „Baustein“ einen Eintrag aus Blatt *Bausteine* wählen; bei Pumpen zusätzlich die Leitungslänge in m eintragen (für den Spannungsfall) |
 | **Motoren** | BMK, Funktion, Leistung kW, Nennstrom A, cos φ, Kabellänge m | Werte vom Typenschild |
 | **Regeln** | Reserve, Absicherungsfaktor, Netzteile, SPS-Module, Leitungswerte | erst ändern, wenn klar ist, was es bewirkt |
 | **Artikel** | nur zum Nachschlagen | neue Artikel kommen in `beispiele\geraetestamm.yaml` |

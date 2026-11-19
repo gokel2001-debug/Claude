@@ -11,8 +11,8 @@ import re
 from collections import OrderedDict
 from typing import Any
 
-from .modell import Absicherung, Betriebsmittel, Klemme, Planmodell, RegelFehler, SpsKanal
-from .motor import MOTOREN_JE_SEITE, plane_motoren
+from .modell import Absicherung, Betriebsmittel, Kabel, Klemme, Planmodell, RegelFehler, SpsKanal
+from .motor import MOTOREN_JE_SEITE, plane_motoren, waehle_querschnitt
 
 # Feste Seiten; ab Seite 6 folgen Motor-Last-, Motor-Steuer- und Feldgeräteseiten (dynamisch)
 SEITE_EINSPEISUNG = 3
@@ -68,26 +68,31 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         gesehen.add(kurz)
         bmk = "-" + kurz
         tname = (str(fg.get("typical") or "").strip()) or None
+        netzgeraet = bool(tname and typicals.get(tname, {}).get("leistung"))
+        i_24 = strom_A(a) if ("i_mA" in a or "p_W" in a or not netzgeraet) else 0.0   # Netzgeräte: kein 24-V-Strom
         b = Betriebsmittel(bmk=bmk, artikel=fg["artikel"], bezeichnung=a["bezeichnung"],
                            funktion=fg.get("funktion", ""), kategorie=a["kategorie"],
-                           daten={"gruppe": fg.get("gruppe", "Allgemein"), "i_A": strom_A(a),
+                           daten={"gruppe": fg.get("gruppe", "Allgemein"), "i_A": i_24,
                                   "signal": a.get("signal"), "anschluss": a.get("anschluss", [])})
         if tname:
             if tname not in typicals:
                 raise RegelFehler(f"Baustein (Typical) '{tname}' für {bmk} fehlt in der Bibliothek")
             tp = typicals[tname]
             vs = tp.get("versorgung", {})
-            pins = list(vs.values()) + [sg[x] for sg in tp["signale"] for x in ("pin", "rueckleiter", "speisung")
-                                        if x in sg]
+            lst = tp.get("leistung") or {}
+            pins = list(vs.values()) + list(lst.get("pins", {}).values()) + \
+                [sg[x] for sg in tp["signale"] for x in ("pin", "rueckleiter", "speisung", "rueckkontakt") if x in sg]
             if any(not isinstance(p, str) for p in pins):     # YAML liest z. B. NO/ON ohne Anführungszeichen als bool
                 raise RegelFehler(f"Baustein '{tname}': Anschlussnamen bitte in Anführungszeichen setzen ({pins})")
             fehlend = [p for p in pins if p not in a.get("anschluss", [])]
             if fehlend:
                 raise RegelFehler(f"{bmk}: Baustein '{tname}' braucht Anschlüsse {fehlend}, Artikel {fg['artikel']} "
                                   f"hat {a.get('anschluss', [])}")
-            if len(pins) > MAX_FELDKLEMMEN:
-                raise RegelFehler(f"Baustein '{tname}' hat {len(pins)} Feldklemmen, höchstens {MAX_FELDKLEMMEN} möglich")
-            versorgt = "+24V" in vs or any(sg.get("speisung") or sg.get("ueber") for sg in tp["signale"])
+            n_signal = len(pins) - len(lst.get("pins", {}))      # L/N/PE liegen auf der Leistungsleiste
+            if n_signal > MAX_FELDKLEMMEN:
+                raise RegelFehler(f"Baustein '{tname}' hat {n_signal} Signalklemmen, höchstens {MAX_FELDKLEMMEN} möglich")
+            versorgt = "+24V" in vs or any(sg.get("speisung") or sg.get("quelle")
+                                           or (sg.get("ueber") and not sg.get("rueckkontakt")) for sg in tp["signale"])
             b.daten.update(typical=tname, signal="BAUSTEIN", versorgung=vs, versorgt=versorgt)
             if "+24V" not in vs:
                 b.daten["i_A"] = 0.0              # fremdversorgt: kein Verbraucher an unserem 24-V-Netz
@@ -96,10 +101,13 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                 t = Betriebsmittel(bmk=f"{bmk}.{n}", artikel="", bezeichnung=sg["text"],
                                    funktion=f"{sg['text']} {b.funktion}".strip(), kategorie="teilsignal",
                                    daten={"signal": sg["art"], "i_A": 0.0, "pin": sg.get("pin", ""),
-                                          "eltern": bmk, "ueber": sg.get("ueber"),
-                                          "rueckleiter": sg.get("rueckleiter"), "speisung": sg.get("speisung")})
+                                          "eltern": bmk, "ueber": sg.get("ueber"), "quelle": sg.get("quelle"),
+                                          "rueckleiter": sg.get("rueckleiter"), "speisung": sg.get("speisung"),
+                                          "rueckkontakt": sg.get("rueckkontakt")})
                 teilsignale.append(t)
                 b.daten["teilsignale"].append(t.bmk)
+                if sg.get("quelle"):
+                    b.daten.setdefault("quellsignale", {})[t.bmk] = sg["quelle"]   # z. B. Hilfskontakt -Q1
             for bt in tp.get("bauteile", []):
                 ba = artikel(bt["artikel"])
                 bauteile.append(Betriebsmittel(bmk=f"{bmk}{bt['bmk']}", artikel=bt["artikel"],
@@ -108,6 +116,8 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                                                daten={"eltern": bmk, "lokal": bt["bmk"],
                                                       "i_A": strom_A(ba) if ("i_mA" in ba or "p_W" in ba) else 0.0,
                                                       "gruppe": bt.get("gruppe", b.daten["gruppe"])}))
+            if lst:
+                bauteile.extend(_leistungsteil(m, b, a, lst, fg, projekt.get("leitungen", {}), art))
         feld.append(b)
 
     # ---- Motorabgänge (Typical DOL) ------------------------------------------
@@ -191,8 +201,10 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     }
     # 400-V-Summenstrom gegen Hauptschalter (Netzteil vereinfacht auf einem Außenleiter addiert)
     i_mot = sum(float(x["i_N_A"]) for x in projekt.get("motoren", []))
+    i_netz = sum(b.daten["leistung"]["i_N_A"] for b in feld if b.daten.get("leistung"))
     m.bilanz["i_motoren_A"] = round(i_mot, 2)
-    m.bilanz["i_400V_max_A"] = round(i_mot + i_primaer, 2)
+    m.bilanz["i_netzgeraete_A"] = round(i_netz, 2)
+    m.bilanz["i_400V_max_A"] = round(i_mot + i_netz + i_primaer, 2)   # 1~-Geräte vereinfacht auf einem Außenleiter
 
     # ---- Einspeisung -----------------------------------------------------------
     hs_key = projekt["einspeisung"]["hauptschalter"]
@@ -257,10 +269,14 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                 plan.append(("+24V", f"{b.daten['absicherung']}:2", vs["+24V"]))
             for k in b.daten["teilsignale"]:
                 d = ts[k].daten
+                if d["quelle"]:           # Meldung aus einem Schrankbauteil (z. B. Hilfskontakt) – keine Feldklemme
+                    continue
                 if d["speisung"]:         # potentialfreier Kontakt: Wurzel aus 24L+ der Gruppe
                     plan.append(("+24V", f"{b.daten['absicherung']}:2", d["speisung"]))
                 if d["ueber"]:            # Signal über Schrankbauteil, z. B. Koppelrelais-Kontakt 11/14
                     plan.append(("Kontakt", f"{b.bmk}{d['ueber']}:14", d["pin"], k))
+                    if d["rueckkontakt"]:  # potentialfrei: Kontaktwurzel 11 geht ins Feld statt an 24L+
+                        plan.append(("Kontakt-Rück", f"{b.bmk}{d['ueber']}:11", d["rueckkontakt"]))
                 else:
                     plan.append(("Signal", d["sps"], d["pin"], k))
                 if d["rueckleiter"]:      # z. B. 4–20 mA Minus zurück auf den Kanal
@@ -281,6 +297,10 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         eltern = next(f for f in feld if f.bmk == bt.daten["eltern"])
         bt.seite, bt.spalte = eltern.seite, eltern.spalte
     m.betriebsmittel.extend(bauteile)
+    # Leistungsklemmen der Netzgeräte hinter den Motorklemmen auf -X2 fortlaufend nummerieren
+    naechste = max([k.nr for k in m.klemmen if k.leiste == "-X2"] + [0]) + 1
+    for k in [k for k in m.klemmen if k.leiste == "-X2" and k.nr == 0]:
+        k.nr, naechste = naechste, naechste + 1
 
     m.betriebsmittel.append(Betriebsmittel("-X1", "RK-2.5", artikel("RK-2.5")["bezeichnung"],
                                            "Klemmleiste Feld", "klemme",
@@ -304,3 +324,41 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     m.seiten = [(i + 1, t, a, x) for i, (t, a, x) in enumerate(plan)]
     assert m.seiten[SEITE_SPS - 1][2] == "sps" and (n_mot == 0 or m.seiten[ERSTE_DYN_SEITE - 1][2] == "motor_last")
     return m
+
+
+def _leistungsteil(m: Planmodell, b: Betriebsmittel, a: dict, lst: dict, fg: dict, ltg: dict,
+                   art: dict) -> list[Betriebsmittel]:
+    """Netzversorgtes Feldgerät (z. B. Pumpe 1~230 V): Motorschutzschalter, Leitung, Klemmen L/N/PE."""
+    if "i_N_A" not in a:
+        raise RegelFehler(f"{b.bmk}: Artikel {b.artikel} braucht i_N_A (Nennstrom) für den Leistungsteil")
+    i_n, cos_phi = float(a["i_N_A"]), float(a.get("cos_phi", 0.9))
+    mss = [k for k, d in art.items() if d["kategorie"] == "motorschutz" and d["bereich_A"][0] <= i_n <= d["bereich_A"][1]]
+    if not mss:
+        raise RegelFehler(f"{b.bmk}: kein Motorschutzschalter mit Einstellbereich für {i_n} A")
+    mss_key = min(mss, key=lambda k: art[k]["bereich_A"][1])
+    laenge = fg.get("laenge_m")
+    if laenge in (None, ""):
+        a_mm2, i_z, du = waehle_querschnitt(i_n, 0.0, cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))
+        du = None
+        m.warnungen.append(f"{b.bmk}: Spannungsfall nicht geprüft – Leitungslänge fehlt (Excel-Spalte Länge)")
+    else:
+        a_mm2, i_z, du = waehle_querschnitt(i_n, float(laenge), cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))
+    adern = lst.get("kabel_adern", 3)
+    kab = [k for k, d in art.items() if d["kategorie"] == "kabel" and d["adern"] == adern and d["querschnitt_mm2"] == a_mm2]
+    if not kab:
+        raise RegelFehler(f"{b.bmk}: kein Kabel {adern} x {a_mm2} mm² im Gerätestamm")
+    if not ltg.get("freigegeben", False):
+        m.warnungen.append(f"{b.bmk}: Strombelastbarkeitstabelle nicht freigegeben – Querschnitt vorläufig")
+    b.daten["leistung"] = {"i_N_A": i_n, "mss": f"{b.bmk}-Q1", "kabel": f"{b.bmk}-W2", "pins": lst.get("pins", {})}
+    w = Kabel(f"{b.bmk}-W2", kab[0], f"{b.bmk}-Q1", b.bmk, adern, a_mm2, float(laenge or 0), i_n, round(i_z, 2),
+              round(du, 2) if du is not None else -1.0)
+    m.kabel.append(w)
+    pins = lst.get("pins", {})
+    for pot, innen in (("L", f"{b.bmk}-Q1:2"), ("N", f"{b.bmk}-Q1:4"), ("PE", "PE-Schiene")):
+        if pot in pins:
+            m.klemmen.append(Klemme("-X2", 0, pot, innen, f"{b.bmk}:{pins[pot]}"))
+    return [Betriebsmittel(f"{b.bmk}-Q1", mss_key, art[mss_key]["bezeichnung"], f"Motorschutz {b.bmk}", "bauteil",
+                           daten={"eltern": b.bmk, "lokal": "-Q1", "i_A": 0.0, "i_r_A": i_n, "gruppe": "-"}),
+            Betriebsmittel(f"{b.bmk}-W2", kab[0], art[kab[0]]["bezeichnung"], f"Zuleitung {b.bmk}", "kabel",
+                           daten={"eltern": b.bmk, "lokal": "-W2", "laenge_m": float(laenge or 0), "i_A": 0.0,
+                                  "gruppe": "-"})]

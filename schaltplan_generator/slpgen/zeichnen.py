@@ -441,7 +441,8 @@ def s_klemmen(b: Blatt, m: Planmodell, _seite: int, idx: int):
 
 def s_kabel(b: Blatt, m: Planmodell, _seite: int, idx: int):
     zeilen = [(c.bmk, c.von, c.nach, c.artikel, f"{c.adern} x {c.querschnitt_mm2:g} mm²", f"{c.laenge_m:g} m",
-               f"{c.i_b_A:g}", f"{c.i_z_A:g}", f"{c.du_prozent:.2f}", verweis(c.seite, c.spalte)) for c in m.kabel]
+               f"{c.i_b_A:g}", f"{c.i_z_A:g}", f"{c.du_prozent:.2f}" if c.du_prozent >= 0 else "nicht geprüft",
+               verweis(c.seite, c.spalte)) for c in m.kabel]
     tabelle(b, ["Kabel", "von", "nach", "Artikel", "Adern x Querschnitt", "Länge", "I_r [A]", "I_z·f [A]",
                 "dU [%]", "Seite"], teil(zeilen, idx), [25, 25, 25, 35, 45, 25, 25, 25, 25, 25])
 

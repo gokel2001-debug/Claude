@@ -21,16 +21,21 @@ class MotorFehler(RegelFehler):
 
 
 def spannungsfall_prozent(i_A: float, l_m: float, cos_phi: float, kappa: float, a_mm2: float,
-                          u_V: float = 400.0) -> float:
-    return math.sqrt(3) * i_A * l_m * cos_phi / (kappa * a_mm2) / u_V * 100.0
+                          u_V: float = 400.0, phasen: int = 3) -> float:
+    """Drehstrom: √3 · I · l · cos φ / (κ · A); Wechselstrom: Hin- und Rückleiter -> Faktor 2 statt √3."""
+    faktor = math.sqrt(3) if phasen == 3 else 2.0
+    return faktor * i_A * l_m * cos_phi / (kappa * a_mm2) / u_V * 100.0
 
 
-def waehle_querschnitt(i_r: float, l_m: float, cos_phi: float, ltg: dict[str, Any]) -> tuple[float, float, float]:
+def waehle_querschnitt(i_r: float, l_m: float, cos_phi: float, ltg: dict[str, Any],
+                       u_V: float = 400.0, phasen: int = 3) -> tuple[float, float, float]:
     """-> (Querschnitt, I_z·f, ΔU %). Tabelle `i_z_A` {mm²: A} muss aufsteigend sinnvoll sein."""
     f = ltg.get("reduktionsfaktor", 1.0)
+    if not ltg.get("i_z_A"):
+        raise MotorFehler("Keine Strombelastbarkeitstabelle (Regeln: iz_…) angegeben")
     for a in sorted(float(k) for k in ltg["i_z_A"]):
         i_z = ltg["i_z_A"][a] if a in ltg["i_z_A"] else ltg["i_z_A"][str(a)]
-        du = spannungsfall_prozent(i_r, l_m, cos_phi, ltg.get("kappa", 56), a)
+        du = spannungsfall_prozent(i_r, l_m, cos_phi, ltg.get("kappa", 56), a, u_V, phasen)
         if i_z * f >= i_r and du <= ltg.get("du_max_prozent", 3.0):
             return a, i_z * f, du
     raise MotorFehler(f"Kein Querschnitt in Tabelle i_z_A erfüllt I_r = {i_r} A / l = {l_m} m "

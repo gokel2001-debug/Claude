@@ -112,3 +112,32 @@ def test_excel_baustein_spalte(tmp_path):
     geladen = lade_excel(tmp_path / "p.xlsx")
     assert [g.get("typical") for g in geladen["feldgeraete"]][-2:] == ["zaehler_di", "stellantrieb_ao"]
     assert geladen["sps"]["module_kandidaten"]["AO"] == "SPS-AO4"
+
+
+PUMPE = {"bmk": "M9", "artikel": "PUMPE-EC-230", "funktion": "Umwälzpumpe Heizkreis", "gruppe": "Aktorik",
+         "typical": "pumpe_ec", "laenge_m": 25}
+
+
+def test_pumpe_leistungsteil_und_meldungen(tmp_path):
+    m = regeln.plane(_projekt(PUMPE), STAMM)
+    assert m.bm("-M9-Q1").artikel == "MSS-1.6"                              # 1,19 A im Bereich 1–1,6 A
+    w = next(c for c in m.kabel if c.bmk == "-M9-W2")
+    # 1~: ΔU = 2 · I · l · cos φ / (κ · A) / 230 V
+    assert w.querschnitt_mm2 == 1.5 and w.du_prozent == pytest.approx(2 * 1.19 * 25 * 0.95 / (56 * 1.5) / 230 * 100, abs=0.01)
+    assert [(k.potential, k.ziel_aussen.split(":")[1]) for k in m.klemmen if k.leiste == "-X2" and "-M9" in k.ziel_aussen] \
+        == [("L", "L"), ("N", "N"), ("PE", "PE")]
+    assert ("Kontakt-Rück", "GND") in _klemmen(m, "-M9")                     # Start/Stopp potentialfrei
+    msmeldung = next(k for k in m.sps_kanaele if k.funktion.startswith("Störung Motorschutz"))
+    assert not any(k.signal == msmeldung.geraet_bmk for k in m.klemmen)      # Hilfskontakt: keine Feldklemme
+    assert m.bilanz["i_netzgeraete_A"] == pytest.approx(1.19)
+    seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+    assert [(a, n) for a, n, _ in seiten if a == "M09"] == [("M09", 1), ("M09", 2)]
+    texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
+    seite2 = texte[seiten.index(("M09", 2, "Leistungsteil"))]
+    assert "-Q1" in seite2 and msmeldung.adresse in seite2 and "L1 =M04/1.9" in seite2   # Netzkette nach Motor 4
+    erzeuge_pdf(m, STAMM, str(tmp_path / "alt.pdf"))
+
+
+def test_pumpe_ohne_laenge_warnt():
+    m = regeln.plane(_projekt(dict(PUMPE, laenge_m=None)), STAMM)
+    assert any("Spannungsfall nicht geprüft" in w for w in m.warnungen)

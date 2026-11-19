@@ -107,12 +107,12 @@ class Hausplan:
             self._lokal(a.bmk, self.VT, f"-F{i + 1}", 1, 1 + 2 * i)
 
         # je Motor eine Anlage (Lastkreis + Steuerung); Zuordnung über die Daten, nicht über Nummern
-        self.motoranlagen: list[str] = []
+        self.netzkette: list[str] = []                 # Anlagen an L1-L3/N/PE in Reihenfolge (Motoren, Netzgeräte)
         for i, mot in enumerate([b for b in m.betriebsmittel if b.kategorie == "motor"], 1):
             kenn = self._kennung(mot.bmk, "M", i)
             an = self._neu(kenn, f"Motor {mot.bmk} {mot.funktion}".strip())
             an.seiten += [("Lastkreis", self._s_motor_last), ("Steuerung", self._s_motor_steuer)]
-            self.motoranlagen.append(kenn)
+            self.netzkette.append(kenn)
             q, k, w = mot.daten["mss"], mot.daten["schuetz"], mot.daten["kabel"]
             self._lokal(mot.bmk, kenn, "-M1", 1, 4)
             self._lokal(w, kenn, "-W1", 1, 4)
@@ -136,8 +136,20 @@ class Hausplan:
             for i, k in enumerate(kl):                              # SPS-Kasten über der Signalklemme
                 if k.signal:
                     self.pos[f"kanal:{k.signal}"] = Ort(kenn, 1, self._feldspalte(i, len(kl)))
-            for bt in [x for x in m.betriebsmittel if x.kategorie == "bauteil" and x.daten["eltern"] == g.bmk]:
+            for bt in [x for x in m.betriebsmittel
+                       if x.kategorie in ("bauteil", "kabel") and x.daten.get("eltern") == g.bmk]:
                 self._lokal(bt.bmk, kenn, bt.daten["lokal"], 1, 1)
+            if g.daten.get("leistung"):                              # Netzgerät: zweite Seite Leistungsteil
+                an.seiten.append(("Leistungsteil", self._s_leistung))
+                self.netzkette.append(kenn)
+                self.pos[f"netz_ein:{kenn}"] = Ort(kenn, 2, 0)
+                self.pos[f"netz_aus:{kenn}"] = Ort(kenn, 2, 9)
+                le = g.daten["leistung"]
+                self._lokal(le["mss"], kenn, "-Q1", 2, 3)
+                self._lokal(le["kabel"], kenn, "-W2", 2, 3)
+                self.pos[f"haupt:{le['mss']}"] = Ort(kenn, 2, 3)
+                for t in g.daten.get("quellsignale", {}):            # Hilfskontakt-Meldung auf Seite 2
+                    self.pos[f"kanal:{t}"] = Ort(kenn, 2, 6)
 
         # SPS-Karten je Signalart als Anlage
         cpu = self._neu(karten["CPU"], "SPS-Steuerung")
@@ -175,7 +187,8 @@ class Hausplan:
             an.seiten.append((titel, (lambda i: lambda b, a: zeichner(b, a, i))(i)))
 
     def _feldklemmen(self, geraet: str):
-        return [k for k in self.m.klemmen if k.ziel_aussen.startswith(geraet + ":")]
+        """Signalklemmen eines Feldgeräts (Leistungsklemmen L/N/PE liegen auf eigener Leiste)."""
+        return [k for k in self.m.klemmen if k.ziel_aussen.startswith(geraet + ":") and k.leiste == "-X1"]
 
     @staticmethod
     def _feldspalte(index: int, anzahl: int) -> int:
@@ -258,11 +271,11 @@ class Hausplan:
         q1, f1 = self.m.bm("-Q1"), self.m.bm("-F1")
         b.text(X0 + 8, 268, self.m.projekt.get("_netz", ""), 2.5)
         ac = self.stil["ader_ac"]
-        erster = self.pos.get(f"netz_ein:{self.motoranlagen[0]}") if self.motoranlagen else None
+        erster = self.pos.get(f"netz_ein:{self.netzkette[0]}") if self.netzkette else None
         for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238)):
             b.linie(X0 + 8, y, X1 - 30, y)
             b.text(X0 + 2, y + 0.8, lt, 2.5)
-            if erster and lt != "N":
+            if erster:
                 potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(erster, a.kennung)}")
         b.rechteck(self.x(2) - 7, 247, 14, 18, strich=([1.5, 1], 0))
         b.text(self.x(2), 270, "-Q1", 3, True, "m")
@@ -362,7 +375,10 @@ class Hausplan:
                 b.text(x - 11, 205.5, "A2", 1.7)
                 b.linie(x - 12, 208, x - 12, 202)
                 b.text(x - 12, 199, f"24M {self.ref(self.pos['24M'], a.kennung)}", 1.8, ausr="m")
-                b.text(x + 1, 203, f"24L+ {self.ref(fa, a.kennung)}", 1.8)
+                rueck = next((n for n, r in enumerate(kl, 1) if r.potential == "Kontakt-Rück"
+                              and r.ziel_innen.split(":")[0] == bauteil), None)
+                b.text(x + 1, 203, f"{leiste}:{rueck} (potentialfrei)" if rueck else f"24L+ {self.ref(fa, a.kennung)}",
+                       1.8)
                 b.linie(x, 201, x, 196)
                 sym_schliesser(b, x, 196, 12)
                 b.linie(x - 8, 211, x - 1.5, 190, 0.15, strich=([1, 1], 0))      # Wirkverbindung Spule-Kontakt
@@ -370,6 +386,12 @@ class Hausplan:
                 b.text(x + 2, 185, "14", 1.7)
                 b.linie(x, 184, x, y_k + 1.1)
                 farbe = ad["+24V"]
+            elif k.potential == "Kontakt-Rück":          # Kontaktwurzel 11 des Koppelrelais (potentialfrei)
+                bauteil = k.ziel_innen.split(":")[0]
+                lok = self.lokal.get(bauteil, ("", bauteil))[1]
+                b.text(x - 1, 266, f"{lok}:11", 1.9, ausr="r")
+                b.linie(x, 268, x, y_k + 1.1)
+                farbe = ad["DO"]
             elif k.potential == "Bezug":                 # Rückleiter 4–20 mA auf den Kanal (M)
                 modul, rest = k.ziel_innen.split(":", 1)
                 karte = self.lokal.get(modul, ("", modul))
@@ -390,7 +412,9 @@ class Hausplan:
         xr = self.x(self._feldspalte(len(kl) - 1, len(kl))) if kl else self.x(6)
         b.linie(self.x(1) - 8, 150, xr + 8, 150, strich=([2, 1], 0))
         b.text(self.x(0) + 10, 151, f"-W1 {self.stil['feldkabel_typ']} {self._feldkabel_adern(g.bmk)}x0,75", 2.2, ausr="r")
+        mss = (g.daten.get("leistung") or {}).get("mss")
         bauteile = [x for x in self.m.betriebsmittel if x.kategorie == "bauteil" and x.daten["eltern"] == g.bmk
+                    and x.bmk != mss                                                # auf Seite Leistungsteil
                     and not any(k.ziel_innen.startswith(x.bmk + ":") for k in kl)]   # Relais schon gezeichnet
         for j, bt in enumerate(bauteile):                       # weitere Zusatzbauteile im Schrank
             b.rechteck(self.x(0) - 8, 200 - j * 12, 16, 8)
@@ -403,7 +427,72 @@ class Hausplan:
         b.text(xm, y_dev - 10, self.lokal[g.bmk][1], 4, True, "m")
         b.text(xm, y_dev - 16, g.bezeichnung[:70], 2.1, ausr="m")
         zusatz = f"Baustein {g.daten['typical']}   " if g.daten.get("typical") else ""
-        b.text(xm, y_dev - 21, f"{zusatz}{g.artikel}   I = {g.daten['i_A'] * 1000:.0f} mA", 2, ausr="m")
+        strom = (f"I_N = {g.daten['leistung']['i_N_A']:g} A (230 V, siehe Seite 2)" if g.daten.get("leistung")
+                 else f"I = {g.daten['i_A'] * 1000:.0f} mA")
+        b.text(xm, y_dev - 21, f"{zusatz}{g.artikel}   {strom}", 2, ausr="m")
+
+    def _netz_nachbarn(self, kenn: str):
+        idx = self.netzkette.index(kenn)
+        quelle = self.pos["netz_aus"] if idx == 0 else self.pos[f"netz_aus:{self.netzkette[idx - 1]}"]
+        weiter = self.pos[f"netz_ein:{self.netzkette[idx + 1]}"] if idx + 1 < len(self.netzkette) else None
+        return quelle, weiter
+
+    def _s_leistung(self, b: Blatt, a: Anlage):
+        """Netzgerät 1~: L/N aus der Netzkette über Motorschutzschalter -Q1 auf Klemmen -X1, Leitung -W2."""
+        alt = next(k for k, (an, lok) in self.lokal.items()
+                   if an == a.kennung and self.m.bm(k).kategorie in ("sensor", "aktor"))
+        g, ac, ad = self.m.bm(alt), self.stil["ader_ac"], self.stil["ader"]
+        le = g.daten["leistung"]
+        q, w = self.m.bm(le["mss"]), next(c for c in self.m.kabel if c.bmk == le["kabel"])
+        quelle, weiter = self._netz_nachbarn(a.kennung)
+        x = self.x(3)
+        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238)):
+            if not weiter and lt in ("L2", "L3"):
+                continue                                          # 1~-Gerät am Kettenende: nur L1, N, PE
+            potential_pfeil(b, X0 + 8, y, f"{lt} {self.ref(quelle, a.kennung)}", False)
+            b.linie(X0 + 8, y, X1 - 30 if weiter else x + 14, y)
+            if weiter:
+                potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(weiter, a.kennung)}")
+        for d, (lt, y) in zip((-4, 4), (("L", 262), ("N", 244))):
+            b.kreis(x + d, y, 0.6, True)
+            b.linie(x + d, y, x + d, 222)
+            b.rechteck(x + d - 1.2, 216, 2.4, 6)
+            b.linie(x + d, 216, x + d, 131.1)
+            b.text(x + d + 1, 160, ac["L"] if lt == "L" else ac["N"], 1.8)
+            b.text(x + d + 1, 157, f"{w.querschnitt_mm2:g}".replace(".", ","), 1.8)
+        b.kreis(x + 12, 238, 0.6, True)
+        b.linie(x + 12, 238, x + 12, 131.1)
+        b.text(x + 13, 160, ac["PE"], 1.8)
+        b.rechteck(x - 9, 210, 18, 18, strich=([1.5, 1], 0))
+        b.text(x - 10, 222, "-Q1", 3, True, "r")
+        b.text(x - 10, 218, f"Ir = {q.daten['i_r_A']:g} A", 2, ausr="r")
+        b.text(x - 10, 214.5, f"13-14 {self.ref(Ort(a.kennung, 2, 6), a.kennung)}", 1.9, ausr="r")
+        for i, (d, pin) in enumerate(((-4, "L"), (4, "N"), (12, "PE")), 1):
+            sym_klemme(b, x + d, 130, "-X1", i)
+            b.linie(x + d, 128.9, x + d, 100)
+            b.text(x + d + 0.8, 101, le["pins"].get(pin, pin), 1.8)
+        b.text(x - 10, 129.2, "-X1", 2.4, True, "r")
+        b.linie(x - 9, 112, x + 15, 118, 0.25)
+        laenge = f" {w.laenge_m:g} m" if w.laenge_m else " (Länge lt. Feld)"
+        b.text(x + 16, 119, f"-W2 {w.adern}G{w.querschnitt_mm2:g}{laenge}".replace(".", ","), 2.2)
+        b.rechteck(x - 12, 75, 34, 25, 0.4)
+        b.text(x + 5, 90, self.lokal[g.bmk][1], 3.5, True, "m")
+        b.text(x + 5, 84, f"I_N = {le['i_N_A']:g} A", 2, ausr="m")
+        # Meldung Hilfskontakt 13/14 des Motorschutzschalters
+        xb = self.x(6)
+        fa = self.pos.get(g.daten.get("absicherung", ""))
+        b.text(xb - 1, 266, f"24L+ {self.ref(fa, a.kennung)}", 2, ausr="r")
+        b.linie(xb, 268, xb, 205)
+        sym_schliesser(b, xb, 205, 12)
+        b.text(xb - 4, 199, "-Q1", 3, True, "r")
+        b.text(xb - 4, 195.5, self.ref(self.pos[f"haupt:{le['mss']}"], a.kennung), 1.9, ausr="r")
+        b.text(xb + 2, 203, "13", 1.9)
+        b.text(xb + 2, 194, "14", 1.9)
+        b.linie(xb, 193, xb, 172)
+        b.text(xb + 1, 185, f"{ad['DI']} {ad['querschnitt']}", 1.9)
+        for t in g.daten.get("quellsignale", {}):
+            self._sps_kasten(b, xb, 140, t, a.kennung, "-Q1:14")
+        b.linie(xb, 172, xb, 140 + 32)
 
     def _sps_kasten(self, b: Blatt, x: float, y: float, geraet: str, von: str, klemme: str, breit: float = 40):
         """SPS-Kasten im Hausstil: Kanal, Karte, Verweis, Adresse, Klemme, Funktionstext, Artikel."""
@@ -432,12 +521,14 @@ class Hausplan:
         mot, q, k, w = self._motor(a)
         ac = self.stil["ader_ac"]
         x = self.x(4)
-        idx = self.motoranlagen.index(a.kennung)
-        quelle = self.pos["netz_aus"] if idx == 0 else self.pos[f"netz_aus:{self.motoranlagen[idx - 1]}"]
-        weiter = self.pos[f"netz_ein:{self.motoranlagen[idx + 1]}"] if idx + 1 < len(self.motoranlagen) else None
-        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("PE", 238)):
+        idx = self.netzkette.index(a.kennung)
+        quelle = self.pos["netz_aus"] if idx == 0 else self.pos[f"netz_aus:{self.netzkette[idx - 1]}"]
+        weiter = self.pos[f"netz_ein:{self.netzkette[idx + 1]}"] if idx + 1 < len(self.netzkette) else None
+        for lt, y in (("L1", 262), ("L2", 256), ("L3", 250), ("N", 244), ("PE", 238)):
+            if lt == "N" and not weiter:
+                continue                                        # N wird nur durchgereicht
             potential_pfeil(b, X0 + 8, y, f"{lt} {self.ref(quelle, a.kennung)}", False)
-            if weiter:                                          # Potentialkette zum nächsten Motor
+            if weiter:                                          # Potentialkette zum nächsten Verbraucher
                 b.linie(X0 + 8, y, X1 - 30, y)
                 potential_pfeil(b, X1 - 30, y, f"{lt} {self.ref(weiter, a.kennung)}")
         for d, (lt, y) in zip((-6, 0, 6), (("L1", 262), ("L2", 256), ("L3", 250))):
@@ -530,6 +621,9 @@ class Hausplan:
         return zeichne
 
     # ---- Listen ------------------------------------------------------------------
+    def _motoren(self) -> set[str]:
+        return {self.lokal[b.bmk][0] for b in self.m.betriebsmittel if b.kategorie == "motor"}
+
     def _feldgeraete(self) -> list[str]:
         return [b.bmk for b in self.m.betriebsmittel if b.kategorie in ("sensor", "aktor")]
 
@@ -544,16 +638,18 @@ class Hausplan:
             z.append((f"={kenn}-W1", f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75 mm²",
                       f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}"))
         for w in self.m.kabel:
-            kenn = self.lokal[w.bmk][0]
-            z.append((f"={kenn}-W1", f"{w.adern}G{w.querschnitt_mm2:g} mm² ({w.artikel})".replace(".", ","),
-                      f"={kenn}-X1", f"={kenn}-M1"))
+            kenn, lok = self.lokal[w.bmk]
+            ziel = self.lokal.get(w.nach, (kenn, w.nach))[1]
+            z.append((f"={kenn}{lok}", f"{w.adern}G{w.querschnitt_mm2:g} mm² ({w.artikel})".replace(".", ","),
+                      f"={kenn}-X1", f"={kenn}{ziel}"))
         return z
 
     def _s_kabel(self, b: Blatt, a: Anlage, idx: int):
         tabelle(b, ["Kabelnummer", "Kabeltyp", "Quelle", "Ziel"],
                 self._kabelzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE], [50, 90, 90, 90])
 
-    POTENTIAL = {"+24V": "24L+", "0V": "24M", "Signal": "Signal", "Kontakt": "24L+ geschaltet", "Bezug": "M (Analog)"}
+    POTENTIAL = {"+24V": "24L+", "0V": "24M", "Signal": "Signal", "Kontakt": "Kontakt 14", "Kontakt-Rück": "Kontakt 11",
+                 "Bezug": "M (Analog)"}
     SCHUETZ_ANSCHLUSS = {"U": "2", "V": "4", "W": "6"}
 
     def _klemmenzeilen(self):
@@ -568,9 +664,13 @@ class Hausplan:
             leiste = "-X1" if motor else self.stil["feldklemmleiste"]
             nr_je[(kenn, leiste)] = nr_je.get((kenn, leiste), 0) + 1
             if motor:
-                ziel = (f"-K1:{self.SCHUETZ_ANSCHLUSS[k.potential]}" if k.potential in self.SCHUETZ_ANSCHLUSS
-                        else f"PE ={self.EIN}")
-                seite = self.ref(Ort(kenn, 1, 4), "")
+                if k.potential in self.SCHUETZ_ANSCHLUSS:
+                    ziel = f"-K1:{self.SCHUETZ_ANSCHLUSS[k.potential]}"
+                elif k.potential in ("L", "N"):                     # Netzgerät über Motorschutzschalter
+                    ziel = f"-Q1:{k.ziel_innen.split(':')[-1]}"
+                else:
+                    ziel = f"PE ={self.EIN}"
+                seite = self.ref(Ort(kenn, 2 if k.potential in ("L", "N") or kenn not in self._motoren() else 1, 4), "")
             else:
                 eigene = [x.nr for x in self._feldklemmen(geraet)]
                 seite = self.ref(Ort(kenn, 1, self._feldspalte(eigene.index(k.nr), len(eigene))), "")
@@ -600,7 +700,8 @@ class Hausplan:
                 continue
             kenn, lok = self.lokal[bm.bmk]
             art = artikel.get(bm.artikel, {"hersteller": "", "bezeichnung": "Beistellung Kunde"})
-            menge = f"{bm.daten['laenge_m']:g} m" if bm.kategorie == "kabel" else "1 Stk"
+            menge = ((f"{bm.daten['laenge_m']:g} m" if bm.daten.get("laenge_m") else "Länge lt. Feld")
+                     if bm.kategorie == "kabel" else "1 Stk")
             zeilen.append((f"={kenn}", ort, lok, menge, art.get("hersteller", ""), bm.artikel, art["bezeichnung"][:55]))
         klemmen: dict[tuple[str, str], int] = {}
         for k in self._klemmenzeilen():

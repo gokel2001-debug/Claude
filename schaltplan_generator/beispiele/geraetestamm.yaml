@@ -163,6 +163,16 @@ artikel:
     i_mA: 150
     signal: DO
     anschluss: ["24V", "S/S", "IN+", "IN-", "COM", "NO", "GND"]
+  PUMPE-EC-230:
+    kategorie: aktor
+    hersteller: Beispiel GmbH
+    bezeichnung: Umwälzpumpe 1~230 V EC, Stelleingang 4–20 mA, Start/Stopp, Relais Betrieb/Störung
+    u_ein_V: 230
+    i_N_A: 1.19
+    cos_phi: 0.95
+    signal: DO
+    anschluss: ["L", "N", "PE", "IN+", "IN-", "S/S", "GND", "C1", "NO1", "C2", "NO2"]
+  KAB-3G1.5: {kategorie: kabel, hersteller: Beispiel GmbH, bezeichnung: "Anschlussleitung 3G1,5 mm²", adern: 3, querschnitt_mm2: 1.5}
   WID-2K2: {kategorie: bauteil, hersteller: Beispiel GmbH, bezeichnung: "Widerstand 2,2 kOhm 0,5 W für Drahtbruchüberwachung"}
   KR-24DC: {kategorie: bauteil, hersteller: Beispiel GmbH, bezeichnung: "Koppelrelais 24 V DC, 1 Wechsler", i_mA: 9}
 
@@ -196,3 +206,15 @@ typicals:
       - {art: DI, text: Betrieb, pin: "NO", speisung: COM}
     bauteile:
       - {bmk: "-K1", artikel: KR-24DC, text: Koppelrelais Freigabe, gruppe: DO-Last}
+  pumpe_ec:
+    beschreibung: Pumpe 1~230 V mit Motorschutzschalter, Start/Stopp über Koppelrelais (potentialfrei), Stellsignal, Betriebs-/Störmeldung
+    versorgung: {}
+    leistung: {phasen: 1, u_V: 230, schutz: motorschutz, kabel_adern: 3, pins: {L: "L", N: "N", PE: "PE"}}
+    signale:
+      - {art: DO, text: Start/Stopp, pin: S/S, ueber: "-K1", rueckkontakt: GND}
+      - {art: AO, text: Stellsignal 4-20mA, pin: IN+, rueckleiter: IN-}
+      - {art: DI, text: Betrieb, pin: NO1, speisung: C1}
+      - {art: DI, text: Störung, pin: NO2, speisung: C2}
+      - {art: DI, text: Störung Motorschutz, quelle: "-Q1"}
+    bauteile:
+      - {bmk: "-K1", artikel: KR-24DC, text: Koppelrelais Start/Stopp, gruppe: DO-Last}

@@ -36,6 +36,7 @@ REGEL_FELDER = [
 VORZEICHEN = {"anlage": "=", "ort": "+"}
 FELD_SPALTEN = ["BMK", "Artikel", "Funktion", "Gruppe"]
 BAUSTEIN_SPALTE = "Baustein (optional)"     # Typical aus der Bibliothek, z. B. zaehler_di
+LAENGE_SPALTE = "Leitungslänge m (optional)" # nur für netzversorgte Bausteine (Spannungsfall)
 MOTOR_SPALTEN = ["BMK", "Funktion", "P_kW", "I_N_A", "cos_phi", "Laenge_m"]
 FETT = Font(bold=True)
 KOPF = PatternFill("solid", fgColor="DDDDDD")
@@ -110,7 +111,9 @@ def lade_excel(pfad: str | Path) -> dict[str, Any]:
                                  if r.get(f"adresse_{s}") not in (None, "")}},
         "feldgeraete": [{"bmk": str(d["BMK"]), "artikel": str(d["Artikel"]), "funktion": str(d["Funktion"]),
                          "gruppe": str(d.get("Gruppe") or "Allgemein"),
-                         **({"typical": str(d[BAUSTEIN_SPALTE]).strip()} if d.get(BAUSTEIN_SPALTE) else {})}
+                         **({"typical": str(d[BAUSTEIN_SPALTE]).strip()} if d.get(BAUSTEIN_SPALTE) else {}),
+                         **({"laenge_m": _zahl(d[LAENGE_SPALTE], f"Feldgeraete Z.{d['_zeile']}")}
+                            if d.get(LAENGE_SPALTE) not in (None, "") else {})}
                         for d in _tabelle(wb["Feldgeraete"], FELD_SPALTEN)],
     }
     if "Motoren" in wb.sheetnames:
@@ -167,9 +170,10 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
         wa.append([k, stamm["artikel"][k]["kategorie"], stamm["artikel"][k]["bezeichnung"]])
 
     wf = wb.create_sheet("Feldgeraete", 2)
-    _kopf(wf, FELD_SPALTEN + [BAUSTEIN_SPALTE])
+    _kopf(wf, FELD_SPALTEN + [BAUSTEIN_SPALTE, LAENGE_SPALTE])
     for g in projekt["feldgeraete"]:
-        wf.append([g["bmk"], g["artikel"], g.get("funktion", ""), g.get("gruppe", ""), g.get("typical", "")])
+        wf.append([g["bmk"], g["artikel"], g.get("funktion", ""), g.get("gruppe", ""), g.get("typical", ""),
+                   g.get("laenge_m")])
     typicals = stamm.get("typicals", {})
     if typicals:
         wt = wb.create_sheet("Bausteine")
@@ -195,4 +199,5 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
         for spalte, breite in zip("ABCDEF", (22, 34, 48, 12, 10, 10)):
             blatt.column_dimensions[spalte].width = breite
     wf.column_dimensions["E"].width = 22
+    wf.column_dimensions["F"].width = 24
     wb.save(pfad)
