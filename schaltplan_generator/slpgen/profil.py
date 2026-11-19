@@ -95,6 +95,23 @@ def _bloecke(je_jahr: dict[int, Counter]) -> list[dict]:
     return bloecke
 
 
+# Vorgaben, die (noch) nicht aus Plänen gelernt werden können: Freigabe/eigener Wert über die Excel-Liste.
+# Schlüssel -> (Beschreibung, Vorgabewert). Wirkung im Hausstil siehe hausstil.lade_hausstil.
+VORGABEN: dict[str, tuple[str, str]] = {
+    "ader_+24V": ("Aderfarbe +24 V (24L+)", "DBU"),
+    "ader_0V": ("Aderfarbe 0 V (24M)", "DBU/WH"),
+    "ader_DI": ("Aderfarbe Digitalsignal Eingang", "DBU"),
+    "ader_DO": ("Aderfarbe Digitalsignal Ausgang", "DBU"),
+    "ader_AI": ("Aderfarbe Analogsignal Eingang", "WH"),
+    "ader_AO": ("Aderfarbe Analogsignal Ausgang", "WH"),
+    "ader_L": ("Aderfarbe Außenleiter AC", "BK"),
+    "ader_N": ("Aderfarbe Neutralleiter", "LBU"),
+    "ader_PE": ("Aderfarbe Schutzleiter", "GNYE"),
+    "kennbuchstabe_netzteil": ("Kennbuchstabe Netzteil (IEC 81346-2, Hausregel)", "T"),
+    "kennbuchstabe_sps_karte": ("Kennbuchstabe SPS-CPU/-Karte (IEC 81346-2, Hausregel)", "K"),
+}
+
+
 def _trend(bloecke: list[dict]) -> list[dict]:
     return [{"ab_jahr": b["von"], "von": a["wert"], "nach": b["wert"], "belege_vorher": a["belege"],
              "belege_nachher": b["belege"],
@@ -150,6 +167,11 @@ def lerne(pdfs: list[Path]) -> dict[str, Any]:
             "ohne_wert": ohne_wert,
             "belege": {w: sorted(d) for w, d in belege.items()},
         }
+
+    for key, (beschreibung, wert) in VORGABEN.items():
+        merkmale[key] = {"beschreibung": beschreibung, "wert": wert, "status": "vorgeschlagen",
+                         "sicherheit": "Vorgabe", "belegt_in": "Vorgabe – noch nicht aus Plänen gelernt",
+                         "anteil_gesamt": {}, "je_jahr": {}, "trend": [], "ohne_wert": [], "belege": {}}
 
     # Häufigkeits-Merkmale: über alle Pläne zählen
     leitungen, dokarten, adern = Counter(), Counter(), Counter()

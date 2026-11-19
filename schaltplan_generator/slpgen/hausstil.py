@@ -30,6 +30,7 @@ HAUSSTIL_STANDARD = {
     "vorschrift": "",
     "ader": {"+24V": "DBU", "0V": "DBU/WH", "DI": "DBU", "DO": "DBU", "AI": "WH", "AO": "WH", "querschnitt": "0,75"},
     "feldkabel_typ": "LIYCY",
+    "kennbuchstaben": {"netzteil": "T", "sps_karte": "K"},
     "feldkabel_adern": [2, 3, 4, 7, 12],
     "kartenanlagen": {"CPU": "SA0", "DI": "SA1", "DO": "SA2", "AI": "SA3", "AO": "SA4"},
     "infrastruktur": {"einspeisung": "EIN", "erzeugung": "NT24", "verteilung": "VT24"},
@@ -45,9 +46,21 @@ def lade_hausstil(profil_pfad: str | Path | None) -> dict:
     stil["quelle"] = {}
     if profil_pfad and Path(profil_pfad).exists():
         profil = yaml.safe_load(Path(profil_pfad).read_text(encoding="utf-8")) or {}
-        m = profil.get("merkmale", {}).get("feldklemmleiste", {})
-        if m.get("status") == "freigegeben" and str(m.get("wert", "")).startswith("-X"):
-            stil["feldklemmleiste"], stil["quelle"]["feldklemmleiste"] = m["wert"], "Hausprofil (freigegeben)"
+        merkmale = profil.get("merkmale", {})
+        frei = {k: str(v["wert"]).strip() for k, v in merkmale.items()
+                if isinstance(v, dict) and v.get("status") == "freigegeben" and str(v.get("wert", "")).strip()}
+        if frei.get("feldklemmleiste", "").startswith("-X"):
+            stil["feldklemmleiste"], stil["quelle"]["feldklemmleiste"] = frei["feldklemmleiste"], "Hausprofil (freigegeben)"
+        for key, wert in frei.items():
+            if key.startswith("ader_"):
+                pot = key[len("ader_"):]
+                ziel = stil["ader_ac"] if pot in ("L", "N", "PE") else stil["ader"]
+                if pot in ziel:
+                    ziel[pot] = wert
+                    stil["quelle"][key] = "Hausprofil (freigegeben)"
+            elif key.startswith("kennbuchstabe_") and wert.isalpha() and wert.isupper() and len(wert) <= 3:
+                stil["kennbuchstaben"][key[len("kennbuchstabe_"):]] = wert
+                stil["quelle"][key] = "Hausprofil (freigegeben)"
     return stil
 
 
@@ -102,7 +115,8 @@ class Hausplan:
         self._lokal("-F1", self.EIN, "-F1", 1, 5)
         self.pos["netz_aus"] = Ort(self.EIN, 1, 9)
         self._neu(self.NT, "24 V DC Erzeugung").seiten.append(("Erzeugung 24 V DC", self._s_erzeugung))
-        self._lokal("-G1", self.NT, "-T1", 1, 4)
+        kb = self.stil["kennbuchstaben"]
+        self._lokal("-G1", self.NT, f"-{kb['netzteil']}1", 1, 4)
         self._neu(self.VT, "24 V DC Verteilung").seiten.append(("Potentialverteilung 24 V DC", self._s_verteilung))
         self.pos["24M"] = Ort(self.VT, 1, 0)
         module = [b for b in m.betriebsmittel if b.kategorie == "selektivmodul"]
@@ -173,7 +187,7 @@ class Hausplan:
         # SPS-Karten je Signalart als Anlage
         cpu = self._neu(karten["CPU"], "SPS-Steuerung")
         cpu.seiten.append(("SPS-CPU", self._s_cpu))
-        self._lokal("-A1", karten["CPU"], "-K1", 1, 1)
+        self._lokal("-A1", karten["CPU"], f"-{kb['sps_karte']}1", 1, 1)
         for sig, kenn, titel in (("DI", karten["DI"], "SPS Digitaleingänge"), ("DO", karten["DO"], "SPS Digitalausgänge"),
                                  ("AI", karten["AI"], "SPS Analogeingänge"), ("AO", karten["AO"], "SPS Analogausgänge")):
             mods = sorted({k.modul_bmk for k in m.sps_kanaele if k.art == sig})
@@ -182,7 +196,7 @@ class Hausplan:
             an = self._neu(kenn, titel)
             for i, mod in enumerate(mods):
                 an.seiten.append((f"{titel} Karte {i + 1}", self._s_karte(mod)))
-                self._lokal(mod, kenn, f"-K{i + 1}", i + 1, 1)
+                self._lokal(mod, kenn, f"-{kb['sps_karte']}{i + 1}", i + 1, 1)
                 for k in [k for k in m.sps_kanaele if k.modul_bmk == mod]:
                     self.pos[f"karte:{k.geraet_bmk}"] = Ort(kenn, i + 1, 2)      # Kanalliste in Spalte 2
 
@@ -646,7 +660,7 @@ class Hausplan:
         cpu = self.m.bm("-A1")
         x = self.x(1)
         b.rechteck(x - 15, 120, 60, 140, 0.4)
-        b.text(x, 252, "-K1", 3.5, True)
+        b.text(x, 252, self.lokal["-A1"][1], 3.5, True)
         b.text(x, 246, cpu.bezeichnung, 2.4)
         b.text(x, 241, cpu.artikel, 2)
         fa = self.pos.get(next((ab.bmk for ab in self.m.absicherungen if "-A1" in ab.verbraucher), ""))
@@ -783,7 +797,7 @@ class Hausplan:
         if self.m.kabel:
             texte.append(f"Motoren Σ I_N = {bil['i_motoren_A']} A; 400 V gesamt ≤ {bil['i_400V_max_A']} A")
         for q, w in self.stil["quelle"].items():
-            texte.append(f"Hausstil: {q} = {self.stil[q]} aus {w}")
+            texte.append(f"Hausstil: {q} aus {w}")
         for t in texte + ["Hinweise:"] + [f"• {w}" for w in self.m.warnungen or ["keine"]]:
             b.text(X0 + 6, y, t, 2.6)
             y -= 6

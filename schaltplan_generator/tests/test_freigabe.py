@@ -37,7 +37,8 @@ def test_liste_enthaelt_nur_einzelwerte_beschreibung_zuerst(gelernt):
     _, liste = gelernt
     ws = load_workbook(liste)["Freigabe"]
     assert ws["A1"].value == "Beschreibung"
-    assert list(_zeilen(liste)) == ["feldklemmleiste", "sps_adressschreibweise", "haeufigste_ader_0_75"]
+    from slpgen.profil import VORGABEN
+    assert list(_zeilen(liste)) == ["feldklemmleiste", "sps_adressschreibweise", "haeufigste_ader_0_75", *VORGABEN]
 
 
 def test_ja_nein_eigener_wert(gelernt):
@@ -45,7 +46,7 @@ def test_ja_nein_eigener_wert(gelernt):
     _setze(liste, {"feldklemmleiste": ("ja", None), "sps_adressschreibweise": ("NEIN", None),
                    "haeufigste_ader_0_75": ("JA", 1.5)})          # als Zahl eingegeben
     e = uebernehme_freigaben(pfad, liste)
-    assert len(e["freigegeben"]) == 2 and len(e["abgelehnt"]) == 1 and e["offen"] == []
+    assert len(e["freigegeben"]) == 2 and len(e["abgelehnt"]) == 1
     m = _merkmale(pfad)
     assert m["feldklemmleiste"]["status"] == "freigegeben"
     assert (m["haeufigste_ader_0_75"]["wert"], m["haeufigste_ader_0_75"]["quelle"]) == ("1,5", "manuell")
@@ -127,3 +128,24 @@ def test_fehlerfaelle_klartext(gelernt, tmp_path):
     wb.save(liste)
     with pytest.raises(RegelFehler, match="Blatt"):
         uebernehme_freigaben(pfad, liste)
+
+
+def test_vorgaben_freigeben_wirken_im_hausstil(gelernt, tmp_path):
+    import copy
+    from pathlib import Path
+    from pypdf import PdfReader
+    from slpgen import regeln
+    from slpgen.hausstil import erzeuge_hausstil_pdf, lade_hausstil
+    B = Path(__file__).resolve().parent.parent / "beispiele"
+    stamm = yaml.safe_load((B / "geraetestamm.yaml").read_text(encoding="utf-8"))
+    projekt = yaml.safe_load((B / "projekt_beispiel.yaml").read_text(encoding="utf-8"))
+    pfad, liste = gelernt
+    _setze(liste, {"ader_0V": ("JA", "BU/WH"), "kennbuchstabe_netzteil": ("JA", "G"), "ader_AI": ("NEIN", None)})
+    uebernehme_freigaben(pfad, liste)
+    stil = lade_hausstil(pfad)
+    assert stil["ader"]["0V"] == "BU/WH" and stil["kennbuchstaben"]["netzteil"] == "G" and stil["ader"]["AI"] == "WH"
+    m = regeln.plane(copy.deepcopy(projekt), stamm)
+    seiten = erzeuge_hausstil_pdf(m, stamm, str(tmp_path / "h.pdf"), stil)
+    texte = [x.extract_text() for x in PdfReader(str(tmp_path / "h.pdf")).pages]
+    nt = texte[[a for a, _, _ in seiten].index("NT24")]
+    assert "-G1" in nt and "BU/WH" in nt
