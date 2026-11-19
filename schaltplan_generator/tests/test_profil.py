@@ -1,8 +1,10 @@
+from collections import Counter
+
 import pytest
 import yaml
 
 from slpgen.korpus import WECHSELJAHR, erzeuge_korpus
-from slpgen.profil import lerne_ordner
+from slpgen.profil import ProfilFehler, _bloecke, _feldklemmleiste, _trend, lerne_ordner
 
 
 @pytest.fixture(scope="module")
@@ -26,7 +28,7 @@ def test_weitere_merkmale(korpus, tmp_path):
     ordner, _ = korpus
     m = lerne_ordner(ordner, tmp_path / "p.yaml")["merkmale"]
     assert m["sps_adressschreibweise"]["wert"] == "deutsch (E/A/EW/AW)"
-    assert m["signalader_0_75"]["wert"] == "DBU 0,75"
+    assert m["haeufigste_ader_0_75"]["wert"] == "DBU 0,75"
     assert m["leitungstypen"]["haeufigkeit"]["LIYCY"] == 10
 
 
@@ -53,3 +55,60 @@ def test_freigegebene_werte_bleiben_erhalten(korpus, tmp_path):
 def test_leerer_ordner(tmp_path):
     with pytest.raises(FileNotFoundError):
         lerne_ordner(tmp_path, tmp_path / "p.yaml")
+
+
+def test_ausreisser_ist_kein_sicherer_trend():
+    # 2010-2023 je 3x A, 2024 1x B, 2025 2x A + 1x B  (Szenario aus der Prüfung)
+    je_jahr = {j: Counter({"A": 3}) for j in range(2010, 2024)}
+    je_jahr[2024] = Counter({"B": 1})
+    je_jahr[2025] = Counter({"A": 2, "B": 1})
+    bloecke = _bloecke(je_jahr)
+    assert [b["wert"] for b in bloecke] == ["A", "B", "A"]
+    assert all(t["sicherheit"] == "unsicher" for t in _trend(bloecke))   # B nur 1 Beleg
+    assert bloecke[-1]["wert"] == "A"
+
+
+def test_gleichstand_im_jahr_ist_unentschieden():
+    bloecke = _bloecke({2024: Counter({"A": 3}), 2025: Counter({"A": 2, "B": 2}), 2026: Counter({"A": 2})})
+    assert [b["wert"] for b in bloecke] == ["A"] and _trend(bloecke) == []
+
+
+def test_feldklemmleiste_bevorzugt_klemmenbezuege():
+    st = {"anlagen": {"F01": {"leer": False, "bmk": ["X1", "X20", "P1"], "klemmenbezuege": {"X20": 3}},
+                      "F02": {"leer": False, "bmk": ["X1", "X20", "B1"], "klemmenbezuege": {"X20": 2}},
+                      "AC1": {"leer": False, "bmk": ["X1"], "klemmenbezuege": {"X1": 9}}}}
+    assert _feldklemmleiste(st) == "-X20"
+    for a in st["anlagen"].values():
+        a["klemmenbezuege"] = {}
+    assert _feldklemmleiste(st) is None          # X1 und X20 gleich oft -> nicht raten
+
+
+def test_unlesbare_pdfs_veraendern_profil_nicht(korpus, tmp_path):
+    ordner, _ = korpus
+    pfad = tmp_path / "hausprofil" / "profil.yaml"
+    lerne_ordner(ordner, pfad)
+    vorher = pfad.read_text(encoding="utf-8")
+    kaputt = tmp_path / "kaputt"
+    kaputt.mkdir()
+    (kaputt / "a.pdf").write_bytes(b"kein pdf")
+    with pytest.raises(ProfilFehler):
+        lerne_ordner(kaputt, pfad)
+    assert pfad.read_text(encoding="utf-8") == vorher
+
+
+def test_beschaedigtes_profil_klare_meldung(korpus, tmp_path):
+    ordner, _ = korpus
+    pfad = tmp_path / "profil.yaml"
+    pfad.write_text("merkmale: [unvollständig\n", encoding="utf-8")
+    with pytest.raises(ProfilFehler, match="beschädigt"):
+        lerne_ordner(ordner, pfad)
+
+
+def test_sicherung_und_uebersicht(korpus, tmp_path):
+    ordner, _ = korpus
+    pfad = tmp_path / "profil.yaml"
+    lerne_ordner(ordner, pfad)
+    lerne_ordner(ordner, pfad)
+    assert (tmp_path / "profil.yaml.bak").exists()
+    text = (tmp_path / "profil_uebersicht.txt").read_text(encoding="utf-8")
+    assert "Änderung ab 2025: -X20 -> -X10" in text and "Nur ansehen" in text

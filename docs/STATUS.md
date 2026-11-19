@@ -3,17 +3,17 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 19.11.2026, Dauerlauf (manuell gestartet) |
-| Aktuelles Paket | P2 – Hausprofil lernen (umgesetzt, Prüfung läuft) |
-| Nächster Schritt | P2 prüfen und nacharbeiten, danach P3 (Plan im Hausstil: Anlage je Funktion) |
-| **Bitte bestätigen** | **E8** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt) |
-| Tests | 28/28 grün |
+| Aktuelles Paket | P3 – Freigabe per Excel + Plan im Hausstil (Anlage je Funktion) |
+| Nächster Schritt | P3a: Profil-Freigabe als Excel-Liste; P3b: Planmodell auf Anlagen umbauen |
+| **Bitte bestätigen** | **E8, E9, E10** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt) |
+| Tests | 34/34 grün |
 
 ## Paketübersicht
 | Paket | Status |
 |---|---|
 | P1 Steuerdateien | erledigt (ROADMAP, STATUS, ENTSCHEIDUNGEN) |
 | P1b Synthetischer Testkorpus | erledigt: `slpgen/korpus.py` – interner Testbefehl `slpgen korpus`, nicht im Menü, für Sie keine Aktion nötig |
-| P2 Hausprofil lernen | umgesetzt: `slpgen lernen` / Menüpunkt 6 – findet im Testkorpus den eingebauten Wechsel X20→X10 ab 2025 |
+| P2 Hausprofil lernen | erledigt: Menüpunkt 6 lernt aus einem Ordner mit PDFs Ihre Zeichenregeln inkl. Änderungen über die Jahre. **Für Sie:** optional mit echten PDFs ausprobieren, nichts freigeben nötig |
 | P3 Anlagen-Struktur / Layout aus Profil | offen |
 | P4 Typical-Bibliothek | offen |
 | P5 SPS-Kasten, Übersichten, Aderkennzeichnung | offen |
@@ -28,3 +28,4 @@
 | 19.11.2026 | manuell | Konzept Langläufer freigegeben, 3 Autostarts angelegt, Steuerdateien angelegt |
 | 19.11.2026 | manuell | E6 und E7 vom Nutzer bestätigt; nächster Schritt P1b im Autostart Fr 22:07 |
 | 19.11.2026 | Autostart-**Testlauf** (vorgezogen, manuell ausgelöst) | P1b umgesetzt; 4 Prüfer-Agenten: 1 kritischer Befund (SPS-Adressen überlappten) + 15 weitere → behoben; 23/23 Tests grün. Planmäßige Autostarts Fr 22:07 / Sa 03:12 / Sa 08:17 bleiben aktiv |
+| 19.11.2026 | Dauerlauf (manuell) | P2 Hausprofil lernen umgesetzt; 4 Prüfer: 21 Befunde (4 hoch: Trend-Ausreißer, Klemmleisten-Erkennung, Signalader ohne Potential, Freigabe für Einsteiger) → behoben bzw. als E9/E10 entschieden; 34/34 Tests grün |

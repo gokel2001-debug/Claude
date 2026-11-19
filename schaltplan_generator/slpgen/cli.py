@@ -78,18 +78,14 @@ def cmd_korpus(a):
 
 
 def cmd_lernen(a):
-    from .profil import lerne_ordner
-    profil = lerne_ordner(a.ordner, a.profil)
-    meta = profil["meta"]
-    print(f"Hausprofil aus {meta['plaene']} Plänen ({meta['jahre'][0] if meta['jahre'] else '?'}–"
-          f"{meta['jahre'][-1] if meta['jahre'] else '?'}) -> {a.profil}")
-    for key, m in profil["merkmale"].items():
-        if "wert" in m:
-            trend = "; ".join(f"ab {t['ab_jahr']}: {t['von']} -> {t['nach']} ({t['sicherheit']})" for t in m["trend"])
-            print(f"  {m['beschreibung']}: {m['wert']}  [{m['status']}, Sicherheit {m['sicherheit']}]"
-                  + (f"  Trend: {trend}" if trend else ""))
-    for f in meta["fehler"]:
-        print(f"  nicht lesbar: {f['datei']} ({f['fehler']})")
+    from .profil import lerne_ordner, uebersicht
+    ziel = Path(a.profil)
+    if "hausprofil" not in ziel.resolve().parts:
+        print("WARNUNG: Das Profil enthält vertrauliche Hausinhalte und Dateinamen. Es liegt nicht in einem "
+              "Ordner 'hausprofil' und ist damit evtl. NICHT vor dem Einchecken in Git geschützt.")
+    profil = lerne_ordner(a.ordner, ziel)
+    print(uebersicht(profil), end="")
+    print(f"Gespeichert: {ziel} und {ziel.with_name('profil_uebersicht.txt')}")
 
 
 def main(argv=None):
@@ -136,9 +132,9 @@ def main(argv=None):
     try:
         a.f(a)
     except regeln.RegelFehler as e:
-        sys.exit(f"Regelfehler: {e}")
+        sys.exit(f"Fehler: {e}")
     except PermissionError as e:
         sys.exit(f"Datei gesperrt: {e.filename}\n-> Ist die Datei noch in einem PDF-Programm oder Excel geöffnet? "
                  f"Bitte schließen und erneut starten.")
     except FileNotFoundError as e:
-        sys.exit(f"Datei nicht gefunden: {e.filename}")
+        sys.exit(f"Nicht gefunden: {e.filename or e}" + (f" ({e.strerror})" if e.strerror else ""))

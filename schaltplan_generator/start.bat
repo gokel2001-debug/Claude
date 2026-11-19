@@ -106,11 +106,14 @@ set "ORD="
 set /p "ORD=> "
 if not defined ORD goto :menue
 set "ORD=%ORD:"=%"
+rem abschliessenden Backslash entfernen (z. B. D:\ ), sonst wird das Anfuehrungszeichen maskiert
+if "%ORD:~-1%"=="\" set "ORD=%ORD%."
 %SLP% lernen "%ORD%" --profil "hausprofil\profil.yaml"
 if errorlevel 1 goto :fehler_lauf
 echo.
-echo Profil gespeichert: hausprofil\profil.yaml (bleibt nur auf diesem PC)
-start "" notepad "hausprofil\profil.yaml"
+echo Profil gespeichert in hausprofil\ (bleibt nur auf diesem PC).
+echo Es oeffnet sich eine Zusammenfassung zum Ansehen - Aendern ist nicht noetig.
+start "" notepad "hausprofil\profil_uebersicht.txt"
 pause
 goto :menue
 

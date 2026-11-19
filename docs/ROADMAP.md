@@ -39,11 +39,11 @@ ein Arbeitspaket je Sitzung.
 |---|---|---|
 | P1 | Steuerungsdateien `docs/STATUS.md`, `docs/ENTSCHEIDUNGEN.md`, `docs/ROADMAP.md`; synthetischer Testkorpus „Hausstil“ (generierte PDFs ohne Kundendaten) | Grundlage für alle weiteren Tests |
 | P2 | Hausprofil lernen (`slpgen lernen`): Werte + Häufigkeit + Jahrestrend + Belegstellen, Status vorgeschlagen/freigegeben; lokal in `hausprofil/` | „Lernen“ wird messbar |
-| P3 | Planmodell auf Anlagen umbauen (Anlage je Funktion, Seitenzählung je Anlage, Querverweise `=A/S.Sp`), Layout aus Profil (Spalten 0–9, Schriftfeld-Felder) | Hausstil-Grundgerüst |
+| P3 | Freigabe des Hausprofils per Excel (Spalte JA/NEIN); Planmodell auf Anlagen umbauen (Anlage je Funktion, Seitenzählung je Anlage, Querverweise `=A/S.Sp`), Layout aus Profil (Spalten 0–9, Schriftfeld-Felder) | Hausstil-Grundgerüst |
 | P4 | Typical-Bibliothek: Einspeisung 230/400 V, 24 V Erzeugung + Selektivmodul, Zähler DI (Impuls + Drahtbruch), Zähler/Messstelle AI, Pumpe (MSS, AO, DO über Koppelrelais, DI) | Bausteine wie im Bestand |
-| P5 | SPS-Kasten Hausstil, SPS-Kartenübersichten DI/DO/AI/AO, Adressen E/A/EW/AW; Aderkennzeichnung an jeder Verbindung | Hausstil-Details |
+| P5 | SPS-Kasten Hausstil, SPS-Kartenübersichten DI/DO/AI/AO, Adressen E/A/EW/AW; Aderkennzeichnung an jeder Verbindung; **Aderfarbe/Querschnitt je Potential lernen** (+24 V, 0 V, Signal, L/N, PE) | Hausstil-Details |
 | P6 | Listen im Hausformat (Artikel-/Summenstückliste, Klemmenplan je Leiste, Kabelübersicht) + Konsistenzprüfungen (Kabelrichtung, BMK mit mehreren Artikeln) | Fertigungsunterlagen |
-| P7 | Geometrie-Auslese (Linien/Positionen) zur Typical-Erkennung; Vergleichsmaß Original ↔ Nachbau | bessere Lernbasis |
+| P7 | Geometrie-Auslese (Linien/Positionen) zur Typical-Erkennung; beschriftete Schriftfeldfelder lesen (Erstell- vs. Revisionsdatum); Vergleichsmaß Original ↔ Nachbau | bessere Lernbasis |
 | P8 | Lokale KI (Ollama/GPU): Datenblatt → Geräteeintrag, Freitext → Excel; `start.bat`-Menü „KI-Prüfung“ | KI-Funktionen bereit für PC-Test |
 | P9 | Abnahmepaket: Anleitung für den PC-Test (Hausprofil lernen, Referenzplan nachbauen (lokal), KI testen), Checkliste | Termin am PC |
 

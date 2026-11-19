@@ -23,6 +23,8 @@ MUSTER = {
     # Siemens-Mnemonik deutsch (E/A/EW/AW) und IEC (%I/%Q/%IW/%QW)
     "sps_adresse": r"\b(?:[EA]\d{1,4}\.[0-7]|[EA]W\d{1,5})\b|%(?:[IQ]\d{1,4}\.[0-7]|[IQ]W\d{1,5})",
     "ader": r"\b(GNYE|BK|BN|BU|GY|OG|RD|WH|YE|GN|VT|PK|DBU/WH|DBU|LBU)\s*\n?\s*(0,75|0,5|1,5|2,5|(?:4|6|10|16)(?=\s*mm))",
+    # Klemmenbezug "-X20:3" (z. B. im SPS-Kasten) -> Leiste, auf die Feldsignale geführt sind
+    "klemmenbezug": r"(?<![\w/.-])-(X[A-Z]?\d+):\d+",
     "leitungstyp": r"\b(LIYCY|LiYCY|NYY-J|NYM-J|ÖLFLEX[^\n]{0,20}|J-Y\(ST\)Y|JE-Y\(ST\)Y|Cat ?\d|Patchkabel)",
 }
 SEITENARTEN_PLAN = {"EFS"}          # Dokumentarten mit Stromlaufplan-Inhalt
@@ -68,6 +70,7 @@ def lese_struktur(pdf: Path, muster: dict | None = None, schwelle: float = 0.75)
             "sps_adressen": sorted(set(sps)),
             "adern": dict(Counter(f"{f} {q}" for f, q in mu["ader"].findall(t))),
             "leitungstypen": sorted(set(mu["leitungstyp"].findall(t))),
+            "klemmenbezuege": dict(Counter(mu["klemmenbezug"].findall(t))),
         }
         # ohne Betriebsmittel und SPS-Adressen: nur Schriftfeld -> leere/Reserve-Anlage
         ergebnis_anlagen[name]["leer"] = not (ergebnis_anlagen[name]["bmk"] or sps)

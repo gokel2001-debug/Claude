@@ -54,6 +54,8 @@ def analysiere_pdf(pfad: Path) -> dict:
         "erzeuger": str(meta.get("/Creator", "") or meta.get("/Producer", "")),
         # Plan-Jahr: das häufigste Jahr im Text (Schriftfeld wiederholt sich je Seite) [Annahme]
         "jahr": jahre.most_common(1)[0][0] if jahre else None,
+        # Gleichstand der häufigsten Jahre (z. B. Erstell- vs. Revisionsdatum) -> Jahr unsicher
+        "jahr_eindeutig": len(jahre) < 2 or jahre.most_common(2)[0][1] > jahre.most_common(2)[1][1],
         "textanteil": len(text.strip()) > 50 * max(1, len(r.pages)),
         "kennbuchstaben": dict(kenn),
         "anlage_kennz": len(RE_ANLAGE.findall(text)),
