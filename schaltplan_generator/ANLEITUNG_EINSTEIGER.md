@@ -45,7 +45,8 @@ Danach erscheint ein Menü:
 | **3** | Projekt aus Excel erzeugen | Excel-Datei ins Fenster ziehen, Enter → Ordner `ausgabe` öffnet sich |
 | **4** | Bestands-PDF auswerten | PDF ins Fenster ziehen → Struktur und gleichartige Anlagen (Typicals) |
 | **5** | Selbsttest | „SELBSTTEST OK“ = Programm funktionsfähig |
-| **6** | Hausprofil lernen | Ordner mit Ihren Bestands-PDFs ins Fenster ziehen → `hausprofil\profil.yaml` mit gelernten Zeichenregeln (z. B. welche Klemmleiste, welche Aderfarben, Änderungen über die Jahre). Werte mit wenigen Belegen sind als „unsicher“ markiert. Es öffnet sich eine kurze Zusammenfassung **nur zum Ansehen** – ändern müssen Sie nichts; die Freigabe einzelner Werte kommt später per Excel. Bleibt nur auf Ihrem PC. |
+| **6** | Hausprofil lernen | Ordner mit Ihren Bestands-PDFs ins Fenster ziehen → `hausprofil\profil.yaml` mit gelernten Zeichenregeln (z. B. welche Klemmleiste, welche Aderfarben, Änderungen über die Jahre). Werte mit wenigen Belegen sind als „unsicher“ markiert. Es öffnen sich eine kurze Zusammenfassung und die Excel-Liste `profil_freigabe.xlsx`. Bleibt nur auf Ihrem PC. |
+| **7** | Hausprofil freigeben | In der Excel-Liste je Zeile **JA** (Wert stimmt) oder **NEIN** (stimmt nicht) wählen, optional einen eigenen Wert eintragen, speichern, dann Punkt 7. Nur freigegebene Werte verwendet das Programm später zum Zeichnen. Ihre Freigaben bleiben beim erneuten Lernen erhalten. |
 
 ## 4 Die Excel-Vorlage ausfüllen
 

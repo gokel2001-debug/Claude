@@ -88,6 +88,14 @@ def cmd_lernen(a):
     print(f"Gespeichert: {ziel} und {ziel.with_name('profil_uebersicht.txt')}")
 
 
+def cmd_freigabe(a):
+    from .freigabe import uebernehme_freigaben
+    e = uebernehme_freigaben(a.profil, a.liste)
+    print(f"Freigegeben: {', '.join(e['freigegeben']) or '-'}")
+    print(f"Abgelehnt:   {', '.join(e['abgelehnt']) or '-'}")
+    print(f"Noch offen:  {', '.join(e['offen']) or '-'}")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="slpgen", description="Stromlaufplan-Generator (Prototyp)")
     sub = p.add_subparsers(dest="befehl", required=True)
@@ -128,6 +136,10 @@ def main(argv=None):
     le.add_argument("ordner")
     le.add_argument("--profil", default="hausprofil/profil.yaml")
     le.set_defaults(f=cmd_lernen)
+    fr = sub.add_parser("freigabe", help="Freigaben aus profil_freigabe.xlsx ins Hausprofil übernehmen")
+    fr.add_argument("--profil", default="hausprofil/profil.yaml")
+    fr.add_argument("--liste", default="hausprofil/profil_freigabe.xlsx")
+    fr.set_defaults(f=cmd_freigabe)
     a = p.parse_args(argv)
     try:
         a.f(a)

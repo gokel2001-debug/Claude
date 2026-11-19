@@ -41,6 +41,7 @@ echo   3  Projekt aus Excel erzeugen
 echo   4  Bestands-PDF auswerten (Struktur, Typicals)
 echo   5  Selbsttest
 echo   6  Hausprofil lernen (Ordner mit Bestands-PDFs)
+echo   7  Hausprofil freigeben (Excel-Liste uebernehmen)
 echo   0  Beenden
 echo.
 set "W="
@@ -51,6 +52,7 @@ if "%W%"=="3" goto :excel
 if "%W%"=="4" goto :struktur
 if "%W%"=="5" goto :selbsttest
 if "%W%"=="6" goto :lernen
+if "%W%"=="7" goto :freigabe
 if "%W%"=="0" goto :ende
 goto :menue
 
@@ -112,8 +114,16 @@ if "%ORD:~-1%"=="\" set "ORD=%ORD%."
 if errorlevel 1 goto :fehler_lauf
 echo.
 echo Profil gespeichert in hausprofil\ (bleibt nur auf diesem PC).
-echo Es oeffnet sich eine Zusammenfassung zum Ansehen - Aendern ist nicht noetig.
+echo Es oeffnen sich die Zusammenfassung und die Freigabeliste (Excel).
+echo In Excel je Zeile JA oder NEIN waehlen, speichern, dann hier Punkt 7.
 start "" notepad "hausprofil\profil_uebersicht.txt"
+start "" "hausprofil\profil_freigabe.xlsx"
+pause
+goto :menue
+
+:freigabe
+%SLP% freigabe --profil "hausprofil\profil.yaml" --liste "hausprofil\profil_freigabe.xlsx"
+if errorlevel 1 goto :fehler_lauf
 pause
 goto :menue
 

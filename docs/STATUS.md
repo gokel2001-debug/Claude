@@ -4,9 +4,9 @@
 |---|---|
 | Stand | 19.11.2026, Dauerlauf (manuell gestartet) |
 | Aktuelles Paket | P3 – Freigabe per Excel + Plan im Hausstil (Anlage je Funktion) |
-| Nächster Schritt | P3a: Profil-Freigabe als Excel-Liste; P3b: Planmodell auf Anlagen umbauen |
+| Nächster Schritt | P3b: Planmodell auf Anlagen umbauen (eine Anlage je Funktion, Spalten 0–9, Querverweise =Anlage/Seite.Spalte) |
 | **Bitte bestätigen** | **E8, E9, E10** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt) |
-| Tests | 34/34 grün |
+| Tests | 39/39 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -14,7 +14,8 @@
 | P1 Steuerdateien | erledigt (ROADMAP, STATUS, ENTSCHEIDUNGEN) |
 | P1b Synthetischer Testkorpus | erledigt: `slpgen/korpus.py` – interner Testbefehl `slpgen korpus`, nicht im Menü, für Sie keine Aktion nötig |
 | P2 Hausprofil lernen | erledigt: Menüpunkt 6 lernt aus einem Ordner mit PDFs Ihre Zeichenregeln inkl. Änderungen über die Jahre. **Für Sie:** optional mit echten PDFs ausprobieren, nichts freigeben nötig |
-| P3 Anlagen-Struktur / Layout aus Profil | offen |
+| P3a Freigabe per Excel | erledigt: Menüpunkt 7 übernimmt JA/NEIN aus `profil_freigabe.xlsx` |
+| P3b Anlagen-Struktur / Layout aus Profil | offen |
 | P4 Typical-Bibliothek | offen |
 | P5 SPS-Kasten, Übersichten, Aderkennzeichnung | offen |
 | P6 Listen im Hausformat + Konsistenzprüfungen | offen |

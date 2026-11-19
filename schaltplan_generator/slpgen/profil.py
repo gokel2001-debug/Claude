@@ -181,9 +181,14 @@ def zusammenfuehren(alt: dict | None, neu: dict) -> dict:
     if not alt:
         return neu
     for key, m_alt in alt.get("merkmale", {}).items():
-        if not isinstance(m_alt, dict) or m_alt.get("status") != "freigegeben":
+        if not isinstance(m_alt, dict):
             continue
         m_neu = neu["merkmale"].get(key)
+        if m_alt.get("status") == "abgelehnt" and m_neu and _vergleichswert(m_neu) == _vergleichswert(m_alt):
+            m_neu["status"] = "abgelehnt"          # gleicher Vorschlag wie zuvor abgelehnt -> nicht erneut vorlegen
+            continue
+        if m_alt.get("status") != "freigegeben":
+            continue
         behalten = dict(m_alt)
         behalten.pop("vorschlag_neu", None)
         if m_neu and _vergleichswert(m_neu) != _vergleichswert(m_alt):
@@ -197,7 +202,7 @@ def uebersicht(profil: dict) -> str:
     meta = profil["meta"]
     jahre = f"{meta['jahre'][0]}–{meta['jahre'][-1]}" if meta["jahre"] else "Jahr unbekannt"
     z = [f"Hausprofil aus {meta['plaene']} Plänen ({jahre}), erstellt {meta['erstellt']}",
-         "Nur ansehen – Freigabe einzelner Werte folgt später über Excel.", ""]
+         "Freigabe: Liste profil_freigabe.xlsx ausfüllen (JA/NEIN), dann Menüpunkt 7.", ""]
     for m in profil["merkmale"].values():
         if "wert" in m:
             z.append(f"- {m['beschreibung']}: {m['wert']}  (belegt in {m.get('belegt_in', '?')}, "
@@ -240,4 +245,6 @@ def lerne_ordner(ordner: str | Path, profil_pfad: str | Path) -> dict:
     profil_pfad.write_text("# Hausprofil – VERTRAULICH, nur lokal. Status je Merkmal: vorgeschlagen -> freigegeben\n"
                            + yaml.safe_dump(profil, allow_unicode=True, sort_keys=False), encoding="utf-8")
     profil_pfad.with_name("profil_uebersicht.txt").write_text(uebersicht(profil), encoding="utf-8")
+    from .freigabe import schreibe_freigabeliste
+    schreibe_freigabeliste(profil, profil_pfad.with_name("profil_freigabe.xlsx"))
     return profil

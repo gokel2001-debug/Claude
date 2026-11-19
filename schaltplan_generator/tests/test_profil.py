@@ -111,4 +111,4 @@ def test_sicherung_und_uebersicht(korpus, tmp_path):
     lerne_ordner(ordner, pfad)
     assert (tmp_path / "profil.yaml.bak").exists()
     text = (tmp_path / "profil_uebersicht.txt").read_text(encoding="utf-8")
-    assert "Änderung ab 2025: -X20 -> -X10" in text and "Nur ansehen" in text
+    assert "Änderung ab 2025: -X20 -> -X10" in text and "profil_freigabe.xlsx" in text
