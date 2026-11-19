@@ -25,3 +25,4 @@
 | Datum | Sitzung | Ergebnis |
 |---|---|---|
 | 19.11.2026 | manuell | Konzept Langläufer freigegeben, 3 Autostarts angelegt, Steuerdateien angelegt |
+| 19.11.2026 | manuell | E6 und E7 vom Nutzer bestätigt; nächster Schritt P1b im Autostart Fr 22:07 |
