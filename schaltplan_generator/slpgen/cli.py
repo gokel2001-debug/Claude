@@ -91,9 +91,14 @@ def cmd_lernen(a):
 def cmd_freigabe(a):
     from .freigabe import uebernehme_freigaben
     e = uebernehme_freigaben(a.profil, a.liste)
-    print(f"Freigegeben: {', '.join(e['freigegeben']) or '-'}")
-    print(f"Abgelehnt:   {', '.join(e['abgelehnt']) or '-'}")
-    print(f"Noch offen:  {', '.join(e['offen']) or '-'}")
+    for titel, key in (("Freigegeben", "freigegeben"), ("Abgelehnt", "abgelehnt"), ("Noch offen", "offen")):
+        print(f"{titel}:")
+        for b in e[key] or ["-"]:
+            print(f"  {b}")
+    if e["offen"] and not (e["freigegeben"] or e["abgelehnt"]):
+        print("Hinweis: keine Entscheidung gefunden – Excel-Liste nach dem Ausfüllen gespeichert?")
+    for h in e.get("hinweis", []):
+        print(f"Hinweis: {h}")
 
 
 def main(argv=None):

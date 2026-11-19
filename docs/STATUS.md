@@ -6,7 +6,7 @@
 | Aktuelles Paket | P3 – Freigabe per Excel + Plan im Hausstil (Anlage je Funktion) |
 | Nächster Schritt | P3b: Planmodell auf Anlagen umbauen (eine Anlage je Funktion, Spalten 0–9, Querverweise =Anlage/Seite.Spalte) |
 | **Bitte bestätigen** | **E8, E9, E10** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt) |
-| Tests | 39/39 grün |
+| Tests | 43/43 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -30,3 +30,4 @@
 | 19.11.2026 | manuell | E6 und E7 vom Nutzer bestätigt; nächster Schritt P1b im Autostart Fr 22:07 |
 | 19.11.2026 | Autostart-**Testlauf** (vorgezogen, manuell ausgelöst) | P1b umgesetzt; 4 Prüfer-Agenten: 1 kritischer Befund (SPS-Adressen überlappten) + 15 weitere → behoben; 23/23 Tests grün. Planmäßige Autostarts Fr 22:07 / Sa 03:12 / Sa 08:17 bleiben aktiv |
 | 19.11.2026 | Dauerlauf (manuell) | P2 Hausprofil lernen umgesetzt; 4 Prüfer: 21 Befunde (4 hoch: Trend-Ausreißer, Klemmleisten-Erkennung, Signalader ohne Potential, Freigabe für Einsteiger) → behoben bzw. als E9/E10 entschieden; 34/34 Tests grün |
+| 19.11.2026 | Dauerlauf (manuell) | P3a Freigabe per Excel; 2 Prüfer (klein): 9 Befunde, 2 hoch (neuer Lernvorschlag konnte ungesehen verloren gehen; veraltete Liste konnte falschen Wert freigeben) → behoben; 43/43 Tests grün |

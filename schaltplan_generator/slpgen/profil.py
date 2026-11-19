@@ -190,8 +190,12 @@ def zusammenfuehren(alt: dict | None, neu: dict) -> dict:
         if m_alt.get("status") != "freigegeben":
             continue
         behalten = dict(m_alt)
-        behalten.pop("vorschlag_neu", None)
-        if m_neu and _vergleichswert(m_neu) != _vergleichswert(m_alt):
+        alt_vorschlag = behalten.pop("vorschlag_neu", None) or {}
+        abgelehnt_gleich = (alt_vorschlag.get("status") == "abgelehnt" and m_neu
+                            and _vergleichswert(m_neu) == _vergleichswert(alt_vorschlag))
+        if abgelehnt_gleich:
+            behalten["vorschlag_neu"] = alt_vorschlag          # bereits abgelehnt -> nicht erneut vorlegen
+        elif m_neu and _vergleichswert(m_neu) != _vergleichswert(m_alt):
             behalten["vorschlag_neu"] = m_neu
         neu["merkmale"][key] = behalten
     return neu
@@ -209,8 +213,9 @@ def uebersicht(profil: dict) -> str:
                      f"Sicherheit {m.get('sicherheit', '?')}, Status {m['status']})")
             for t in m.get("trend", []):
                 z.append(f"    Änderung ab {t['ab_jahr']}: {t['von']} -> {t['nach']} (Sicherheit {t['sicherheit']})")
-            if m.get("vorschlag_neu"):
-                z.append(f"    ACHTUNG: neuer Lernlauf ergibt {m['vorschlag_neu'].get('wert')} – bitte prüfen")
+            if m.get("vorschlag_neu") and m["vorschlag_neu"].get("status") != "abgelehnt":
+                z.append(f"    ACHTUNG: neuer Lernlauf ergibt {m['vorschlag_neu'].get('wert')} – in der Excel-Liste "
+                         f"entscheiden")
         else:
             top = ", ".join(f"{k} ({v})" for k, v in list(m["haeufigkeit"].items())[:4])
             z.append(f"- {m['beschreibung']}: {top}")
@@ -240,11 +245,12 @@ def lerne_ordner(ordner: str | Path, profil_pfad: str | Path) -> dict:
         raise ProfilFehler(f"Keine der {len(pdfs)} PDF-Dateien war lesbar – Profil nicht verändert")
     profil = zusammenfuehren(alt, neu)
     profil_pfad.parent.mkdir(parents=True, exist_ok=True)
+    # Liste zuerst: ist sie noch in Excel geöffnet, bricht der Lauf ab, bevor das Profil geändert ist
+    from .freigabe import schreibe_freigabeliste
+    schreibe_freigabeliste(profil, profil_pfad.with_name("profil_freigabe.xlsx"))
     if profil_pfad.exists():
         shutil.copyfile(profil_pfad, profil_pfad.with_suffix(".yaml.bak"))
     profil_pfad.write_text("# Hausprofil – VERTRAULICH, nur lokal. Status je Merkmal: vorgeschlagen -> freigegeben\n"
                            + yaml.safe_dump(profil, allow_unicode=True, sort_keys=False), encoding="utf-8")
     profil_pfad.with_name("profil_uebersicht.txt").write_text(uebersicht(profil), encoding="utf-8")
-    from .freigabe import schreibe_freigabeliste
-    schreibe_freigabeliste(profil, profil_pfad.with_name("profil_freigabe.xlsx"))
     return profil
