@@ -45,6 +45,7 @@ Danach erscheint ein Menü:
 | **3** | Projekt aus Excel erzeugen | Excel-Datei ins Fenster ziehen, Enter → Ordner `ausgabe` öffnet sich |
 | **4** | Bestands-PDF auswerten | PDF ins Fenster ziehen → Struktur und gleichartige Anlagen (Typicals) |
 | **5** | Selbsttest | „SELBSTTEST OK“ = Programm funktionsfähig |
+| **6** | Hausprofil lernen | Ordner mit Ihren Bestands-PDFs ins Fenster ziehen → `hausprofil\profil.yaml` mit gelernten Zeichenregeln (z. B. welche Klemmleiste, welche Aderfarben, Änderungen über die Jahre). Werte mit wenigen Belegen sind als „unsicher“ markiert. Bleibt nur auf Ihrem PC. |
 
 ## 4 Die Excel-Vorlage ausfüllen
 

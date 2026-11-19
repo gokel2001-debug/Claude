@@ -2,18 +2,18 @@
 
 | Feld | Inhalt |
 |---|---|
-| Stand | 19.11.2026, Autostart (Testlauf) |
-| Aktuelles Paket | P1b – erfundene Testpläne (fertig, geprüft) → als Nächstes P2 |
-| Nächster Schritt | P2 – Hausprofil lernen (`slpgen lernen`) |
+| Stand | 19.11.2026, Dauerlauf (manuell gestartet) |
+| Aktuelles Paket | P2 – Hausprofil lernen (umgesetzt, Prüfung läuft) |
+| Nächster Schritt | P2 prüfen und nacharbeiten, danach P3 (Plan im Hausstil: Anlage je Funktion) |
 | **Bitte bestätigen** | **E8** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt) |
-| Tests | 23/23 grün |
+| Tests | 28/28 grün |
 
 ## Paketübersicht
 | Paket | Status |
 |---|---|
 | P1 Steuerdateien | erledigt (ROADMAP, STATUS, ENTSCHEIDUNGEN) |
 | P1b Synthetischer Testkorpus | erledigt: `slpgen/korpus.py` – interner Testbefehl `slpgen korpus`, nicht im Menü, für Sie keine Aktion nötig |
-| P2 Hausprofil lernen | offen |
+| P2 Hausprofil lernen | umgesetzt: `slpgen lernen` / Menüpunkt 6 – findet im Testkorpus den eingebauten Wechsel X20→X10 ab 2025 |
 | P3 Anlagen-Struktur / Layout aus Profil | offen |
 | P4 Typical-Bibliothek | offen |
 | P5 SPS-Kasten, Übersichten, Aderkennzeichnung | offen |

@@ -40,6 +40,7 @@ echo   2  Neues Projekt anlegen (Excel-Vorlage kopieren)
 echo   3  Projekt aus Excel erzeugen
 echo   4  Bestands-PDF auswerten (Struktur, Typicals)
 echo   5  Selbsttest
+echo   6  Hausprofil lernen (Ordner mit Bestands-PDFs)
 echo   0  Beenden
 echo.
 set "W="
@@ -49,6 +50,7 @@ if "%W%"=="2" goto :neu
 if "%W%"=="3" goto :excel
 if "%W%"=="4" goto :struktur
 if "%W%"=="5" goto :selbsttest
+if "%W%"=="6" goto :lernen
 if "%W%"=="0" goto :ende
 goto :menue
 
@@ -95,6 +97,20 @@ if not exist "analyse" mkdir "analyse"
 if errorlevel 1 goto :fehler_lauf
 echo.
 echo Vollstaendiges Ergebnis: analyse\struktur.json
+pause
+goto :menue
+
+:lernen
+echo Ordner mit Ihren Bestands-PDFs in dieses Fenster ziehen und Enter druecken:
+set "ORD="
+set /p "ORD=> "
+if not defined ORD goto :menue
+set "ORD=%ORD:"=%"
+%SLP% lernen "%ORD%" --profil "hausprofil\profil.yaml"
+if errorlevel 1 goto :fehler_lauf
+echo.
+echo Profil gespeichert: hausprofil\profil.yaml (bleibt nur auf diesem PC)
+start "" notepad "hausprofil\profil.yaml"
 pause
 goto :menue
 

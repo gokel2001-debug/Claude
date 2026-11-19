@@ -77,6 +77,21 @@ def cmd_korpus(a):
         print(f"{pl.datei}  Jahr {pl.jahr}  Feldleiste {pl.feldleiste}  Typicals {pl.typicals}")
 
 
+def cmd_lernen(a):
+    from .profil import lerne_ordner
+    profil = lerne_ordner(a.ordner, a.profil)
+    meta = profil["meta"]
+    print(f"Hausprofil aus {meta['plaene']} Plänen ({meta['jahre'][0] if meta['jahre'] else '?'}–"
+          f"{meta['jahre'][-1] if meta['jahre'] else '?'}) -> {a.profil}")
+    for key, m in profil["merkmale"].items():
+        if "wert" in m:
+            trend = "; ".join(f"ab {t['ab_jahr']}: {t['von']} -> {t['nach']} ({t['sicherheit']})" for t in m["trend"])
+            print(f"  {m['beschreibung']}: {m['wert']}  [{m['status']}, Sicherheit {m['sicherheit']}]"
+                  + (f"  Trend: {trend}" if trend else ""))
+    for f in meta["fehler"]:
+        print(f"  nicht lesbar: {f['datei']} ({f['fehler']})")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="slpgen", description="Stromlaufplan-Generator (Prototyp)")
     sub = p.add_subparsers(dest="befehl", required=True)
@@ -113,6 +128,10 @@ def main(argv=None):
     ko.add_argument("--anzahl", type=int, default=10)
     ko.add_argument("--seed", type=int, default=1)
     ko.set_defaults(f=cmd_korpus)
+    le = sub.add_parser("lernen", help="Hausprofil aus einem Ordner mit Bestands-PDFs lernen")
+    le.add_argument("ordner")
+    le.add_argument("--profil", default="hausprofil/profil.yaml")
+    le.set_defaults(f=cmd_lernen)
     a = p.parse_args(argv)
     try:
         a.f(a)
