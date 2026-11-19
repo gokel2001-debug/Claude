@@ -7,6 +7,7 @@ können, statt im Code zu stehen.
 from __future__ import annotations
 
 import math
+import re
 from collections import OrderedDict
 from typing import Any
 
@@ -20,6 +21,8 @@ SEITE_SPS = 5
 ERSTE_DYN_SEITE = 6
 SPALTEN_JE_SEITE = 8
 ZEILEN_JE_SEITE = 36          # Listen (Klemmen, Kabel, Stückliste)
+MAX_FELDKLEMMEN = 9           # je Feldgerät/Baustein (eine Seite, Spalten 1..9)
+RE_GERAETE_BMK = re.compile(r"[A-Z]{1,3}\d{1,4}")
 
 
 def strom_A(art: dict[str, Any]) -> float:
@@ -53,10 +56,18 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     # Zusatzbauteile und Klemmenbelegung laut Bibliothek `typicals` im Gerätestamm.
     feld, teilsignale, bauteile = [], [], []
     typicals = stamm.get("typicals", {})
+    gesehen: set[str] = set()
     for fg in projekt["feldgeraete"]:
         a = artikel(fg["artikel"])
-        bmk = "-" + str(fg["bmk"]).lstrip("-")
-        tname = fg.get("typical") or None
+        kurz = str(fg["bmk"]).strip().lstrip("-")
+        if not RE_GERAETE_BMK.fullmatch(kurz):
+            raise RegelFehler(f"Betriebsmittelkennzeichen '{fg['bmk']}' ungültig – erlaubt sind Kennbuchstaben "
+                              f"und Nummer, z. B. B7 oder KF12 (ohne Punkt/Bindestrich)")
+        if kurz in gesehen:
+            raise RegelFehler(f"Betriebsmittelkennzeichen '{kurz}' ist doppelt vergeben")
+        gesehen.add(kurz)
+        bmk = "-" + kurz
+        tname = (str(fg.get("typical") or "").strip()) or None
         b = Betriebsmittel(bmk=bmk, artikel=fg["artikel"], bezeichnung=a["bezeichnung"],
                            funktion=fg.get("funktion", ""), kategorie=a["kategorie"],
                            daten={"gruppe": fg.get("gruppe", "Allgemein"), "i_A": strom_A(a),
@@ -65,13 +76,28 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
             if tname not in typicals:
                 raise RegelFehler(f"Baustein (Typical) '{tname}' für {bmk} fehlt in der Bibliothek")
             tp = typicals[tname]
-            b.daten.update(typical=tname, signal="BAUSTEIN", versorgung=tp.get("versorgung", {}))
+            vs = tp.get("versorgung", {})
+            pins = list(vs.values()) + [sg[x] for sg in tp["signale"] for x in ("pin", "rueckleiter", "speisung")
+                                        if x in sg]
+            if any(not isinstance(p, str) for p in pins):     # YAML liest z. B. NO/ON ohne Anführungszeichen als bool
+                raise RegelFehler(f"Baustein '{tname}': Anschlussnamen bitte in Anführungszeichen setzen ({pins})")
+            fehlend = [p for p in pins if p not in a.get("anschluss", [])]
+            if fehlend:
+                raise RegelFehler(f"{bmk}: Baustein '{tname}' braucht Anschlüsse {fehlend}, Artikel {fg['artikel']} "
+                                  f"hat {a.get('anschluss', [])}")
+            if len(pins) > MAX_FELDKLEMMEN:
+                raise RegelFehler(f"Baustein '{tname}' hat {len(pins)} Feldklemmen, höchstens {MAX_FELDKLEMMEN} möglich")
+            versorgt = "+24V" in vs or any(sg.get("speisung") or sg.get("ueber") for sg in tp["signale"])
+            b.daten.update(typical=tname, signal="BAUSTEIN", versorgung=vs, versorgt=versorgt)
+            if "+24V" not in vs:
+                b.daten["i_A"] = 0.0              # fremdversorgt: kein Verbraucher an unserem 24-V-Netz
             b.daten["teilsignale"] = []
             for n, sg in enumerate(tp["signale"], 1):
                 t = Betriebsmittel(bmk=f"{bmk}.{n}", artikel="", bezeichnung=sg["text"],
                                    funktion=f"{sg['text']} {b.funktion}".strip(), kategorie="teilsignal",
                                    daten={"signal": sg["art"], "i_A": 0.0, "pin": sg.get("pin", ""),
-                                          "eltern": bmk})
+                                          "eltern": bmk, "ueber": sg.get("ueber"),
+                                          "rueckleiter": sg.get("rueckleiter"), "speisung": sg.get("speisung")})
                 teilsignale.append(t)
                 b.daten["teilsignale"].append(t.bmk)
             for bt in tp.get("bauteile", []):
@@ -134,13 +160,16 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     for b in motor_signale:          # Schützspulen -> DO-Last, MSS-Rückmeldung -> SPS
         (do_last if b.daten["gruppe"] == "DO-Last" else gruppen["SPS"]).append(b)
     for b in feld:
+        if b.daten["signal"] == "BAUSTEIN" and not b.daten["versorgt"]:
+            continue                 # fremdversorgter Baustein ohne 24-V-Anschluss
         if b.daten["signal"] == "DO":
             b.daten["gruppe"] = "DO-Last"
             do_last.append(b)
         else:
             gruppen.setdefault(b.daten["gruppe"], []).append(b)
-    for b in bauteile:              # z. B. Koppelrelais-Spulen: Gruppe laut Bibliothek
-        (do_last if b.daten["gruppe"] == "DO-Last" else gruppen.setdefault(b.daten["gruppe"], [])).append(b)
+    for b in bauteile:              # z. B. Koppelrelais-Spulen: Gruppe laut Bibliothek; passive Bauteile nicht
+        if b.daten["i_A"] > 0:
+            (do_last if b.daten["gruppe"] == "DO-Last" else gruppen.setdefault(b.daten["gruppe"], [])).append(b)
     if do_last:
         gruppen["DO-Last"] = do_last
 
@@ -221,18 +250,29 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         elif sig == "DO":
             plan = [("Signal", b.daten["sps"], ans[0]),
                     ("0V", "0V-Schiene", ans[1])]
-        elif sig == "BAUSTEIN":   # Versorgung + je Teilsignal eine Klemme, Reihenfolge laut Bibliothek
+        elif sig == "BAUSTEIN":   # Versorgung + je Teilsignal Klemmen, Reihenfolge laut Bibliothek
             vs = b.daten["versorgung"]
             ts = {t.bmk: t for t in teilsignale if t.daten["eltern"] == b.bmk}
             if "+24V" in vs:
                 plan.append(("+24V", f"{b.daten['absicherung']}:2", vs["+24V"]))
-            plan += [("Signal", ts[k].daten["sps"], ts[k].daten["pin"], k) for k in b.daten["teilsignale"]]
+            for k in b.daten["teilsignale"]:
+                d = ts[k].daten
+                if d["speisung"]:         # potentialfreier Kontakt: Wurzel aus 24L+ der Gruppe
+                    plan.append(("+24V", f"{b.daten['absicherung']}:2", d["speisung"]))
+                if d["ueber"]:            # Signal über Schrankbauteil, z. B. Koppelrelais-Kontakt 11/14
+                    plan.append(("Kontakt", f"{b.bmk}{d['ueber']}:14", d["pin"], k))
+                else:
+                    plan.append(("Signal", d["sps"], d["pin"], k))
+                if d["rueckleiter"]:      # z. B. 4–20 mA Minus zurück auf den Kanal
+                    plan.append(("Bezug", d["sps"].split(" ")[0] + "M", d["rueckleiter"], k))
             if "0V" in vs:
                 plan.append(("0V", "0V-Schiene", vs["0V"]))
         b.daten["klemmen"] = []
         for eintrag in plan:
             pot, innen, aussen = eintrag[:3]
             schluessel = eintrag[3] if len(eintrag) > 3 else (b.bmk if pot == "Signal" else "")
+            if pot == "Bezug":
+                schluessel = ""          # gehört zum Kanal, aber kein eigener SPS-Kasten
             m.klemmen.append(Klemme("-X1", knr, pot, innen, f"{b.bmk}:{aussen}", b.seite, b.spalte, schluessel))
             b.daten["klemmen"].append(knr)
             knr += 1

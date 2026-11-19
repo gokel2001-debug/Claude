@@ -142,11 +142,27 @@ artikel:
   ZAEHLER-PULS:
     kategorie: sensor
     hersteller: Beispiel GmbH
-    bezeichnung: Durchflusszähler mit 2 Impulsausgängen 24 V DC
+    bezeichnung: Durchflusszähler mit Impulsausgang und Störausgang 24 V DC
     u_V: 24
     i_mA: 30
     signal: DI
-    anschluss: ["24V", "I1", "I2", "GND"]
+    anschluss: ["24V", "I1", "I2", "GND"]          # I1 Impuls, I2 Störung
+  ZAEHLER-AI:
+    kategorie: sensor
+    hersteller: Beispiel GmbH
+    bezeichnung: Durchflusszähler mit Impulsausgang und Analogausgang 4–20 mA (aktiv, 4-Leiter)
+    u_V: 24
+    i_mA: 45
+    signal: DI
+    anschluss: ["24V", "I1", "AO+", "AO-", "GND"]
+  STELLANTRIEB-24:
+    kategorie: aktor
+    hersteller: Beispiel GmbH
+    bezeichnung: Stellantrieb 24 V DC mit Freigabeeingang, Stelleingang 4–20 mA, Betriebskontakt
+    u_V: 24
+    i_mA: 150
+    signal: DO
+    anschluss: ["24V", "S/S", "IN+", "IN-", "COM", "NO", "GND"]
   WID-2K2: {kategorie: bauteil, hersteller: Beispiel GmbH, bezeichnung: "Widerstand 2,2 kOhm 0,5 W für Drahtbruchüberwachung"}
   KR-24DC: {kategorie: bauteil, hersteller: Beispiel GmbH, bezeichnung: "Koppelrelais 24 V DC, 1 Wechsler", i_mA: 9}
 
@@ -155,26 +171,28 @@ artikel:
 #   versorgung: Klemme -> Geräteanschluss;  signale: SPS-Signal je Kanal (art, text, pin)
 #   bauteile:   zusätzliche Schrankbauteile (lokales BMK, Artikel, Text, 24-V-Gruppe)
 typicals:
+  # Signal-Optionen: ueber = Schrankbauteil, dessen Kontakt das Signal ins Feld gibt (DO -> Koppelrelais);
+  #                  rueckleiter = zweiter Anschluss (z. B. 4–20 mA Minus); speisung = 24-V-Speisung eines Kontakts
   zaehler_di:
-    beschreibung: Zähler mit Impuls und Drahtbruchüberwachung (2 Digitaleingänge)
+    beschreibung: Zähler mit Impuls- und Störausgang (2 Digitaleingänge), Abschlusswiderstand an der Klemme
     versorgung: {"+24V": "24V", "0V": "GND"}
     signale:
       - {art: DI, text: Zählimpuls, pin: I1}
       - {art: DI, text: Störung Drahtbruch, pin: I2}
     bauteile:
-      - {bmk: "-R1", artikel: WID-2K2, text: Abschlusswiderstand Drahtbruchüberwachung}
+      - {bmk: "-R1", artikel: WID-2K2, text: Abschlusswiderstand an der Klemme}
   zaehler_ai:
-    beschreibung: Zähler mit Impuls und Durchfluss-Messwert 4–20 mA
+    beschreibung: Zähler mit Impuls und Durchfluss-Messwert 4–20 mA (aktiver Ausgang, 4-Leiter)
     versorgung: {"+24V": "24V", "0V": "GND"}
     signale:
       - {art: DI, text: Zählimpuls, pin: I1}
-      - {art: AI, text: Messwert Durchfluss, pin: I2}
+      - {art: AI, text: Messwert Durchfluss, pin: AO+, rueckleiter: AO-}
   stellantrieb_ao:
-    beschreibung: Stellantrieb mit Freigabe (Koppelrelais), Stellsignal 4–20 mA und Rückmeldung
+    beschreibung: Stellantrieb mit Freigabe über Koppelrelais, Stellsignal 4–20 mA und Betriebsrückmeldung
     versorgung: {"+24V": "24V", "0V": "GND"}
     signale:
-      - {art: DO, text: Freigabe, pin: S/S}
-      - {art: AO, text: Stellsignal 4-20mA, pin: IN}
-      - {art: DI, text: Betrieb, pin: NO}
+      - {art: DO, text: Freigabe, pin: S/S, ueber: "-K1"}
+      - {art: AO, text: Stellsignal 4-20mA, pin: IN+, rueckleiter: IN-}
+      - {art: DI, text: Betrieb, pin: "NO", speisung: COM}
     bauteile:
       - {bmk: "-K1", artikel: KR-24DC, text: Koppelrelais Freigabe, gruppe: DO-Last}

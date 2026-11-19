@@ -1,4 +1,5 @@
 import copy
+import re
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,9 @@ PROJEKT = yaml.safe_load((B / "projekt_beispiel.yaml").read_text(encoding="utf-8
 STAMM = yaml.safe_load((B / "geraetestamm.yaml").read_text(encoding="utf-8"))
 ZAEHLER = {"bmk": "P7", "artikel": "ZAEHLER-PULS", "funktion": "Zähler Kühlwasser", "gruppe": "Sensorik",
            "typical": "zaehler_di"}
-STELL = {"bmk": "Y9", "artikel": "MV-24-4W", "funktion": "Stellventil", "gruppe": "Aktorik",
+ZAEHLER_AI = {"bmk": "P8", "artikel": "ZAEHLER-AI", "funktion": "Zähler Hauptleitung", "gruppe": "Sensorik",
+              "typical": "zaehler_ai"}
+STELL = {"bmk": "Y9", "artikel": "STELLANTRIEB-24", "funktion": "Stellantrieb Heizung", "gruppe": "Aktorik",
          "typical": "stellantrieb_ao"}
 
 
@@ -25,46 +28,79 @@ def _projekt(*geraete):
     return p
 
 
+def _klemmen(m, bmk):
+    return [(k.potential, k.ziel_aussen.split(":")[1]) for k in m.klemmen if k.ziel_aussen.startswith(bmk + ":")]
+
+
 def test_zaehler_di_zwei_eingaenge_klemmen_und_widerstand():
     m = regeln.plane(_projekt(ZAEHLER), STAMM)
     kanaele = [k for k in m.sps_kanaele if k.geraet_bmk.startswith("-P7.")]
     assert [(k.art, k.funktion.split()[0]) for k in kanaele] == [("DI", "Zählimpuls"), ("DI", "Störung")]
-    kl = [k for k in m.klemmen if k.ziel_aussen.startswith("-P7:")]
-    assert [(k.potential, k.ziel_aussen) for k in kl] == [("+24V", "-P7:24V"), ("Signal", "-P7:I1"),
-                                                          ("Signal", "-P7:I2"), ("0V", "-P7:GND")]
-    assert [k.signal for k in kl] == ["", "-P7.1", "-P7.2", ""]
+    assert _klemmen(m, "-P7") == [("+24V", "24V"), ("Signal", "I1"), ("Signal", "I2"), ("0V", "GND")]
     r1 = m.bm("-P7-R1")
     assert r1.kategorie == "bauteil" and r1.artikel == "WID-2K2"
+    assert not any("-P7-R1" in a.verbraucher for a in m.absicherungen)      # passiv: kein 24-V-Verbraucher
 
 
-def test_stellantrieb_ao_modul_und_koppelrelais_in_bilanz():
+def test_zaehler_ai_vier_leiter_mit_rueckleiter():
+    m = regeln.plane(_projekt(ZAEHLER_AI), STAMM)
+    assert _klemmen(m, "-P8") == [("+24V", "24V"), ("Signal", "I1"), ("Signal", "AO+"), ("Bezug", "AO-"),
+                                  ("0V", "GND")]
+    ai = next(k for k in m.sps_kanaele if k.geraet_bmk == "-P8.2")
+    bezug = next(k for k in m.klemmen if k.ziel_aussen == "-P8:AO-")
+    assert ai.art == "AI" and bezug.ziel_innen == f"{ai.modul_bmk}:{ai.kanal}M"
+
+
+def test_stellantrieb_koppelrelais_kontakt_speisung_und_bilanz():
     ohne = regeln.plane(_projekt(), STAMM)
     mit = regeln.plane(_projekt(STELL), STAMM)
-    ao = [k for k in mit.sps_kanaele if k.art == "AO"]
-    assert len(ao) == 1 and ao[0].adresse == "%QW0"
-    assert mit.bm(ao[0].modul_bmk).artikel == "SPS-AO4"
-    # Koppelrelais 9 mA + DO-Modul unverändert -> DO-Last steigt genau um 0,009 A
-    assert mit.bilanz["gruppen"]["DO-Last"] == pytest.approx(ohne.bilanz["gruppen"]["DO-Last"] + 0.009, abs=1e-3)
+    assert _klemmen(mit, "-Y9") == [("+24V", "24V"), ("Kontakt", "S/S"), ("Signal", "IN+"), ("Bezug", "IN-"),
+                                    ("+24V", "COM"), ("Signal", "NO"), ("0V", "GND")]
+    kontakt = next(k for k in mit.klemmen if k.ziel_aussen == "-Y9:S/S")
+    assert kontakt.ziel_innen == "-Y9-K1:14"                         # DO geht über das Koppelrelais
+    ao = next(k for k in mit.sps_kanaele if k.art == "AO")
+    assert ao.adresse == "%QW0" and mit.bm(ao.modul_bmk).artikel == "SPS-AO4"
+    g = mit.bilanz["gruppen"]
+    assert g["DO-Last"] == pytest.approx(ohne.bilanz["gruppen"]["DO-Last"] + 0.009, abs=1e-3)   # nur Spule
+    assert g["Aktorik"] == pytest.approx(0.150, abs=1e-3)                                       # Antrieb selbst
 
 
-def test_fehlende_bibliothek_oder_modul():
-    with pytest.raises(regeln.RegelFehler, match="Baustein"):
-        regeln.plane(_projekt(dict(ZAEHLER, typical="gibt_es_nicht")), STAMM)
+def test_fremdversorgter_baustein_ist_kein_verbraucher():
+    stamm = copy.deepcopy(STAMM)
+    stamm["typicals"]["zaehler_fremd"] = {"versorgung": {}, "signale": [{"art": "DI", "text": "Impuls", "pin": "I1"}]}
+    m = regeln.plane(_projekt(dict(ZAEHLER, typical="zaehler_fremd")), stamm)
+    assert not any("-P7" in a.verbraucher for a in m.absicherungen)
+    assert _klemmen(m, "-P7") == [("Signal", "I1")]
+
+
+@pytest.mark.parametrize("geraet, text", [
+    (dict(ZAEHLER, typical="gibt_es_nicht"), "Baustein"),
+    (dict(STELL, artikel="MV-24-4W"), "Anschlüsse"),                    # Pins passen nicht zum Artikel
+    (dict(ZAEHLER, bmk="P7.1"), "ungültig"),
+    (dict(ZAEHLER, bmk="B1"), "doppelt"),
+])
+def test_eingabefehler_klar_gemeldet(geraet, text):
+    with pytest.raises(regeln.RegelFehler, match=text):
+        regeln.plane(_projekt(geraet), STAMM)
+
+
+def test_fehlendes_ao_modul():
     p = _projekt(STELL)
     del p["sps"]["module_kandidaten"]["AO"]
     with pytest.raises(regeln.RegelFehler, match="AO"):
         regeln.plane(p, STAMM)
 
 
-def test_hausstil_zeigt_baustein_mit_allen_kanaelen(tmp_path):
-    m = regeln.plane(_projekt(ZAEHLER, STELL), STAMM)
+def test_hausstil_zeigt_bausteine(tmp_path):
+    m = regeln.plane(_projekt(ZAEHLER, ZAEHLER_AI, STELL), STAMM)
     seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     t = {a: texte[i] for i, (a, n, _) in enumerate(seiten) if n == 1}
-    assert "SA4" in t and "=Y09/1.5" in t["SA4"]                    # AO-Karte verweist auf Signalklemme
+    assert "=Y09/1.3" in t["SA4"]                                     # 7 Klemmen -> Spalten 1..7, AO auf Spalte 3
     for adr in [k.adresse for k in m.sps_kanaele if k.geraet_bmk.startswith("-Y9.")]:
         assert adr in t["Y09"]
-    assert "-R1" in t["P07"] and "-K1" in t["Y09"]
+    assert "-K1:A1" in t["Y09"] and re.search(r"\b11\b", t["Y09"]) and re.search(r"\b14\b", t["Y09"])
+    assert "-R1" in t["P07"] and "(M)" in t["P08"]
     stl = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "STL")
     assert "WID-2K2" in stl and "KR-24DC" in stl
     erzeuge_pdf(m, STAMM, str(tmp_path / "alt.pdf"))                 # bisheriger Plan bricht nicht ab

@@ -132,9 +132,10 @@ class Hausplan:
             an = self._neu(kenn, f"{g.funktion}".strip() or g.bezeichnung)
             an.seiten.append((g.funktion or g.bezeichnung, self._s_feld))
             self._lokal(g.bmk, kenn, f"-{buchst}1", 1, 4)
-            for i, k in enumerate(self._feldklemmen(g.bmk)):        # SPS-Kasten über der Signalklemme
+            kl = self._feldklemmen(g.bmk)
+            for i, k in enumerate(kl):                              # SPS-Kasten über der Signalklemme
                 if k.signal:
-                    self.pos[f"kanal:{k.signal}"] = Ort(kenn, 1, self._feldspalte(i))
+                    self.pos[f"kanal:{k.signal}"] = Ort(kenn, 1, self._feldspalte(i, len(kl)))
             for bt in [x for x in m.betriebsmittel if x.kategorie == "bauteil" and x.daten["eltern"] == g.bmk]:
                 self._lokal(bt.bmk, kenn, bt.daten["lokal"], 1, 1)
 
@@ -177,9 +178,9 @@ class Hausplan:
         return [k for k in self.m.klemmen if k.ziel_aussen.startswith(geraet + ":")]
 
     @staticmethod
-    def _feldspalte(index: int) -> int:
-        """Klemmen eines Feldgeräts von links nach rechts in den Spalten 1, 3, 5, 7, 9."""
-        return min(1 + 2 * index, 9)
+    def _feldspalte(index: int, anzahl: int) -> int:
+        """Klemmen von links nach rechts: bis 5 Klemmen in Spalte 1, 3, 5, 7, 9, sonst 1, 2, … 9."""
+        return 1 + 2 * index if anzahl <= 5 else 1 + index
 
     def _kennung(self, bmk: str, buchst: str, laufnr: int) -> str:
         ziffern = "".join(c for c in bmk if c.isdigit())
@@ -331,12 +332,14 @@ class Hausplan:
                    if an == a.kennung and self.m.bm(k).kategorie in ("sensor", "aktor"))
         g, ad, leiste = self.m.bm(alt), self.stil["ader"], self.stil["feldklemmleiste"]
         kl = self._feldklemmen(g.bmk)
-        if len(kl) > 5:
-            raise RegelFehler(f"{g.bmk}: mehr als 5 Feldklemmen passen nicht auf eine Seite")
+        if len(kl) > 9:
+            raise RegelFehler(f"{g.bmk}: mehr als 9 Feldklemmen passen nicht auf eine Seite")
+        breit = 40 if len(kl) <= 5 else 34
         fa = self.pos.get(g.daten.get("absicherung", ""))
         y_k, y_dev = 170, 120
+        kanal_von = {c.geraet_bmk: c for c in self.m.sps_kanaele}
         for i, k in enumerate(kl):
-            x = self.x(self._feldspalte(i))
+            x = self.x(self._feldspalte(i, len(kl)))
             if k.potential == "+24V":
                 b.text(x - 1, 266, f"24L+ {self.ref(fa, a.kennung)}", 2, ausr="r")
                 b.linie(x, 268, x, y_k + 1.1)
@@ -345,9 +348,37 @@ class Hausplan:
                 b.text(x - 1, 266, f"24M {self.ref(self.pos['24M'], a.kennung)}", 2, ausr="r")
                 b.linie(x, 268, x, y_k + 1.1)
                 farbe = ad["0V"]
+            elif k.potential == "Kontakt":               # DO -> Koppelrelais-Spule, Kontakt 11/14 -> Feld
+                kanal = kanal_von[k.signal]
+                bauteil = k.ziel_innen.split(":")[0]
+                lok = self.lokal.get(bauteil, ("", bauteil))[1]
+                self._sps_kasten(b, x, 228, k.signal, a.kennung, f"{lok}:A1", breit)
+                b.linie(x, 228, x, 222)
+                b.linie(x, 222, x - 12, 222)
+                b.linie(x - 12, 222, x - 12, 214)
+                b.rechteck(x - 16, 208, 8, 6, 0.4)
+                b.text(x - 17, 210, lok, 2.6, True, "r")
+                b.text(x - 11, 215, "A1", 1.7)
+                b.text(x - 11, 205.5, "A2", 1.7)
+                b.linie(x - 12, 208, x - 12, 202)
+                b.text(x - 12, 199, f"24M {self.ref(self.pos['24M'], a.kennung)}", 1.8, ausr="m")
+                b.text(x + 1, 203, f"24L+ {self.ref(fa, a.kennung)}", 1.8)
+                b.linie(x, 201, x, 196)
+                sym_schliesser(b, x, 196, 12)
+                b.linie(x - 8, 211, x - 1.5, 190, 0.15, strich=([1, 1], 0))      # Wirkverbindung Spule-Kontakt
+                b.text(x + 2, 194, "11", 1.7)
+                b.text(x + 2, 185, "14", 1.7)
+                b.linie(x, 184, x, y_k + 1.1)
+                farbe = ad["+24V"]
+            elif k.potential == "Bezug":                 # Rückleiter 4–20 mA auf den Kanal (M)
+                modul, rest = k.ziel_innen.split(":", 1)
+                karte = self.lokal.get(modul, ("", modul))
+                b.text(x - 1, 266, f"={karte[0]}{karte[1]}:{rest} (M)", 1.9, ausr="r")
+                b.linie(x, 268, x, y_k + 1.1)
+                farbe = ad["AI"]
             else:
-                kanal = next(c for c in self.m.sps_kanaele if c.geraet_bmk == k.signal)
-                self._sps_kasten(b, x, 215, k.signal, a.kennung, f"{leiste}:{i + 1}")
+                kanal = kanal_von[k.signal]
+                self._sps_kasten(b, x, 215, k.signal, a.kennung, f"{leiste}:{i + 1}", breit)
                 b.linie(x, 215, x, y_k + 1.1)
                 farbe = ad[kanal.art]
             b.text(x + 1, y_k + 12, farbe, 1.9)
@@ -356,11 +387,12 @@ class Hausplan:
             b.linie(x, y_k - 1.1, x, y_dev)
             b.text(x + 0.8, y_dev + 1, k.ziel_aussen.split(":", 1)[1].split(" ")[0], 1.9)
         b.text(self.x(0) + 10, y_k - 0.8, leiste, 2.4, True, "r")
-        xr = self.x(self._feldspalte(len(kl) - 1)) if kl else self.x(6)
+        xr = self.x(self._feldspalte(len(kl) - 1, len(kl))) if kl else self.x(6)
         b.linie(self.x(1) - 8, 150, xr + 8, 150, strich=([2, 1], 0))
         b.text(self.x(0) + 10, 151, f"-W1 {self.stil['feldkabel_typ']} {self._feldkabel_adern(g.bmk)}x0,75", 2.2, ausr="r")
-        bauteile = [x for x in self.m.betriebsmittel if x.kategorie == "bauteil" and x.daten["eltern"] == g.bmk]
-        for j, bt in enumerate(bauteile):                       # Zusatzbauteile im Schrank
+        bauteile = [x for x in self.m.betriebsmittel if x.kategorie == "bauteil" and x.daten["eltern"] == g.bmk
+                    and not any(k.ziel_innen.startswith(x.bmk + ":") for k in kl)]   # Relais schon gezeichnet
+        for j, bt in enumerate(bauteile):                       # weitere Zusatzbauteile im Schrank
             b.rechteck(self.x(0) - 8, 200 - j * 12, 16, 8)
             b.text(self.x(0), 203 - j * 12, bt.daten["lokal"], 2.4, True, "m")
             b.text(self.x(0) - 8, 197 - j * 12, bt.funktion[:30], 1.7)
@@ -369,23 +401,24 @@ class Hausplan:
         b.rechteck(self.x(1) - 8, y_dev - 30, xr - self.x(1) + 16, 30, 0.4)
         xm = (self.x(1) + xr) / 2
         b.text(xm, y_dev - 10, self.lokal[g.bmk][1], 4, True, "m")
-        b.text(xm, y_dev - 16, g.bezeichnung[:60], 2.1, ausr="m")
+        b.text(xm, y_dev - 16, g.bezeichnung[:70], 2.1, ausr="m")
         zusatz = f"Baustein {g.daten['typical']}   " if g.daten.get("typical") else ""
         b.text(xm, y_dev - 21, f"{zusatz}{g.artikel}   I = {g.daten['i_A'] * 1000:.0f} mA", 2, ausr="m")
 
-    def _sps_kasten(self, b: Blatt, x: float, y: float, geraet: str, von: str, klemme: str):
+    def _sps_kasten(self, b: Blatt, x: float, y: float, geraet: str, von: str, klemme: str, breit: float = 40):
         """SPS-Kasten im Hausstil: Kanal, Karte, Verweis, Adresse, Klemme, Funktionstext, Artikel."""
         k = next(c for c in self.m.sps_kanaele if c.geraet_bmk == geraet)
         karte_a, karte_bmk = self.lokal[k.modul_bmk]
         modul = self.m.bm(k.modul_bmk)
-        b.rechteck(x - 20, y, 40, 32)
+        h = breit / 2
+        b.rechteck(x - h, y, breit, 32)
         zeilen = [(f"{k.art}{k.kanal}", 2.0, False), (f"={karte_a}{karte_bmk}", 2.6, True),
                   (self.ref(self.pos.get(f"karte:{geraet}"), von), 1.9, False), (k.adresse, 2.6, True),
                   (klemme, 1.9, False), (k.funktion[:34], 1.8, False)]
         for i, (t, g, fett) in enumerate(zeilen):
             b.text(x, y + 28 - i * 4.6, t, g, fett, "m")
             if i in (1, 3):
-                b.linie(x - 20, y + 26.3 - i * 4.6, x + 20, y + 26.3 - i * 4.6, 0.15)
+                b.linie(x - h, y + 26.3 - i * 4.6, x + h, y + 26.3 - i * 4.6, 0.15)
         b.text(x, y - 3, modul.artikel, 1.7, ausr="m")
 
     # ---- Motor ------------------------------------------------------------------
@@ -520,7 +553,7 @@ class Hausplan:
         tabelle(b, ["Kabelnummer", "Kabeltyp", "Quelle", "Ziel"],
                 self._kabelzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE], [50, 90, 90, 90])
 
-    POTENTIAL = {"+24V": "24L+", "0V": "24M", "Signal": "Signal"}
+    POTENTIAL = {"+24V": "24L+", "0V": "24M", "Signal": "Signal", "Kontakt": "24L+ geschaltet", "Bezug": "M (Analog)"}
     SCHUETZ_ANSCHLUSS = {"U": "2", "V": "4", "W": "6"}
 
     def _klemmenzeilen(self):
@@ -539,8 +572,8 @@ class Hausplan:
                         else f"PE ={self.EIN}")
                 seite = self.ref(Ort(kenn, 1, 4), "")
             else:
-                index = [x.nr for x in self._feldklemmen(geraet)].index(k.nr)
-                seite = self.ref(Ort(kenn, 1, self._feldspalte(index)), "")
+                eigene = [x.nr for x in self._feldklemmen(geraet)]
+                seite = self.ref(Ort(kenn, 1, self._feldspalte(eigene.index(k.nr), len(eigene))), "")
                 if k.potential == "0V":
                     ziel = f"24M {self.ref(self.pos['24M'], '')}"
                 else:
