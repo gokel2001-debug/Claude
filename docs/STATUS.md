@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2a + M2b erledigt → nächstes: M2c (Menü KI-Auftrag/KI-Antwort prüfen) |
+| Aktuelles Paket | M2a–M2c erledigt → nächstes: M2d (CI, Linter, Abdeckung) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 158/158 grün |
+| Tests | 164/164 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -42,3 +42,4 @@
 | 20.11.2026 | manuell | M2a Schema Projektmodell v1 + Prüfung (Klartext), Hausvorgaben; Prüfer: 7 hoch (Abstürze bei leeren/verschachtelten Werten, Annahmen unsichtbar) → behoben; Arbeitsvorrat für Autostarts angelegt; 144/144 Tests |
 | 20.11.2026 | manuell | M2b KI_AUFBEREITUNG.md, Befehl ki-auftrag, synthetisches Lastenheft → KI-Antwort → PDF (E2E-Test); Fehler Motor-Lastseite (KeyError bei Motor ≠ M1) behoben; 146/146 Tests |
 | 20.11.2026 | manuell | M2b geprüft (Elektro, Software, Einsteiger): 6 hoch (Regeln erlaubten angenommene Motordaten/stille Ersatzartikel, fehlende Sicherheitsfragen, Abstürze bei kaputten Lastenheften, Komma-Zahlen, kein Rückweg zur KI) → behoben; Korrekturauftrag für die KI; echte Rohantwort einer unabhängigen KI-Instanz → PDF als Test; 158/158 Tests |
+| 20.11.2026 | manuell | M2c Menüpunkte 8/9 (KI-Auftrag in Zwischenablage, KI-Antwort prüfen → Plan oder Korrekturauftrag), Zeilennummern; Prüfer UX+Einsteiger: 1 kritisch (eigener Einfügefehler zerriss das Menü) + 5 hoch → behoben, start.bat jetzt per Test abgesichert; 164/164 Tests |
