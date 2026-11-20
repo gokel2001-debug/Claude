@@ -53,3 +53,57 @@ def test_kein_raster_bei_ungleichmaessigen_ziffern():
     texte = [(10 + x, 290.0, str(i)) for i, x in enumerate((0, 39, 78, 130, 160))]
     assert spaltenraster(texte, 297) is None
     assert spaltenraster([(10.0, 290.0, "0"), (49.0, 290.0, "1")], 297) is None          # zu wenige Ziffern
+
+
+def _seite(pfad, zeichne, groesse=None, drehen=0):
+    c = Canvas(str(pfad), pagesize=groesse or landscape(A3))
+    zeichne(c)
+    c.showPage()
+    c.save()
+    if drehen:
+        from pypdf import PdfReader, PdfWriter
+        r, w = PdfReader(str(pfad)), PdfWriter()
+        for s in r.pages:
+            s.rotate(drehen)
+            w.add_page(s)
+        with open(pfad, "wb") as f:
+            w.write(f)
+
+
+def test_aenderungsdatum_links_zaehlt_nicht(tmp_path):
+    """Software-Befund M5a 1: Änderungsdatum links im Schriftfeld darf nicht Planjahr werden."""
+    def z(c):
+        c.drawString(5 * mm, 30 * mm, "Änderung 01.02.2025")
+        c.drawString(60 * mm, 18 * mm, "Datum")
+        c.drawString(75 * mm, 18 * mm, "12.03.2023")
+    _seite(tmp_path / "p.pdf", z)
+    assert lese_geometrie(tmp_path / "p.pdf")["schriftfeld_jahr"] == 2023
+
+
+def test_raster_ab_1_und_mit_stoerzahl(tmp_path):
+    def z(c):
+        for i in range(1, 9):
+            c.drawString((40 + 45 * i) * mm, 282 * mm, str(i))
+        c.drawString(400 * mm, 286 * mm, "12")                       # Seitenzahl im oberen Band
+    _seite(tmp_path / "p.pdf", z)
+    assert lese_geometrie(tmp_path / "p.pdf")["spaltenraster"] == "8 Spalten à 45 mm"
+
+
+def test_gedrehte_seite(tmp_path):
+    """Hochformat-Mediabox mit /Rotate 90: Anzeige im Querformat, Spaltenleiste oben."""
+    def z(c):                                                       # Inhalt so gezeichnet, dass er gedreht stimmt
+        c.translate(297 * mm, 0)
+        c.rotate(90)
+        for i in range(10):
+            c.drawString((40 + 39 * i) * mm, 282 * mm, str(i))
+    _seite(tmp_path / "p.pdf", z, groesse=A3, drehen=90)
+    assert lese_geometrie(tmp_path / "p.pdf")["spaltenraster"] == "10 Spalten à 39 mm"
+
+
+def test_wortgrenzen_und_leere_seite(tmp_path):
+    def z(c):
+        c.drawString(25 * mm, 18 * mm, "Seitenanzahl 3   Normalbetrieb")
+    _seite(tmp_path / "p.pdf", z)
+    assert lese_geometrie(tmp_path / "p.pdf")["schriftfeld_felder"] is None
+    _seite(tmp_path / "leer.pdf", lambda c: None)
+    assert "keine Textebene" in lese_geometrie(tmp_path / "leer.pdf")["hinweis"]

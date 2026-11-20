@@ -143,8 +143,11 @@ def lerne(pdfs: list[Path]) -> dict[str, Any]:
         try:
             a = analysiere_pdf(p)
             st = lese_struktur(p)
-            st["geometrie"] = geo = lese_geometrie(p)
-            if geo.get("schriftfeld_jahr"):            # Datum im Schriftfeld genauer als häufigstes Datum im Text (A16)
+            try:
+                st["geometrie"] = geo = lese_geometrie(p)
+            except Exception:
+                st["geometrie"] = geo = {"hinweis": "Geometrie nicht lesbar (gescannt/defekt?)"}
+            if geo.get("schriftfeld_jahr") and geo.get("anteil_jahr", 0) >= 0.8:   # Schriftfeld-Datum genauer (A16)
                 plaene.append((p.name, geo["schriftfeld_jahr"], True, st))
             else:
                 plaene.append((p.name, a["jahr"], a.get("jahr_eindeutig", True), st))
