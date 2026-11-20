@@ -9,6 +9,7 @@ wird abgebrochen (z. B. wenn nach dem Ausfüllen erneut gelernt wurde).
 """
 from __future__ import annotations
 
+import re
 import shutil
 import zipfile
 from pathlib import Path
@@ -72,6 +73,26 @@ def schreibe_freigabeliste(profil: dict, pfad: str | Path) -> None:
     wb.save(pfad)
 
 
+# Zulässige eigene Werte je Merkmalsart (Klartext-Hinweis bei Verstoß)
+PRUEFUNG = [
+    ("kennbuchstabe_", re.compile(r"[A-Z]{1,3}"), "Kennbuchstabe: 1–3 Großbuchstaben ohne Ziffer, z. B. T oder KF"),
+    ("ader_", re.compile(r"[A-Z]{2,4}(/[A-Z]{2,4})?"),
+     "Aderfarbe als Farbkürzel nach IEC 60757, z. B. DBU oder DBU/WH (Querschnitt nicht hier eintragen)"),
+    ("feldklemmleiste", re.compile(r"-X[A-Z]?\d{1,3}"), "Klemmleiste wie -X10 oder -XD1"),
+]
+
+
+def pruefe_eigenen_wert(key: str, wert: str) -> str:
+    """Eigenen Wert vereinheitlichen und prüfen; liefert den bereinigten Wert oder wirft RegelFehler (Hinweis)."""
+    wert = wert.strip().upper()
+    if key == "feldklemmleiste" and wert.startswith("X"):
+        wert = "-" + wert
+    for praefix, muster, hinweis in PRUEFUNG:
+        if key.startswith(praefix) and not muster.fullmatch(wert):
+            raise RegelFehler(hinweis)
+    return wert
+
+
 def _als_text(wert) -> str:
     if isinstance(wert, float):                  # trotzdem als Zahl eingegeben -> deutsches Komma
         return f"{wert:g}".replace(".", ",")
@@ -121,7 +142,12 @@ def uebernehme_freigaben(profil_pfad: str | Path, liste_pfad: str | Path) -> dic
             raise RegelFehler(f"Zeile {nr} ({m['beschreibung']}): Liste ist veraltet, das Profil wurde inzwischen "
                               f"neu gelernt – {NEU_LERNEN}")
         wahl = str(z[S_FREIGABE] or "").strip().upper()
-        eigener = None if z[S_EIGENER] in (None, "") else _als_text(z[S_EIGENER])
+        eigener = None if z[S_EIGENER] is None or not _als_text(z[S_EIGENER]) else _als_text(z[S_EIGENER])
+        if eigener is not None:
+            try:
+                eigener = pruefe_eigenen_wert(key, eigener)
+            except RegelFehler as e:
+                raise RegelFehler(f"Zeile {nr} ({m['beschreibung']}): eigener Wert „{z[S_EIGENER]}“ ungültig – {e}") from None
         if wahl not in ("", JA, NEIN):
             raise RegelFehler(f"Zeile {nr}: „{z[S_FREIGABE]}“ – bitte JA, NEIN oder leer eintragen")
         if eigener is not None and wahl != JA:

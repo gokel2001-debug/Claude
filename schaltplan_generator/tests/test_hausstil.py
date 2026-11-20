@@ -61,7 +61,7 @@ def test_freigegebenes_profil_wirkt_vorgeschlagenes_nicht(tmp_path):
         if status == "freigegeben":
             erzeuge_hausstil_pdf(regeln.plane(PROJEKT, STAMM), STAMM, str(tmp_path / "h.pdf"), stil)
             text = "\n".join(s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages)
-            assert "-X20:2" in text and "Hausprofil (freigegeben)" in text
+            assert "-X20:2" in text and "feldklemmleiste = -X20 (Hausprofil, freigegeben)" in text
 
 
 def _plan_mit(**aenderungen):

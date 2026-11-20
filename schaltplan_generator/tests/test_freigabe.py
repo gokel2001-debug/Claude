@@ -149,3 +149,52 @@ def test_vorgaben_freigeben_wirken_im_hausstil(gelernt, tmp_path):
     texte = [x.extract_text() for x in PdfReader(str(tmp_path / "h.pdf")).pages]
     nt = texte[[a for a, _, _ in seiten].index("NT24")]
     assert "-G1" in nt and "BU/WH" in nt
+
+
+@pytest.mark.parametrize("key, wert, hinweis", [
+    ("kennbuchstabe_netzteil", "T1", "Großbuchstaben"),
+    ("kennbuchstabe_sps_karte", "K-", "Großbuchstaben"),
+    ("ader_DI", 1.5, "Farbkürzel"),                 # Querschnitt in falsche Spalte
+    ("ader_0V", "DBU/", "Farbkürzel"),
+    ("feldklemmleiste", "X", "Klemmleiste"),
+])
+def test_ungueltige_eigene_werte_klar_abgelehnt(gelernt, key, wert, hinweis):
+    pfad, liste = gelernt
+    vorher = pfad.read_text(encoding="utf-8")
+    _setze(liste, {key: ("JA", wert)})
+    with pytest.raises(RegelFehler, match=f"Zeile \\d+ .*ungültig – .*{hinweis}"):
+        uebernehme_freigaben(pfad, liste)
+    assert pfad.read_text(encoding="utf-8") == vorher             # nichts übernommen
+
+
+def test_gueltige_werte_vereinheitlicht_und_leer_ist_kein_wert(gelernt):
+    pfad, liste = gelernt
+    _setze(liste, {"kennbuchstabe_netzteil": ("JA", "g"), "feldklemmleiste": ("JA", "x12"),
+                   "ader_DO": ("JA", "   ")})
+    uebernehme_freigaben(pfad, liste)
+    m = _merkmale(pfad)
+    assert m["kennbuchstabe_netzteil"]["wert"] == "G" and m["feldklemmleiste"]["wert"] == "-X12"
+    assert (m["ader_DO"]["wert"], m["ader_DO"].get("quelle")) == ("DBU", None)   # Leerzeichen = Vorgabe bestätigt
+
+
+def test_eigener_vorgabewert_bleibt_nach_neuem_lernen(gelernt, tmp_path):
+    pfad, liste = gelernt
+    _setze(liste, {"ader_0V": ("JA", "BU/WH"), "ader_AI": ("NEIN", None)})
+    uebernehme_freigaben(pfad, liste)
+    lerne_ordner(tmp_path / "k", pfad)
+    m = _merkmale(pfad)
+    assert (m["ader_0V"]["wert"], m["ader_0V"]["status"]) == ("BU/WH", "freigegeben")
+    assert "vorschlag_neu" not in m["ader_0V"] and m["ader_AI"]["status"] == "abgelehnt"
+    z = _zeilen(liste)["ader_0V"]
+    assert z[S_VORSCHLAG] == "BU/WH" and z[S_FREIGABE] == "JA"      # kein erneutes Angebot der Vorgabe
+    e = uebernehme_freigaben(pfad, liste)                            # „JA“ überschreibt nichts
+    assert _merkmale(pfad)["ader_0V"]["wert"] == "BU/WH" and "Aderfarbe 0 V (24M)" in e["freigegeben"]
+
+
+def test_offene_punkte_genau_die_unentschiedenen(gelernt):
+    from slpgen.profil import VORGABEN
+    pfad, liste = gelernt
+    _setze(liste, {"feldklemmleiste": ("JA", None)})
+    e = uebernehme_freigaben(pfad, liste)
+    erwartet = {_merkmale(pfad)[k]["beschreibung"] for k in ["sps_adressschreibweise", "haeufigste_ader_0_75", *VORGABEN]}
+    assert set(e["offen"]) == erwartet

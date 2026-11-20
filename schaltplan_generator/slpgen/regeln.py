@@ -195,7 +195,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         gruppen["DO-Last"] = do_last
 
     i_summe = sum(b.daten["i_A"] for gl in gruppen.values() for b in gl)
-    g, r = v24.get("gleichzeitigkeit", 1.0), v24.get("reserve", 0.25)
+    g, r = v24.get("gleichzeitigkeit", 1.0), v24.get("reserve", 0.25)  # ANNAHME A1
     i_bedarf = i_summe * g * (1 + r)
     nt_key = waehle_kleinste(art, v24["netzteile"], i_bedarf)
     if nt_key is None:
@@ -216,7 +216,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     je_leiter = {"L1": i_mot + i_primaer, "L2": i_mot, "L3": i_mot}
     netzgeraete = [b for b in feld if b.daten.get("leistung")]
     for i, b in enumerate(netzgeraete):
-        leiter = ("L2", "L3", "L1")[i % 3]          # L1 trägt bereits das Netzteil
+        leiter = ("L2", "L3", "L1")[i % 3]          # L1 trägt bereits das Netzteil  # ANNAHME A13
         b.daten["leistung"]["aussenleiter"] = leiter
         je_leiter[leiter] += b.daten["leistung"]["i_N_A"]
     m.bilanz["i_motoren_A"] = round(i_mot, 2)
@@ -242,7 +242,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
 
     # ---- Absicherung der 24-V-Gruppen ----------------------------------------
     es_kand = [k for k, a in art.items() if a["kategorie"] == "schutz_dc"]
-    fak = v24.get("absicherungsfaktor", 1.25)
+    fak = v24.get("absicherungsfaktor", 1.25)  # ANNAHME A2
     if v24.get("verteilung") == "selektivmodul":
         if not v24.get("selektivmodul"):
             raise RegelFehler("verteilung = selektivmodul, aber kein Artikel im Feld 'selektivmodul' angegeben")

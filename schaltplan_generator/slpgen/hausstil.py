@@ -9,6 +9,7 @@ dem lokalen Hausprofil überschrieben (`lade_hausstil`).
 from __future__ import annotations
 
 import copy
+import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -49,18 +50,21 @@ def lade_hausstil(profil_pfad: str | Path | None) -> dict:
         merkmale = profil.get("merkmale", {})
         frei = {k: str(v["wert"]).strip() for k, v in merkmale.items()
                 if isinstance(v, dict) and v.get("status") == "freigegeben" and str(v.get("wert", "")).strip()}
+
+        def herkunft(key: str) -> str:
+            return f"{merkmale[key].get('beschreibung', key)} = {frei[key]} (Hausprofil, freigegeben)"
         if frei.get("feldklemmleiste", "").startswith("-X"):
-            stil["feldklemmleiste"], stil["quelle"]["feldklemmleiste"] = frei["feldklemmleiste"], "Hausprofil (freigegeben)"
+            stil["feldklemmleiste"], stil["quelle"]["feldklemmleiste"] = frei["feldklemmleiste"], herkunft("feldklemmleiste")
         for key, wert in frei.items():
             if key.startswith("ader_"):
                 pot = key[len("ader_"):]
                 ziel = stil["ader_ac"] if pot in ("L", "N", "PE") else stil["ader"]
                 if pot in ziel:
                     ziel[pot] = wert
-                    stil["quelle"][key] = "Hausprofil (freigegeben)"
-            elif key.startswith("kennbuchstabe_") and wert.isalpha() and wert.isupper() and len(wert) <= 3:
+                    stil["quelle"][key] = herkunft(key)
+            elif key.startswith("kennbuchstabe_") and re.fullmatch(r"[A-Z]{1,3}", wert):
                 stil["kennbuchstaben"][key[len("kennbuchstabe_"):]] = wert
-                stil["quelle"][key] = "Hausprofil (freigegeben)"
+                stil["quelle"][key] = herkunft(key)
     return stil
 
 
@@ -796,8 +800,8 @@ class Hausplan:
                  f"Netzteil {bil['netzteil']} ({bil['i_nenn_A']} A, Auslastung {bil['auslastung']:.0%})"]
         if self.m.kabel:
             texte.append(f"Motoren Σ I_N = {bil['i_motoren_A']} A; 400 V gesamt ≤ {bil['i_400V_max_A']} A")
-        for q, w in self.stil["quelle"].items():
-            texte.append(f"Hausstil: {q} aus {w}")
+        for w in self.stil["quelle"].values():
+            texte.append(f"Hausstil: {w}")
         for t in texte + ["Hinweise:"] + [f"• {w}" for w in self.m.warnungen or ["keine"]]:
             b.text(X0 + 6, y, t, 2.6)
             y -= 6

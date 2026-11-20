@@ -5,7 +5,7 @@ ZIEL.md hat Vorrang. Reihenfolge der Meilensteine ist verbindlich.
 ## Meilensteine
 | M | Inhalt | fertig, wenn | Status |
 |---|---|---|---|
-| M1 | Offene Fehler aus P5a beheben | Tests für ungültige Werte und Überschreiben grün | **in Arbeit** |
+| M1 | Offene Fehler aus P5a beheben | Tests für ungültige Werte und Überschreiben grün | umgesetzt, Prüfung läuft |
 | M2 | Projektmodell-Schema und `KI_AUFBEREITUNG.md` | Beispiel-Lastenheft → gültige YAML (manuell über externe KI) | offen |
 | M3 | Planungskern trennen (`planmodell.json`) | PDF entsteht nur noch aus dem Planmodell | offen (Vorarbeit: neutrales Planmodell, `*_Planmodell.json`) |
 | M4 | SPS-Übersicht, Listen im Hausformat, Konsistenzprüfungen | Prüfbericht ohne Fehler am Testkorpus | offen (Vorarbeit: Hausstil-Listen P3b) |

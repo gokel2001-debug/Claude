@@ -47,7 +47,7 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
     motoren = projekt.get("motoren", [])
     ltg = projekt.get("leitungen", {})
     if motoren:
-        m.warnungen.append("Motorabgänge: Kurzschluss-/Abschaltbedingung der Leitungen (Schleifenimpedanz, "
+        m.warnungen.append("Motorabgänge: Kurzschluss-/Abschaltbedingung der Leitungen (Schleifenimpedanz, "  # ANNAHME A5
                            "Schaltvermögen) nicht geprüft")
     if motoren and not ltg.get("freigegeben", False):
         m.warnungen.append("Strombelastbarkeitstabelle (leitungen.i_z_A) nicht freigegeben – "
