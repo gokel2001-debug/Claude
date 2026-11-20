@@ -124,11 +124,6 @@ def cmd_generieren(a):
     ziel = Path(a.ausgabe)
     ziel.mkdir(parents=True, exist_ok=True)
     json_pfad = ziel / f"{m.projekt['nummer']}_Planmodell.json"
-    from .konsistenz import FEHLER, bericht_text, pruefe_plan
-    befunde = pruefe_plan(m)
-    m.warnungen.extend(bericht_text(befunde))
-    if any(b.art == FEHLER for b in befunde):
-        print("ACHTUNG: Der Prüfbericht enthält FEHLER – Plan nicht für die Fertigung verwenden (siehe Auslegungsnachweis).")
     from .hausstil import kennzeichne, lade_hausstil
     try:                                         # Kennzeichen gehören ins Planmodell (gleich in PDF und EPLAN)
         m.kennzeichen = kennzeichne(m, lade_hausstil(a.profil))
@@ -139,12 +134,18 @@ def cmd_generieren(a):
     _ausgabe(Planmodell.lade(json_pfad), ziel, a.profil)
 
 
+def _seiten_hausstil(m: Planmodell, profil: str | None) -> int:
+    from .hausstil import Hausplan, lade_hausstil
+    return sum(len(a.seiten) for a in Hausplan(m, lade_hausstil(profil)).anlagen.values())
+
+
 def cmd_pruefbericht(a):
+    from .hausstil import _zahl
     from .konsistenz import FEHLER, bericht_text, kennzahlen, pruefe_plan
     m = Planmodell.lade(a.planmodell)
     befunde = pruefe_plan(m)
     print("\n".join(bericht_text(befunde)))
-    print("Kennzahlen: " + ", ".join(f"{k} {v:g}" for k, v in kennzahlen(m).items()))
+    print("Kennzahlen: " + ", ".join(f"{k} {_zahl(v)}" for k, v in kennzahlen(m, _seiten_hausstil(m, a.profil)).items()))
     if any(b.art == FEHLER for b in befunde):
         raise regeln.RegelFehler("Prüfbericht enthält FEHLER")
 
@@ -171,12 +172,20 @@ def _ausgabe(m: Planmodell, ziel: Path, profil: str | None) -> None:
     except regeln.RegelFehler as e:            # bisheriger Plan, Stückliste und Modell bleiben erhalten
         print(f"HINWEIS: Hausstil-PDF nicht erzeugt: {e}")
     print(f"Netzteil: {m.bilanz['netzteil']} (Bedarf {m.bilanz['i_bedarf_A']} A)")
+    from .konsistenz import FEHLER, bericht_text, pruefe_plan  # bei jeder Ausgabe frisch geprüft
+    befunde = pruefe_plan(m)
+    print(bericht_text(befunde)[0] + " (Einzelheiten im Auslegungsnachweis)")
+    fehler = [b for b in befunde if b.art == FEHLER]
     if MENUE:
-        print(f"FERTIG. {len(m.warnungen)} Hinweise (Annahmen, offene Fragen, nicht geprüfte Punkte) stehen im "
-              f"Auslegungsnachweis – bitte vor Freigabe durchgehen.")
-        return
+        if not fehler:
+            print(f"FERTIG. {len(m.warnungen)} Hinweise (Annahmen, offene Fragen, nicht geprüfte Punkte) stehen im "
+                  f"Auslegungsnachweis – bitte vor Freigabe durchgehen.")
+            return
     for w in m.warnungen:
         print("WARNUNG:", w)
+    if fehler:
+        raise regeln.RegelFehler(f"Plan erzeugt, aber der Prüfbericht enthält {len(fehler)} FEHLER – nicht für die "
+                                 f"Fertigung verwenden: " + "; ".join(b.text for b in fehler[:3]))
 
 
 KORREKTUR = "_Korrekturauftrag.txt"
@@ -352,6 +361,7 @@ def main(argv=None):
     g.set_defaults(f=cmd_generieren)
     pb = sub.add_parser("pruefbericht", help="Konsistenzprüfung eines Planmodells (JSON) mit Kennzahlen")
     pb.add_argument("planmodell")
+    pb.add_argument("--profil", default="hausprofil/profil.yaml")
     pb.set_defaults(f=cmd_pruefbericht)
     ze = sub.add_parser("zeichnen", help="PDFs und Listen aus einem vorhandenen Planmodell (JSON)")
     ze.add_argument("planmodell")

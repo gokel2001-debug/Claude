@@ -7,7 +7,7 @@ Branch: `claude/ai-schaltplan-generator-u6lzbz`
 - M1 – 100 %, erledigt.
 - M2 – erledigt (M2a–M2d, CI grün auf Ubuntu+Windows); Fertig-Kriterium belegt mit einer unabhängigen KI-Instanz und synthetischem Lastenheft. Erprobung mit der im Betrieb freigegebenen KI = PC6.
 - M3 – erledigt: PDFs entstehen nur noch aus `planmodell.json` (aus JSON byte-gleich), Schema `docs/SCHEMA_PLANMODELL.md`, EPLAN-Adapter als Stub.
-- M4 – M4a erledigt (SPS-Übersicht); M4b–M4e offen.
+- M4 – M4a–M4c erledigt (SPS-Übersicht, Listen im Hausformat, Prüfbericht ohne Fehler am Testkorpus); M4d/M4e offen.
 
 ## 2. Seit letztem Bericht erledigt
 | Datum | Paket | Ergebnis | Tests |
@@ -21,12 +21,14 @@ Branch: `claude/ai-schaltplan-generator-u6lzbz`
 | 20.11. | M2d | GitHub Actions (Ubuntu + Windows, Python 3.12/3.13): ruff, pytest, Abdeckung Kern ≥ 90 % | 164/164 |
 | 20.11. | M3a/b | Planungskern getrennt (planmodell.json, Kennzeichen im Modell, Befehl `zeichnen`), Schema, EPLAN-Stub | 184/184 |
 | 20.11. | M4a | SPS-Kartenseiten mit allen Kanälen (Reserve, Schrankanschluss/Feldklemme, Versorgung), Steckplatzübersicht; Adressen überschneidungsfrei | 186/186 |
+| 20.11. | M4b | Listen im Hausformat: Klemmenplan je Leiste, Kabelübersicht mit Länge, Summenstückliste, Nachweis gegliedert | 187/187 |
+| 20.11. | M4c | Prüfbericht mit Quelle je Regel (inkl. Leitungsschutz I_B ≤ I_n ≤ I_z, Motorschutz, offene Potentiale) bei jeder Ausgabe; Kennzahl Zeichenaufwand (A36) | 210/210 |
 | 20.11. | Autostart | `docs/ARBEITSVORRAT.md` als Warteschlange; alle 3 Autostarts arbeiten sie ab und füllen sie auf ≥ 5 Pakete auf | – |
 
-Prüfungen (`docs/pruefungen/`): M2a 7 hoch, M2b 6 hoch, M2c 1 kritisch + 5 hoch, M3 1 hoch, M4a 2 hoch – alle behoben. Der kritische Befund (zerrissenes Menü in start.bat) war ein eigener Einfügefehler; start.bat ist jetzt per Test abgesichert.
+Prüfungen (`docs/pruefungen/`): M2a 7 hoch, M2b 6 hoch, M2c 1 kritisch + 5 hoch, M3 1 hoch, M4a 2 hoch, M4b 3 hoch, M4c 4 hoch – alle behoben. Der kritische Befund (zerrissenes Menü in start.bat) war ein eigener Einfügefehler; start.bat ist jetzt per Test abgesichert.
 
 ## 3. Tests
-186/186 grün; ruff ohne Befund; CI grün (Ubuntu + Windows).
+210/210 grün; ruff ohne Befund; CI grün (Ubuntu + Windows); mypy noch nicht ohne Befund (M2e).
 
 ## 4. Neue vorläufige Annahmen
 A17 DBU/LBU als Hausfarben; A18 Vorgaben nicht neu anbieten; A19 Hauptschalter als Hausvorgabe; A20 Hausvorgaben = Beispielwerte; A21 Kennbuchstaben der KI-Anleitung (Hausregel, nicht IEC 81346-2); A23 Längengrenze KI-Auftrag; A24 Ablage KI-Anleitung; A25 strukturierte Meldungen; A26 EPLAN-Importweg; A27 Kennzeichen-Strukturlogik; A28 Verbindungen; A29 Steckplatzreihenfolge; A30 SPS-Adressvergabe; A31–A33 offene Prüferpunkte (Ortsaspekt Feldgeräte, Kartenpins, Analogdetails).
@@ -41,8 +43,9 @@ A17 DBU/LBU als Hausfarben; A18 Vorgaben nicht neu anbieten; A19 Hauptschalter a
 - „Externe KI“ für das M2-Kriterium: unabhängige KI-Instanz ohne Projektkontext statt Betriebs-KI (PC6 folgt).
 
 ## 7. Nächster geplanter Schritt
-Autostart Fr 22:07: oberstes offenes Paket in `docs/ARBEITSVORRAT.md` (M4b Listen im Hausformat).
+Autostart Fr 22:07: oberstes offenes Paket in `docs/ARBEITSVORRAT.md` (M4d).
 
 ## 8. Fragen an die Überwachung (max. 3)
+0. Produkt-Prüfer empfiehlt Reihenfolge M4c → M4d → M5 → M8-Vorabtest mit echtem Plan → M7 → M6 → M4e und die Lernschleife (M5c) vor M7. ZIEL-Reihenfolge ist verbindlich – ändern? Annahme: Reihenfolge bleibt, M5c wird in M5 eingeplant.
 1. Sollen die Steuerdateien nach `schaltplan_generator/docs/` umziehen? Annahme: bleiben in `docs/`.
 2. Für die Elektrofachkraft: A3, A5, A11, A12, A17, A20, A21, A30, A31 in `docs/OFFENE_PUNKTE.md`.

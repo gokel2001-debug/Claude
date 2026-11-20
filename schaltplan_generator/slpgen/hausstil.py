@@ -963,12 +963,16 @@ class Hausplan:
         if self.m.kabel:
             z.append((f"Motoren Σ I_N = {_zahl(bil['i_motoren_A'])} A; Strom je Außenleiter höchstens "
                       f"{_zahl(bil['i_400V_max_A'])} A",))
+            from .konsistenz import _schutzorgan_je_kabel
+            schutz = _schutzorgan_je_kabel(self.m)
             z += [("",), ("2a Leitungen Motor-/Leistungsabgänge (Quelle: Tabelle i_z_A der Hausvorgabe, nicht freigegeben)",),
-                  ("Kabel", "Querschnitt", "I_B / I_r [A]", "I_z·f [A]", "ΔU [%]")]
-            for w in self.m.kabel:
-                kenn, lok = self.lokal.get(w.bmk, ("", w.bmk))
-                z.append((f"={kenn}{lok} ({_zahl(w.laenge_m)} m)", f"{w.adern}G{_zahl(w.querschnitt_mm2)} mm²",
-                          _zahl(w.i_b_A), _zahl(w.i_z_A), _zahl(round(w.du_prozent, 2))))
+                  ("Kabel", "Querschnitt", "I_B [A]", "I_n = I_r [A]", "I_z·f [A]", "ΔU [%]")]
+            for kab in self.m.kabel:
+                kenn, lok = self.lokal.get(kab.bmk, ("", kab.bmk))
+                mss = schutz.get(kab.bmk)
+                i_r = self.m.bm(mss).daten.get("i_r_A", "") if mss else ""
+                z.append((f"={kenn}{lok} ({_zahl(kab.laenge_m)} m)", f"{kab.adern}G{_zahl(kab.querschnitt_mm2)} mm²",
+                          _zahl(kab.i_b_A), _zahl(i_r) if i_r != "" else "–", _zahl(kab.i_z_A), _zahl(round(kab.du_prozent, 2))))
         gruppen: dict[str, list[str]] = {"3 Hausvorgaben und Hausstil": [], "4 Annahmen": [], "5 Offene Fragen": [],
                                          "6 Nicht geprüft / nicht freigegeben": []}
         gruppen["3 Hausvorgaben und Hausstil"] += [f"Hausstil: {w}" for w in self.stil["quelle"].values()]
@@ -983,23 +987,22 @@ class Hausplan:
                 gruppen["3 Hausvorgaben und Hausstil"].append(w)
             else:
                 gruppen["6 Nicht geprüft / nicht freigegeben"].append(w)
-        gruppen["7 Prüfbericht (Konsistenz)"] = []
-        for titel in list(gruppen["6 Nicht geprüft / nicht freigegeben"]):
-            if titel.startswith(("Prüfbericht", "FEHLER", "HINWEIS")):
-                gruppen["6 Nicht geprüft / nicht freigegeben"].remove(titel)
-                gruppen["7 Prüfbericht (Konsistenz)"].append(titel)
-        from .konsistenz import MINUTEN_JE, kennzahlen  # reine Zählung am Planmodell (keine Planungslogik)
+        from .konsistenz import MINUTEN_JE, bericht_text, kennzahlen, pruefe_plan  # frisch am Planmodell geprüft
+        gruppen["7 Prüfbericht (Konsistenz)"] = bericht_text(pruefe_plan(self.m))
         k = kennzahlen(self.m, sum(len(a.seiten) for a in self.anlagen.values()))
         gruppen["8 Kennzahlen (Zeitansatz je Element: " + ", ".join(f"{n} {_zahl(v)} min" for n, v in MINUTEN_JE.items())
                 + " – Annahme A36)"] = [f"{n}: {_zahl(v)}" for n, v in k.items()]
         for titel, eintraege in gruppen.items():
-            z += [("",), (titel,)] + [(f"• {e}",) for e in (eintraege or ["keine"])]
+            z.append(("",))
+            if len(z) % ZEILEN_JE_LISTENSEITE == ZEILEN_JE_LISTENSEITE - 1:      # Überschrift nie allein am Seitenende
+                z.append(("",))
+            z += [(titel,)] + [(f"• {e}",) for e in (eintraege or ["keine"])]
         return z
 
     def _s_auslegung(self, b: Blatt, a: Anlage, idx: int):
         zeilen = self._auslegungszeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE]
-        fett = {i for i, z in enumerate(zeilen) if z and re.match(r"\d \w|Abgang$", str(z[0]))}
-        tabelle(b, [], zeilen, [50, 40, 30, 30, 10], y_start=YL - 5, fett=fett, linien=False)
+        fett = {i for i, z in enumerate(zeilen) if z and re.match(r"\d\w? \w|Abgang$|Kabel$", str(z[0]))}
+        tabelle(b, [], zeilen, [55, 40, 30, 35, 30, 30], y_start=YL - 5, fett=fett, linien=False)
 
 def kennzeichne(m: Planmodell, stil: dict | None = None) -> dict[str, list[str]]:
     """Kennzeichen im Hausstil (Anlage je Funktion + lokales BMK) für das Planmodell festlegen.

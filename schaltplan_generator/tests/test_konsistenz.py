@@ -7,7 +7,7 @@ import yaml
 
 from slpgen import regeln
 from slpgen.cli import main
-from slpgen.konsistenz import FEHLER, HINWEIS, kennzahlen, pruefe_plan
+from slpgen.konsistenz import FEHLER, HINWEIS, KENNZAHL, kennzahlen, pruefe_plan
 from slpgen.modell import Klemme, SpsKanal
 from slpgen.projektmodell import bereit_machen
 
@@ -69,11 +69,18 @@ def _stoere_kanal(m):
 
 @pytest.mark.parametrize("stoerung, pruefung", [
     (_stoere_adresse, "SPS"), (_stoere_klemme, "Klemmen"), (_stoere_verweis, "Verweis"), (_stoere_bmk, "Kennzeichen"),
-    (_stoere_sicherung, "Absicherung"), (_stoere_kanal, "SPS")])
+    (_stoere_sicherung, "Absicherung"), (_stoere_kanal, "SPS"), (lambda m: setattr(m.kabel[0], "i_z_A", 0.5), "Leitungsschutz"),
+    (lambda m: setattr(m.kabel[0], "du_prozent", 12.0), "Spannungsfall"),
+    (lambda m: m.bm(m.bm("-M1").daten["mss"]).daten.update(i_r_A=40.0), "Motorschutz"),
+    (lambda m: m.absicherungen.__setitem__(slice(None), [a for a in m.absicherungen if "-B1" not in a.verbraucher]),
+     "Potential"),
+    (lambda m: setattr(m.klemmen[1], "ziel_aussen", m.klemmen[0].ziel_aussen), "Klemmen"),
+    (lambda m: setattr(m.klemmen[0], "nr", 0), "Klemmen")])
 def test_jede_fehlerart_wird_erkannt(stoerung, pruefung):
     m = _plan()
     stoerung(m)
-    assert any(b.art == FEHLER and b.pruefung == pruefung for b in pruefe_plan(m))
+    fehler = {b.pruefung for b in pruefe_plan(m) if b.art == FEHLER}
+    assert pruefung in fehler and fehler <= {pruefung, "Klemmen", "Verweis", "Potential", "Leitungsschutz"}   # keine fremden Fehlalarme
 
 
 def test_hinweise_luecke_und_textdopplung():
@@ -87,7 +94,8 @@ def test_hinweise_luecke_und_textdopplung():
 def test_kennzahlen_und_cli(tmp_path, capsys):
     m = _plan()
     k = kennzahlen(m, 40)
-    assert k["Seite"] == 40 and k["Klemme"] == len(m.klemmen) and k["Stunden (Zeichenaufwand, Annahme A36)"] > 0
+    assert k["Seite"] == 40 and k["Klemme"] == len(m.klemmen) and k[KENNZAHL] > 0
+    assert k["Kabel"] == len(m.kabel) + len([b for b in m.betriebsmittel if b.kategorie in ("sensor", "aktor")])
     m.speichere(tmp_path / "pm.json")
     main(["pruefbericht", str(tmp_path / "pm.json")])
     aus = capsys.readouterr().out
@@ -103,3 +111,24 @@ def test_nachweis_enthaelt_pruefbericht_motorleitungen_und_kennzahlen(tmp_path):
     main(["generieren", str(B / "projekt_beispiel.yaml"), "--ausgabe", str(tmp_path), "--profil", str(tmp_path / "x.yaml")])
     text = "".join(p.extract_text() for p in PdfReader(str(tmp_path / "P-2026-001_Stromlaufplan_Hausstil.pdf")).pages)
     assert "7 Prüfbericht (Konsistenz)" in text and "2a Leitungen Motor" in text and "8 Kennzahlen" in text
+
+
+def test_ungueltige_werte_ergeben_befund_statt_absturz():
+    m = _plan()
+    next(b for b in m.betriebsmittel if b.kategorie == "sps_di").daten["bytebereich"] = [0]
+    assert any(b.pruefung == "Daten" and b.art == FEHLER for b in pruefe_plan(m))
+
+
+def test_zeichnen_prueft_frisch(tmp_path):
+    """Software-Befund M4c: geändertes planmodell.json -> zeichnen meldet FEHLER, Nachweis zeigt ihn."""
+    from pypdf import PdfReader
+    main(["generieren", str(B / "projekt_beispiel.yaml"), "--ausgabe", str(tmp_path), "--profil", str(tmp_path / "x.yaml")])
+    pm = tmp_path / "P-2026-001_Planmodell.json"
+    from slpgen.modell import Planmodell
+    m = Planmodell.lade(pm)
+    _stoere_adresse(m)
+    m.speichere(pm)
+    with pytest.raises(SystemExit, match="FEHLER"):
+        main(["zeichnen", str(pm), "--profil", str(tmp_path / "x.yaml")])
+    text = "".join(p.extract_text() for p in PdfReader(str(tmp_path / "P-2026-001_Stromlaufplan_Hausstil.pdf")).pages)
+    assert "FEHLER (SPS)" in text

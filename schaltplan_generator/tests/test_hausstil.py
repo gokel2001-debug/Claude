@@ -166,3 +166,15 @@ def test_listen_im_hausformat(tmp_path):
     assert len(aus) == -(-len(Hausplan(m, lade_hausstil(None))._auslegungszeilen()) // ZEILEN_JE_LISTENSEITE) >= 2
     text = "".join(p.extract_text() for p in PdfReader(str(tmp_path / "h.pdf")).pages)
     assert "Hinweis 59" in text and "Summenstückliste" in text
+
+
+def test_klemmenplan_lange_leiste_mit_fortsetzung():
+    from slpgen.hausstil import ZEILEN_JE_LISTENSEITE, Hausplan
+    hp = Hausplan(regeln.plane(PROJEKT, STAMM), lade_hausstil(None))
+    hp._klemmenzeilen = lambda: [("=B01-X10:1", "Signal", "", "", ""), ("=B01-X10:2", "Signal", "", "", "")] + \
+        [(f"=Z01-X10:{i}", "Signal", "", "", "") for i in range(1, 81)]
+    zeilen, kopf = hp._klemmenplan()
+    n = ZEILEN_JE_LISTENSEITE
+    assert all(i % n != n - 1 for i in kopf)
+    assert [zeilen[i][0] for i in range(n, len(zeilen), n)] == ["Klemmleiste =Z01-X10 (Fortsetzung)"] * (len(zeilen) // n)
+    assert sum(1 for z in zeilen if z[0].startswith("=Z01")) == 80

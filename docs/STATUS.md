@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2, M3, M4a erledigt → nächstes: M4b (Listen im Hausformat) |
+| Aktuelles Paket | M2, M3, M4a–M4c erledigt → nächstes: M4d (Projektordner, Feldleitungslängen) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 186/186 grün |
+| Tests | 210/210 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -46,3 +46,5 @@
 | 20.11.2026 | manuell | M2d CI (GitHub Actions Ubuntu+Windows, Python 3.12/3.13): ruff ohne Befund (pyproject.toml), Abdeckung 95 % (Kern 95 %, Grenze 90 %); Sammelbericht fortgeschrieben |
 | 20.11.2026 | manuell | M3 Planungskern getrennt: Ausgabe nur aus planmodell.json (Schema planmodell/1, Artikelauszug, Kennzeichen), Befehl zeichnen, EPLAN-Adapter-Stub; Prüfer: 1 hoch (Kennzeichen PDF ≠ EPLAN) + 5 mittel → behoben; PDFs aus JSON byte-gleich; 184/184 Tests |
 | 20.11.2026 | manuell | M4a SPS-Übersicht (Kartenseiten mit allen Kanälen, Reserve, Feldklemme/Schrankanschluss, Versorgung; CPU-Steckplatzübersicht); Prüfer Elektro+UX: 2 hoch (falsches Gerät bei Relais/Hilfskontakt, Adressüberschneidung AI/DI) → behoben im Planungskern; 186/186 Tests |
+| 20.11.2026 | manuell | M4b Listen im Hausformat (Klemmenplan je Leiste, Summenstückliste, Nachweis gegliedert); Prüfer Elektro+UX+Produkt: 3 hoch (Artikelnummer verändert, Benennung abgeschnitten) → behoben; Produkt: Zeitersparnis, Lernschleife, Artikelstamm, EPLAN → M4c/M5c/M7a/PC7 |
+| 20.11.2026 | manuell | M4c Prüfbericht (Kennzeichen, Verweise, Klemmen, Potentiale, SPS, Absicherung, Leitungsschutz, Motorschutz, Texte; Quelle je Regel) bei jeder Ausgabe, Befehl pruefbericht, Kennzahlen; Prüfer Elektro+Software: 4 hoch → behoben; 210/210 Tests |

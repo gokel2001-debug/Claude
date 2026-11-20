@@ -246,6 +246,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     i_primaer = p_aus / nt["wirkungsgrad"] / nt["u_ein_V"]
     m.bilanz = {
         "i_summe_A": round(i_summe, 3), "gleichzeitigkeit": g, "reserve": r,
+        "du_max_prozent": float(projekt.get("leitungen", {}).get("du_max_prozent", 3.0)),    # für den Prüfbericht
         "i_bedarf_A": round(i_bedarf, 3), "netzteil": nt_key, "i_nenn_A": nt["i_nenn_A"],
         "auslastung": round(i_summe * g / nt["i_nenn_A"], 3),
         "i_primaer_max_A": round(i_primaer, 2),
