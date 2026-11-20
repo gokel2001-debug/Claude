@@ -1,0 +1,23 @@
+# Offene Punkte – Annahmen der Software (ZIEL.md „Annahme zuerst“)
+
+Jede Annahme ist umgesetzt, damit die Software weiterläuft, und bleibt offen, bis sie beantwortet ist.
+Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Freigabe durch Elektrofachkraft nötig.
+
+| Nr. | Annahme | Begründung / Quelle | Alternative | Betroffen | Frage |
+|---|---|---|---|---|---|
+| A1 | 24-V-Reserve 25 %, Gleichzeitigkeit 1,0 | Hausregel-Platzhalter, keine Quelle | Werte aus Hausprofil | `regeln.py`, Excel *Regeln* | Welche Reserve/Gleichzeitigkeit gilt im Betrieb? |
+| A2 | Absicherungsfaktor 1,25 × Gruppenstrom (Sicherung/Selektivkanal) | übliche Praxis, keine Normquelle | anderer Faktor | `regeln.py` | Gilt 1,25? |
+| A3 | Strombelastbarkeit I_z 1,5 mm² = 13,1 A, 2,5 mm² = 17,4 A (Cu/PVC, 40 °C, B2), Reduktionsfaktor 0,8 | Herstellerangabe (vereinfachte Werte), EN 60204-1 Tab. 6 nicht eingesehen | Normtabelle eintragen | Excel *Regeln* `iz_…` | **EF:** Normwerte bestätigen/eintragen |
+| A4 | zulässiger Spannungsfall 3 % | übliche Grenze, keine Hausregel | Hauswert | Excel *Regeln* | Welcher Grenzwert? |
+| A5 | Kurzschluss-/Abschaltbedingung der Leitungen wird nicht geprüft | Daten (Schleifenimpedanz, Icu) fehlen | Prüfung mit Netzdaten | `motor.py`, `regeln.py` | **EF:** Wie wird das im Betrieb nachgewiesen? |
+| A6 | Testkorpus-Trend Feldklemmleiste -X20 → -X10 ab 2025 (E8) | nur für Tests | anderer Trend | `korpus.py` | Passt das als Testfall? |
+| A7 | Aderfarbe je Potential nur als Vorgabe, nicht gelernt (E9/E18) | Lage-Auswertung fehlt (M5) | Lernen über Geometrie | `profil.py` | – (wird mit M5 gelöst) |
+| A8 | Hausstil zusätzlich zum bisherigen Plan, neutrale Anlagenkennungen EIN/NT24/VT24/SA… (E11) | Vertraulichkeit, Übergang | Hauskennungen aus Profil | `hausstil.py` | Soll der bisherige Plan entfallen? |
+| A9 | Netzteil-Kennbuchstabe -T, SPS -K (E12/E18) | im Bestand beobachtet | IEC 81346-2:2019-Klassen | Freigabeliste | Welche Normausgabe gilt? |
+| A10 | Bausteinbibliothek im Gerätestamm (E13) | einfach erweiterbar | eigene Datei | `geraetestamm.yaml` | – |
+| A11 | Drahtbruch: eigener Störausgang + Widerstand an der Klemme (E14) | im Bestand beobachtet | Widerstand im Feld + Diagnose-DI | `zaehler_di` | **EF:** bestätigen |
+| A12 | Pumpe 1~ am 3-poligen Motorschutzschalter: L über 1–2, N über 3–4 (E15) | Platzhalter | Reihenschaltung nach Hersteller | `pumpe_ec`, `hausstil.py` | **EF:** Hausregel? |
+| A13 | 1~-Geräte reihum L2/L3/L1 (E16) | Netzteil liegt auf L1 | feste Zuordnung | `regeln.py` | Gilt das? |
+| A14 | Selektivmodul wählbar, Sammelmeldung Ruhestrom (E17) | im Bestand beobachtet | Einzelsicherungen | `regeln.py` | Standard für neue Projekte? |
+| A15 | Kanalwert/Sicherung wird nicht gegen I_z des 24-V-Abgangs geprüft | Prüfer-Befund P4c (mittel) | Prüfung ergänzen (M4) | `regeln.py` | – (M4) |
+| A16 | Plan-Jahr = häufigstes Datum im Text | Schriftfeldfelder noch nicht getrennt lesbar | Erstelldatum aus Feld (M5) | `analyse.py` | – (M5) |

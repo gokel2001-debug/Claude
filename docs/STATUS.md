@@ -3,8 +3,8 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 19.11.2026, Dauerlauf (manuell gestartet) |
-| Aktuelles Paket | P4 erledigt → als Nächstes P5 |
-| Nächster Schritt | P5: Aderfarbe/Querschnitt je Potential lernbar, Kennbuchstaben-Tabelle (E12), SPS-Kartenübersicht im Hausstil verfeinern |
+| Aktuelles Paket | **ZIEL.md übernommen** (hat Vorrang) → M1: offene Fehler aus P5a |
+| Nächster Schritt | M1 (siehe docs/ROADMAP.md), Sammelbericht in docs/STATUSBERICHT.md |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
 | Tests | 75/75 grün |
@@ -36,3 +36,4 @@
 | 19.11.2026 | Dauerlauf (manuell) | P4a Bausteine; 2 Prüfer: 11 Befunde (5 hoch: Koppelrelais nicht verdrahtet, AO ohne Rückleiter, Kontakt ohne Speisung, BMK mit Punkt, doppelte Kanalschlüssel) → behoben; Drahtbruch-Variante als E14 zur Bestätigung; 63/63 Tests grün |
 | 19.11.2026 | Dauerlauf (manuell) | P4b Pumpe mit Leistungsteil; 2 Prüfer: 11 Befunde (1 hoch: Hilfskontakt 13/14 als „Störung“ statt „eingeschaltet“; Netzkette zeigte teils ins Leere) → behoben; E15/E16 zur Bestätigung; 67/67 Tests grün |
 | 19.11.2026 | Dauerlauf (manuell) | P4c Selektivmodul; Prüfer (Elektro+Qualität): 6 Befunde (2 hoch: Spaltenüberlauf ab 5 Gruppen, Sammelmeldung nicht als Reihe/Ruhestrom) → behoben; bisheriger Plan zeigt Kanäle weiterhin als Einzelsymbole (läuft aus, E11); 74/74 Tests grün |
+| 20.11.2026 | manuell | ZIEL.md übernommen: CLAUDE.md, Roadmap M1–M9, 6 Prüfer-Agenten (.claude/agents), OFFENE_PUNKTE (A1–A16), PC_AUFGABEN, STATUSBERICHT; Autostarts lesen jetzt zuerst ZIEL.md |
