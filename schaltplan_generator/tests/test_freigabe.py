@@ -250,7 +250,7 @@ def test_geometrie_werte_vereinheitlicht(gelernt):
     m = _merkmale(pfad)
     assert m["spaltenraster"]["wert"] == "10 Spalten à 40,5 mm" and m["datumsformat"]["wert"] == "JJJJ-MM-TT"
     assert m["schriftfeld_felder"]["wert"] == "Datum, Erstellt, Blatt"
-    assert "wirkt im Plan noch nicht" in m["spaltenraster"]["beschreibung"]
+    assert "wirkt im Plan noch nicht" in m["schriftfeld_felder"]["beschreibung"]
 
 
 def test_gelernter_kennbuchstabe_nach_frueherer_vorgabe_wird_angeboten(gelernt, tmp_path):
@@ -281,3 +281,28 @@ def test_gelernter_kennbuchstabe_wirkt_nach_freigabe_im_plan(gelernt, tmp_path):
     projekt = yaml.safe_load((b / "projekt_beispiel.yaml").read_text(encoding="utf-8"))
     erzeuge_hausstil_pdf(regeln.plane(projekt, stamm), str(tmp_path / "h.pdf"), lade_hausstil(pfad))
     assert "-G1" in "".join(x.extract_text() for x in PdfReader(str(tmp_path / "h.pdf")).pages)
+
+
+def test_gelernte_geometrie_wirkt_im_plan(gelernt, tmp_path):
+    """M5d: freigegebenes Spaltenraster (12 Spalten) und Datumsformat erscheinen im Hausstil-Rahmen."""
+    from pathlib import Path
+
+    from pypdf import PdfReader
+
+    from slpgen import regeln
+    from slpgen.hausstil import erzeuge_hausstil_pdf, lade_hausstil
+    pfad, liste = gelernt
+    _setze(liste, {"spaltenraster": ("JA", "12 Spalten à 31,5 mm"), "datumsformat": ("JA", "TT.MM.JJJJ")})
+    uebernehme_freigaben(pfad, liste)
+    stil = lade_hausstil(pfad)
+    assert stil["spalten"] == 12 and not stil["warnungen"]
+    b = Path(__file__).resolve().parent.parent / "beispiele"
+    stamm = yaml.safe_load((b / "geraetestamm.yaml").read_text(encoding="utf-8"))
+    projekt = yaml.safe_load((b / "projekt_beispiel.yaml").read_text(encoding="utf-8"))
+    erzeuge_hausstil_pdf(regeln.plane(projekt, stamm), str(tmp_path / "h.pdf"), stil)
+    seite = PdfReader(str(tmp_path / "h.pdf")).pages[3].extract_text()
+    assert "Datum 24.10.2026" in seite and "\n11\n" in seite
+    _setze(liste, {"spaltenraster": ("JA", "8 Spalten à 49 mm")})
+    uebernehme_freigaben(pfad, liste)
+    stil = lade_hausstil(pfad)
+    assert stil["spalten"] == 10 and "weniger als 10 Spalten" in stil["warnungen"][0]

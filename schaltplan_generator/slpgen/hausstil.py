@@ -76,6 +76,21 @@ def lade_hausstil(profil_pfad: str | Path | None) -> dict:
 
         def herkunft(key: str) -> str:
             return f"{merkmale[key].get('beschreibung', key)} = {frei[key]} (Hausprofil, freigegeben)"
+        if "spaltenraster" in frei:                     # M5d: gelernte Geometrie wirkt im Plan
+            n, breite = re.match(r"(\d+) Spalten à ([\d,]+) mm", frei["spaltenraster"]).groups()  # type: ignore[union-attr]
+            soll = (X1 - X0) / int(n)
+            if int(n) < 10:                              # ANNAHME A45: Zeichnungen nutzen die Spalten 0…9
+                stil["warnungen"].append(f"Hausprofil: Spaltenraster {frei['spaltenraster']} – weniger als 10 Spalten wird "
+                                         f"noch nicht unterstützt, Standard 10 Spalten verwendet")
+            else:
+                stil["spalten"] = int(n)
+                stil["quelle"]["spaltenraster"] = herkunft("spaltenraster")
+                if abs(float(breite.replace(",", ".")) - soll) > 0.1 * soll:
+                    stil["warnungen"].append(f"Hausprofil: Spaltenbreite {breite} mm passt nicht zum A3-Rahmen "
+                                             f"({soll:.1f} mm bei {n} Spalten) – Breite ergibt sich aus dem Blattformat")
+        if "datumsformat" in frei:
+            stil["datumsformat"] = frei["datumsformat"]
+            stil["quelle"]["datumsformat"] = herkunft("datumsformat")
         if frei.get("feldklemmleiste", "").startswith("-X"):
             stil["feldklemmleiste"], stil["quelle"]["feldklemmleiste"] = frei["feldklemmleiste"], herkunft("feldklemmleiste")
         for key, wert in frei.items():
@@ -110,6 +125,16 @@ class Ort:
 
 
 NACH_FELDMASS = "nach Feldmaß"
+
+
+def datum_im_format(iso: object, fmt: str | None) -> str:
+    """ISO-Datum (Planmodell) im Hausformat: TT.MM.JJJJ, TT.MM.JJ oder JJJJ-MM-TT (Standard: unverändert)."""
+    import datetime as dt
+    try:
+        d = dt.date.fromisoformat(str(iso))
+    except ValueError:
+        return str(iso)
+    return {"TT.MM.JJJJ": f"{d:%d.%m.%Y}", "TT.MM.JJ": f"{d:%d.%m.%y}"}.get(fmt or "", d.isoformat())
 
 
 def _zahl(x: float) -> str:
@@ -316,7 +341,7 @@ class Hausplan:
             b.linie(X0 + xs, Y0, X0 + xs, YS)
         b.text(X0 + 2, YS - 5, "Rev.  Änderung", 1.9)
         b.text(X0 + 2, YS - 11, f"{p.get('revision', '')}", 2.3)
-        b.text(X0 + 62, YS - 5, f"Datum {p.get('datum', '')}", 2)
+        b.text(X0 + 62, YS - 5, f"Datum {datum_im_format(p.get('datum', ''), self.stil.get('datumsformat'))}", 2)
         b.text(X0 + 62, YS - 10, f"Bearb. {p.get('ersteller', '')}", 2)
         b.text(X0 + 62, YS - 15, "Gepr.", 2)
         b.text(X0 + 112, YS - 6, p.get("bezeichnung", ""), 2.3)

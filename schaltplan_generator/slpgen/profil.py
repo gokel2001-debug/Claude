@@ -102,7 +102,7 @@ EINZELWERTE: dict[str, tuple[str, Callable[[dict], str | None]]] = {
     "haeufigste_ader_0_75": ("häufigste Aderkennzeichnung 0,75 mm² (noch ohne Potentialzuordnung)",
                              _haeufigste_ader_075),
     # Geometrie/Schriftfeld (M5a) – aus Textpositionen der Vektor-PDFs
-    "spaltenraster": ("Spaltenraster der Planseiten (Spaltenleiste)" + NOCH_NICHT_IM_PLAN,
+    "spaltenraster": ("Spaltenraster der Planseiten (Spaltenleiste; Breite ergibt sich aus dem Blattformat)",
                       lambda st: st.get("geometrie", {}).get("spaltenraster")),
     "schriftfeld_felder": ("Felder im Schriftfeld, nur bekannte Feldnamen (von links nach rechts)"
                            + NOCH_NICHT_IM_PLAN,
@@ -112,7 +112,7 @@ EINZELWERTE: dict[str, tuple[str, Callable[[dict], str | None]]] = {
     "kennbuchstabe_sps_karte": ("Kennbuchstabe SPS-Karte (aus SPS-Kästen gelernt)",
                                 lambda st: _eindeutig_haeufigster(Counter(st.get("kennbuchstaben", {}).get("sps_karte", {})))),
     "anlagen_feldgeraete": ("Anlagenkennung der Feldgeräte (Aufbau)" + NOCH_NICHT_IM_PLAN, _anlagen_schema),
-    "datumsformat": ("Datumsformat im Schriftfeld" + NOCH_NICHT_IM_PLAN, lambda st: st.get("geometrie", {}).get("datumsformat")),
+    "datumsformat": ("Datumsformat im Schriftfeld", lambda st: st.get("geometrie", {}).get("datumsformat")),
 }
 
 
