@@ -59,8 +59,9 @@ artikel:
     kanaele: 4
     einstellwerte_A: [0.5, 1, 2, 3, 4, 5, 6, 8, 10]
     i_summe_A: 20                   # zulässiger Summenstrom aller Kanäle (Datenblatt)
-  RK-2.5: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: Reihenklemme 2,5 mm² grau}
-  RK-4: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: Reihenklemme 4 mm² grau}
+  RK-2.5: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: "Reihenklemme 2,5 mm² grau"}
+  RK-4: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: "Reihenklemme 4 mm² grau"}
+  RK-PE: {kategorie: klemme, hersteller: Beispiel GmbH, bezeichnung: "Schutzleiterklemme 4 mm² grün-gelb"}
 
   # Motorabgang Direktstart: Motorschutzschalter (Einstellbereich), Schütz (AC-3, Spule 24 V DC)
   MSS-1.6:  {kategorie: motorschutz, hersteller: Beispiel GmbH, bezeichnung: "Motorschutzschalter 1–1,6 A", bereich_A: [1.0, 1.6]}

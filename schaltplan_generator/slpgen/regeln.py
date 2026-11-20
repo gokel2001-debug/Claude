@@ -48,6 +48,14 @@ def waehle_kleinste(stamm: dict, kandidaten: list[str], i_min: float) -> str | N
     return min(passend, key=lambda k: stamm[k]["i_nenn_A"]) if passend else None
 
 
+def _verbinde(signal: str, funktion: str) -> str:
+    """„Messwert Durchfluss“ + „Durchfluss Rücklauf“ -> „Messwert Durchfluss Rücklauf“ (keine Wortdopplung)."""
+    a, b = signal.split(), funktion.split()
+    if a and b and a[-1].lower() == b[0].lower():
+        b = b[1:]
+    return " ".join(a + b)
+
+
 def _anschluss(g: Betriebsmittel) -> str:
     """Betriebsmittel im Schrank, an dem der SPS-Kanal direkt hängt (Spule A1, Hilfskontakt 13); leer = Feldklemme.
 
@@ -125,7 +133,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
             b.daten["teilsignale"] = []
             for n, sg in enumerate(tp["signale"], 1):
                 t = Betriebsmittel(bmk=f"{bmk}.{n}", artikel="", bezeichnung=sg["text"],
-                                   funktion=f"{sg['text']} {b.funktion}".strip(), kategorie="teilsignal",
+                                   funktion=_verbinde(sg["text"], b.funktion), kategorie="teilsignal",
                                    daten={"signal": sg["art"], "i_A": 0.0, "pin": sg.get("pin", ""),
                                           "eltern": bmk, "ueber": sg.get("ueber"), "quelle": sg.get("quelle"),
                                           "rueckleiter": sg.get("rueckleiter"), "speisung": sg.get("speisung"),
@@ -402,6 +410,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     assert m.seiten[SEITE_SPS - 1][2] == "sps" and (n_mot == 0 or m.seiten[ERSTE_DYN_SEITE - 1][2] == "motor_last")
     # Auszug aus dem Gerätestamm: die Ausgabe (PDF, Listen) braucht danach nur noch das Planmodell
     benutzt = {b.artikel for b in m.betriebsmittel} | {a.artikel for a in m.absicherungen} | {k.artikel for k in m.kabel}
+    benutzt |= {"RK-2.5", "RK-4", "RK-PE"}         # Reihen-/Schutzleiterklemmen der Listen im Hausstil
     m.artikel = {k: dict(art[k]) for k in sorted(benutzt) if k in art}
     return m
 

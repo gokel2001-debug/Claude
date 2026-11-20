@@ -107,7 +107,7 @@ def test_viele_seiten_inhalt_mehrseitig_und_jedes_feldgeraet_in_kabelliste(tmp_p
 def test_stueckliste_mit_klemmen_feldkabeln_und_laengen(plan):
     seiten, texte = plan
     stl = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "STL")
-    assert "=B01" in stl and "RK-2.5" in stl and "RK-4" in stl and "Länge lt. Feld" in stl
+    assert "=B01" in stl and "RK-2.5" in stl and "RK-4" in stl and "nach Feldmaß" in stl
     assert "12 m" in stl                                           # Motorleitung mit Länge
 
 
@@ -143,13 +143,23 @@ def test_listen_im_hausformat(tmp_path):
     m = regeln.plane(PROJEKT, STAMM)
     hp = Hausplan(m, lade_hausstil(None))
     zeilen, kopf = hp._klemmenplan()
-    assert zeilen[min(kopf)][0].startswith("Klemmleiste =") and len(kopf) == len({z[0].split(":")[0]
-                                                                                  for z in hp._klemmenzeilen()})
+    leisten = {z[0].split(":")[0] for z in hp._klemmenzeilen()}
+    assert zeilen[min(kopf)][0].startswith("Klemmleiste =")
+    assert {zeilen[i][0] for i in kopf if "Fortsetzung" not in zeilen[i][0]} == {f"Klemmleiste {x}" for x in leisten}
+    n = ZEILEN_JE_LISTENSEITE
+    assert all(i % n != n - 1 for i in kopf)                                    # Kopf nie letzte Zeile der Seite
+    assert all(zeilen[i][0].startswith("Klemmleiste") for i in range(n, len(zeilen), n))   # Folgeseite mit Kopf
+    stl_alle = hp._stl_zeilen()
+    stamm_name = {k: v["bezeichnung"] for k, v in STAMM["artikel"].items()}
+    assert all(z[7] == stamm_name[z[6]] for z in stl_alle if z[6] in stamm_name)          # Benennung vollständig
+    assert any(z[6] == "RK-PE" for z in stl_alle)                                          # PE-Klemme eigener Artikel
+    kab_typ = next(z[1] for z in hp._kabelzeilen() if "KAB-" in z[1])
+    assert "(KAB-4G1.5)" in kab_typ or "(KAB-4G2.5)" in kab_typ                           # Artikelnummer unverändert
     kab = hp._kabelzeilen()
-    assert all(len(z) == 6 for z in kab) and any(z[4].endswith(" m") for z in kab) and any(z[4] == "lt. Feld" for z in kab)
+    assert all(len(z) == 6 for z in kab) and any(z[4].endswith(" m") for z in kab) and any(z[4] == "nach Feldmaß" for z in kab)
     summe = {z[3]: z[1] for z in hp._summenzeilen()}
     stl = [z for z in hp._stl_zeilen() if z[6] == "IND-M12-PNP"]
-    assert summe["IND-M12-PNP"] == f"{len(stl)} Stk" and "Länge lt. Feld" in summe[hp.stil["feldkabel_typ"] + " 3x0,75"]
+    assert summe["IND-M12-PNP"] == f"{len(stl)} Stk" and "nach Feldmaß" in summe[hp.stil["feldkabel_typ"] + " 3x0,75"]
     m.warnungen += [f"Hinweis {i}" for i in range(60)]                     # viele Hinweise -> Folgeseiten
     seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
     aus = [s for s in seiten if s[0] == "AUS"]

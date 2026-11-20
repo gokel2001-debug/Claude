@@ -107,6 +107,14 @@ class Ort:
     spalte: int
 
 
+NACH_FELDMASS = "nach Feldmaß"
+
+
+def _zahl(x: float) -> str:
+    """Zahl im deutschen Format ohne überflüssige Nullen: 1.5 -> „1,5“, 25.0 -> „25“."""
+    return f"{x:g}".replace(".", ",")
+
+
 def _kuerze(text: str, n: int) -> str:
     return text if len(text) <= n else text[: n - 1] + "…"
 
@@ -794,14 +802,14 @@ class Hausplan:
         z = []
         for alt in self._feldgeraete():
             kenn, lok = self.lokal[alt]
-            z.append((f"={kenn}-W1", f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75 mm²",
-                      f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}", "lt. Feld",
+            z.append((f"={kenn}-W1", f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75",
+                      f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}", NACH_FELDMASS,
                       self.ref(Ort(kenn, 1, 4), "")))
         for w in self.m.kabel:
             kenn, lok = self.lokal[w.bmk]
             ziel = self.lokal.get(w.nach, (kenn, w.nach))[1]
-            z.append((f"={kenn}{lok}", f"{w.adern}G{w.querschnitt_mm2:g} mm² ({w.artikel})".replace(".", ","),
-                      f"={kenn}-X1", f"={kenn}{ziel}", f"{w.laenge_m:g} m".replace(".", ","),
+            z.append((f"={kenn}{lok}", f"{w.adern}G{_zahl(w.querschnitt_mm2)} mm² ({w.artikel})",
+                      f"={kenn}-X1", f"={kenn}{ziel}", f"{_zahl(w.laenge_m)} m",
                       self.ref(self.pos.get(w.bmk), "")))
         return z
 
@@ -850,20 +858,31 @@ class Hausplan:
         return z
 
     def _klemmenplan(self) -> tuple[list[tuple], set[int]]:
-        """Klemmenplan je Leiste: Kopfzeile „Klemmleiste =Anlage-Leiste (n Klemmen)“, darunter die Klemmen."""
-        zeilen, kopf, je_leiste = [], set(), OrderedDict()
+        """Klemmenplan je Leiste (sortiert nach Anlage/Leiste), seitenweise aufgefüllt: Leistenkopf nie allein am
+        Seitenende, auf Folgeseiten als „(Fortsetzung)“ wiederholt. -> (Zeilen, Indizes der Kopfzeilen)."""
+        je_leiste: dict[str, list] = {}
         for z in self._klemmenzeilen():
             je_leiste.setdefault(z[0].split(":")[0], []).append(z)
-        for leiste, klemmen in je_leiste.items():
+        zeilen: list[tuple] = []
+        kopf: set[int] = set()
+        n = ZEILEN_JE_LISTENSEITE
+        for leiste in sorted(je_leiste):
+            klemmen = je_leiste[leiste]
+            if len(zeilen) % n == n - 1:                         # Kopf wäre letzte Zeile -> neue Seite
+                zeilen.append(("", "", "", "", ""))
             kopf.add(len(zeilen))
             zeilen.append((f"Klemmleiste {leiste}", f"{len(klemmen)} Klemmen", "", "", ""))
-            zeilen += klemmen
+            for z in klemmen:
+                if len(zeilen) % n == 0:                         # Seitenwechsel mitten in der Leiste
+                    kopf.add(len(zeilen))
+                    zeilen.append((f"Klemmleiste {leiste} (Fortsetzung)", "", "", "", ""))
+                zeilen.append(z)
         return zeilen, kopf
 
     def _s_klemmen(self, b: Blatt, a: Anlage, idx: int):
         zeilen, kopf = self._klemmenplan()
         von = idx * ZEILEN_JE_LISTENSEITE
-        tabelle(b, ["Klemme", "Potential", "Ziel innen", "Ziel außen", "Verweis"],
+        tabelle(b, ["Klemme", "Potential", "Ziel innen (Schrank)", "Ziel außen (Feld)", "Verweis"],
                 zeilen[von:von + ZEILEN_JE_LISTENSEITE], [55, 30, 110, 80, 30],
                 fett={i - von for i in kopf if von <= i < von + ZEILEN_JE_LISTENSEITE})
 
@@ -876,22 +895,22 @@ class Hausplan:
                 continue
             kenn, lok = self.lokal[bm.bmk]
             art = artikel.get(bm.artikel, {"hersteller": "", "bezeichnung": "Beistellung Kunde"})
-            menge = ((f"{bm.daten['laenge_m']:g} m" if bm.daten.get("laenge_m") else "Länge lt. Feld")
+            menge = ((f"{_zahl(bm.daten['laenge_m'])} m" if bm.daten.get("laenge_m") else NACH_FELDMASS)
                      if bm.kategorie == "kabel" else "1 Stk")
-            zeilen.append((f"={kenn}", ort, lok, menge, art.get("hersteller", ""), bm.artikel, art["bezeichnung"][:55]))
-        klemmen: dict[tuple[str, str], int] = {}
+            zeilen.append((f"={kenn}", ort, lok, menge, art.get("hersteller", ""), bm.artikel, _kuerze(art["bezeichnung"], 110)))
+        klemmen: dict[tuple[str, str, str], int] = {}
         for k in self._klemmenzeilen():
             anlage, rest = k[0][1:].split("-", 1)
             leiste = "-" + rest.split(":")[0]
-            klemmen[(anlage, leiste)] = klemmen.get((anlage, leiste), 0) + 1
-        for (anlage, leiste), n in klemmen.items():
-            key = "RK-4" if leiste == "-X1" else "RK-2.5"
+            key = "RK-PE" if k[1] == "PE" else ("RK-4" if leiste == "-X1" else "RK-2.5")
+            klemmen[(anlage, leiste, key)] = klemmen.get((anlage, leiste, key), 0) + 1
+        for (anlage, leiste, key), n in klemmen.items():
             a = artikel.get(key, {"hersteller": "", "bezeichnung": "Reihenklemme"})
-            zeilen.append((f"={anlage}", ort, leiste, f"{n} Stk", a.get("hersteller", ""), key, a["bezeichnung"][:55]))
+            zeilen.append((f"={anlage}", ort, leiste, f"{n} Stk", a.get("hersteller", ""), key, _kuerze(a["bezeichnung"], 110)))
         for alt in self._feldgeraete():
             kenn = self.lokal[alt][0]
             typ = f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75"
-            zeilen.append((f"={kenn}", ort, "-W1", "Länge lt. Feld", "", typ, "Feldleitung geschirmt"))
+            zeilen.append((f"={kenn}", ort, "-W1", NACH_FELDMASS, "–", typ, "Feldleitung geschirmt"))
         return [(i + 1, *z) for i, z in enumerate(zeilen)]
 
     def _s_stueckliste(self, b: Blatt, a: Anlage, idx: int):
@@ -900,24 +919,29 @@ class Hausplan:
                 [14, 28, 20, 20, 18, 38, 38, 160])
 
     def _summenzeilen(self) -> list[tuple]:
-        """Summenstückliste: je Artikel eine Zeile mit Gesamtmenge (Stück bzw. Meter)."""
+        """Summenstückliste: je Artikel eine Zeile mit Gesamtmenge; Beistellungen am Ende („nicht bestellen“)."""
         summe: OrderedDict[str, list] = OrderedDict()
-        for _, _, _, _, menge, hersteller, artikel, benennung in self._stl_zeilen():
-            e = summe.setdefault(artikel, [0.0, 0, "", hersteller, benennung])
+        for _, _, _, lok, menge, hersteller, artikel, benennung in self._stl_zeilen():
+            schluessel = f"{artikel}|{benennung}" if artikel == "KUNDE" else artikel
+            e = summe.setdefault(schluessel, [0.0, 0, "", hersteller, benennung, artikel])
             if menge.endswith(" Stk"):
                 e[0] += float(menge.split()[0])
                 e[2] = "Stk"
             elif menge.endswith(" m"):
                 e[0] += float(menge.split()[0].replace(",", "."))
                 e[2] = "m"
-            else:                                       # Länge lt. Feld
+            else:                                       # nach Feldmaß
                 e[1] += 1
-        zeilen = []
-        for i, (artikel, (menge, offen, einheit, hersteller, benennung)) in enumerate(summe.items(), 1):
-            text = f"{menge:g} {einheit}".replace(".", ",") if einheit else ""
+        kauf, beistellung = [], []
+        for menge, offen, einheit, hersteller, benennung, artikel in summe.values():
+            text = f"{_zahl(menge)} {einheit}" if einheit else ""
             if offen:
-                text = (text + " + " if text else "") + f"{offen}× Länge lt. Feld"
-            zeilen.append((i, text, hersteller, artikel, benennung))
+                text = (text + " + " if text else "") + f"{offen} Stk {NACH_FELDMASS}"
+            (beistellung if artikel == "KUNDE" else kauf).append((text, hersteller, artikel, benennung))
+        zeilen = [(i, *z) for i, z in enumerate(kauf, 1)]
+        if beistellung:
+            zeilen.append(("", "Beistellung – nicht bestellen", "", "", ""))
+            zeilen += [("", *z) for z in beistellung]
         return zeilen
 
     def _s_summe(self, b: Blatt, a: Anlage, idx: int):
@@ -926,23 +950,40 @@ class Hausplan:
                 [14, 50, 40, 45, 200])
 
     def _auslegungszeilen(self) -> list[tuple]:
-        """Auslegungsnachweis als Liste (mehrseitig): Abgänge, Bilanz, Hausstil-Quellen, Hinweise."""
+        """Auslegungsnachweis (mehrseitig), gegliedert: Abgänge, Bilanz, Hausvorgaben/-stil, Annahmen, offene Fragen,
+        nicht geprüft / nicht freigegeben."""
         bil = self.m.bilanz
-        z: list[tuple] = [("Abgang", "Gruppe", "Σ I [A]", "Sicherung [A]", "")]
-        z += [(f"={self.VT}{self.lokal[ab.bmk][1]}", ab.gruppe, f"{ab.i_gruppe_A:.3f}", f"{ab.i_nenn_A:g}", "")
+        z: list[tuple] = [("1 Abgänge 24 V DC", "", "", "", ""), ("Abgang", "Gruppe", "Σ I [A]", "Sicherung [A]", "")]
+        z += [(f"={self.VT}{self.lokal[ab.bmk][1]}", ab.gruppe, _zahl(round(ab.i_gruppe_A, 3)), _zahl(ab.i_nenn_A), "")
               for ab in self.m.absicherungen]
-        texte = [f"Summenstrom 24 V: Σ I = {bil['i_summe_A']} A; Bedarf mit g und Reserve = {bil['i_bedarf_A']} A",
-                 f"Netzteil {bil['netzteil']} ({bil['i_nenn_A']} A, Auslastung {bil['auslastung']:.0%})"]
+        z += [("", ), ("2 Strombilanz", )]
+        z += [(f"Summenstrom 24 V: Σ I = {_zahl(bil['i_summe_A'])} A; Bedarf mit Gleichzeitigkeit g = "
+               f"{_zahl(bil['gleichzeitigkeit'])} und Reserve {_zahl(bil['reserve'])} = {_zahl(bil['i_bedarf_A'])} A",),
+              (f"Netzteil {bil['netzteil']} ({_zahl(bil['i_nenn_A'])} A, Auslastung {bil['auslastung']:.0%})",)]
         if self.m.kabel:
-            texte.append(f"Motoren Σ I_N = {bil['i_motoren_A']} A; 400 V gesamt ≤ {bil['i_400V_max_A']} A")
-        texte += [f"Hausstil: {w}" for w in self.stil["quelle"].values()]
-        texte += [f"Achtung {w}" for w in self.stil.get("warnungen", [])]
-        texte += ["Hinweise:"] + [f"• {w}" for w in self.m.warnungen or ["keine"]]
-        return z + [("", "", "", "", "")] + [(t,) for t in texte]
+            z.append((f"Motoren Σ I_N = {_zahl(bil['i_motoren_A'])} A; Strom je Außenleiter höchstens "
+                      f"{_zahl(bil['i_400V_max_A'])} A",))
+        gruppen: dict[str, list[str]] = {"3 Hausvorgaben und Hausstil": [], "4 Annahmen": [], "5 Offene Fragen": [],
+                                         "6 Nicht geprüft / nicht freigegeben": []}
+        gruppen["3 Hausvorgaben und Hausstil"] += [f"Hausstil: {w}" for w in self.stil["quelle"].values()]
+        gruppen["3 Hausvorgaben und Hausstil"] += [f"Achtung {w}" for w in self.stil.get("warnungen", [])]
+        for w in self.m.warnungen:
+            w = re.sub(r"\s*\((leitungen|versorgung_24V|sps)\.[\w.]+\)", "", w)        # keine internen Schlüssel
+            if w.startswith("Annahme der Aufbereitung:"):
+                gruppen["4 Annahmen"].append(w.split(":", 1)[1].strip())
+            elif w.startswith("Offene Frage:"):
+                gruppen["5 Offene Fragen"].append(w.split(":", 1)[1].strip())
+            elif "nach Hausvorgabe" in w:
+                gruppen["3 Hausvorgaben und Hausstil"].append(w)
+            else:
+                gruppen["6 Nicht geprüft / nicht freigegeben"].append(w)
+        for titel, eintraege in gruppen.items():
+            z += [("",), (titel,)] + [(f"• {e}",) for e in (eintraege or ["keine"])]
+        return z
 
     def _s_auslegung(self, b: Blatt, a: Anlage, idx: int):
         zeilen = self._auslegungszeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE]
-        fett = {i for i, z in enumerate(zeilen) if z[0] in ("Abgang", "Hinweise:")}
+        fett = {i for i, z in enumerate(zeilen) if z and re.match(r"\d \w|Abgang$", str(z[0]))}
         tabelle(b, [], zeilen, [50, 40, 30, 30, 10], y_start=YL - 5, fett=fett, linien=False)
 
 def kennzeichne(m: Planmodell, stil: dict | None = None) -> dict[str, list[str]]:

@@ -38,3 +38,5 @@ Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Fre
 | A31 | Feldgeräte tragen das Ortskennzeichen des Schranks | bisheriges Verhalten | ohne Ort oder Feldort (+FLD) | `hausstil.voll` | **EF:** Ortsaspekt Feldgeräte? |
 | A32 | Kartenanschlüsse (Frontstecker-Pins) nicht dargestellt | keine Pinbelegung im Gerätestamm | Pinbelegung je Kartenartikel | `geraetestamm.yaml` | – (M7) |
 | A33 | Analogkanäle ohne Signalart/Bezug/Messbereich/Diagnose | Daten fehlen im Projektmodell/Gerätestamm | Felder ergänzen | `projektmodell.py`, Stamm | – (M7) |
+| A34 | Klemmenzubehör (Endplatten, Endhalter, Brücken, Leistenbeschriftung, Schirmauflage) nicht in den Listen | Daten/Hausregel fehlen | Zubehör je Leiste aus Hausprofil | `hausstil._stl_zeilen` | **EF:** Hausregel Zubehör/Brücken? |
+| A35 | Feldleitungen „nach Feldmaß“ ohne Meter | Projektmodell hat Länge nur für Leistungsteil/Motoren | Länge je Feldgerät im Projektmodell, Übertrag auf alle Kabel des Geräts | `projektmodell.py`, `hausstil.py` | – (M4d) |

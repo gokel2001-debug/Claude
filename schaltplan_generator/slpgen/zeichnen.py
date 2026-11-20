@@ -180,7 +180,7 @@ def s_deckblatt(b: Blatt, m: Planmodell):
               ("Revision", p.get("revision"))]
     for i, (k, v) in enumerate(zeilen):
         b.text(xm - 60, 170 - i * 9, k, 4)
-        b.text(xm + 5, 170 - i * 9, v, 4, True)
+        b.text(xm + 5, 170 - i * 9, v if v not in (None, "") else "nicht angegeben", 4, True)
 
 
 def s_inhalt(seiten):
