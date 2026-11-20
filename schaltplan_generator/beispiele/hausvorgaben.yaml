@@ -1,0 +1,34 @@
+# Hausvorgaben (Abschnittsart H im Projektmodell, docs/SCHEMA_PROJEKTMODELL.md)
+# Fehlt ein Abschnitt/Feld im Projektmodell (z. B. aus der KI-Aufbereitung), wird er von hier ergänzt.
+# Werte wie im Beispielprojekt – Hausregeln, von der Elektrofachkraft freizugeben (siehe OFFENE_PUNKTE A1, A2, A3).
+einspeisung:
+  hauptschalter: HS-3P-40
+versorgung_24V:
+  netzteile:
+  - NT-24-05
+  - NT-24-10
+  - NT-24-20
+  gleichzeitigkeit: 1.0
+  reserve: 0.25
+  absicherungsfaktor: 1.25
+sps:
+  cpu: SPS-CPU
+  module_kandidaten:
+    DI: SPS-DI16
+    DO: SPS-DO16
+    AI: SPS-AI8
+    AO: SPS-AO4
+  adressschema:
+    DI: '%I{byte}.{bit}'
+    DO: '%Q{byte}.{bit}'
+    AI: '%IW{wort}'
+    AO: '%QW{wort}'
+leitungen:
+  freigegeben: false
+  verlegeart: B2
+  i_z_A:
+    1.5: 13.1
+    2.5: 17.4
+  reduktionsfaktor: 0.8
+  kappa: 56
+  du_max_prozent: 3.0

@@ -23,3 +23,5 @@ Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Fre
 | A16 | Plan-Jahr = häufigstes Datum im Text | Schriftfeldfelder noch nicht getrennt lesbar | Erstelldatum aus Feld (M5) | `analyse.py` | – (M5) |
 | A17 | Aderfarben DBU (dunkelblau) und LBU (hellblau) zusätzlich zu IEC 60757 zulässig | im Bestand üblich, IEC 60757 kennt nur BU | nur IEC-Kürzel | `freigabe.py` | **EF:** Hausregel so beibehalten? |
 | A18 | Freigegebene/abgelehnte Vorgaben werden beim Lernen nicht neu angeboten | Vorgaben werden noch nicht aus Plänen gelernt | Lernen der Vorgaben (M5) | `profil.py` | – (M5) |
+| A19 | Hauptschalter gilt als Hausvorgabe (wird ergänzt, wenn das Projektmodell keinen nennt) | Lastenhefte nennen selten einen Hauptschalter-Artikel | Auswahl nach Bemessungsstrom (M7) | `projektmodell.py` | Gilt das? |
+| A20 | Hausvorgaben (`beispiele/hausvorgaben.yaml`) = Werte des Beispielprojekts (Netzteile, SPS, Leitungstabelle) | keine echten Hauswerte im Repo (Vertraulichkeit) | lokale Hausvorgaben aus `hausprofil/` (M5) | `hausvorgaben.yaml` | **EF:** Werte freigeben |

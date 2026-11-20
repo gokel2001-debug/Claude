@@ -13,7 +13,13 @@ from . import analyse, regeln, zeichnen
 
 def lade_yaml(p: str) -> dict:
     with open(p, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        try:
+            return yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            stelle = getattr(e, "problem_mark", None)
+            zeile = f" in Zeile {stelle.line + 1}" if stelle else ""
+            raise regeln.RegelFehler(f"{Path(p).name}: Formatfehler{zeile} – Einrückung und Doppelpunkte prüfen "
+                                     f"(z. B. „feld: wert“, Listen mit „- “)") from None
 
 
 def lade_projekt(p: str) -> dict:
@@ -23,9 +29,17 @@ def lade_projekt(p: str) -> dict:
     return lade_yaml(p)
 
 
+def _vorgaben(pfad: str | None) -> dict | None:
+    return lade_yaml(pfad) if pfad and Path(pfad).exists() else None
+
+
 def cmd_generieren(a):
-    projekt, stamm = lade_projekt(a.projekt), lade_yaml(a.stamm)
+    from .projektmodell import bereit_machen
+    stamm = lade_yaml(a.stamm)
+    projekt, ergaenzt = bereit_machen(lade_projekt(a.projekt), stamm, _vorgaben(a.vorgaben))
     m = regeln.plane(projekt, stamm)
+    if ergaenzt:
+        m.warnungen.append(f"Aus Hausvorgaben ergänzt: {', '.join(ergaenzt)}")
     ziel = Path(a.ausgabe)
     ziel.mkdir(parents=True, exist_ok=True)
     name = m.projekt["nummer"]
@@ -45,6 +59,26 @@ def cmd_generieren(a):
     print(f"Netzteil: {m.bilanz['netzteil']} (Bedarf {m.bilanz['i_bedarf_A']} A)")
     for w in m.warnungen:
         print("WARNUNG:", w)
+
+
+def cmd_pruefen(a):
+    from .projektmodell import bereit_machen
+    daten = lade_projekt(a.projekt)
+    _, ergaenzt = bereit_machen(daten, lade_yaml(a.stamm), _vorgaben(a.vorgaben))
+    print(f"Projektmodell {Path(a.projekt).name}: vollständig, Plan kann erzeugt werden.")
+    if ergaenzt:
+        print(f"Aus Hausvorgaben ergänzt: {', '.join(ergaenzt)}")
+    for titel, k in (("Annahmen der Aufbereitung", "annahmen"), ("Offene Fragen", "offene_fragen")):
+        if isinstance(daten, dict) and daten.get(k):
+            print(f"{titel} (bitte prüfen):")
+            for x in daten[k]:
+                print(f"  • {x}")
+
+
+def cmd_schema(a):
+    from .projektmodell import schema_markdown
+    Path(a.ziel).write_text(schema_markdown() + "\n", encoding="utf-8")
+    print(f"Schema -> {a.ziel}")
 
 
 def cmd_analysieren(a):
@@ -117,7 +151,17 @@ def main(argv=None):
     g.add_argument("--ausgabe", default="ausgabe")
     g.add_argument("--profil", default="hausprofil/profil.yaml",
                    help="Hausprofil; nur freigegebene Werte fließen in den Hausstil ein")
+    g.add_argument("--vorgaben", default="beispiele/hausvorgaben.yaml",
+                   help="Hausvorgaben für fehlende Abschnitte (versorgung_24V, sps, leitungen)")
     g.set_defaults(f=cmd_generieren)
+    pr = sub.add_parser("pruefen", help="Projektmodell (YAML/Excel) prüfen, alle Lücken im Klartext")
+    pr.add_argument("projekt")
+    pr.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
+    pr.add_argument("--vorgaben", default="beispiele/hausvorgaben.yaml")
+    pr.set_defaults(f=cmd_pruefen)
+    sc = sub.add_parser("schema", help="Schema des Projektmodells als Markdown schreiben")
+    sc.add_argument("ziel", nargs="?", default="../docs/SCHEMA_PROJEKTMODELL.md")
+    sc.set_defaults(f=cmd_schema)
     an = sub.add_parser("analysieren", help="Bestands-PDFs auswerten (Formate, Jahre, Kennbuchstaben)")
     an.add_argument("ordner")
     an.add_argument("--ausgabe", default="analyse")
