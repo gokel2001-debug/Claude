@@ -73,6 +73,20 @@ def _haeufigste_ader_075(st: dict) -> str | None:
                                            if k.endswith(" 0,75")}))
 
 
+def _anlagen_schema(st: dict) -> str | None:
+    """Aufbau der Feldgeräte-Anlagen, z. B. „2 Buchstaben + 2 Ziffern (ZD01)“; Infrastruktur-Anlagen zählen nicht."""
+    schemas: Counter[str] = Counter()
+    beispiel: dict[str, str] = {}
+    for name in st.get("anlagen_reihenfolge", st.get("anlagen", {})):
+        mt = re.fullmatch(r"([A-Z]{1,3})(\d{2,3})", name)
+        if mt:
+            sch = f"{len(mt.group(1))} Buchstaben + {len(mt.group(2))} Ziffern"
+            schemas[sch] += 1
+            beispiel.setdefault(sch, name)
+    wert = _eindeutig_haeufigster(schemas)
+    return f"{wert} (z. B. {beispiel[wert]})" if wert else None
+
+
 NOCH_NICHT_IM_PLAN = " – wird gespeichert, wirkt im Plan noch nicht (folgt mit M5)"
 
 # Einzelwert-Merkmale: je Plan ein Wert -> Mehrheit, Anteil, Jahrestrend
@@ -87,6 +101,11 @@ EINZELWERTE: dict[str, tuple[str, Callable[[dict], str | None]]] = {
     "schriftfeld_felder": ("Felder im Schriftfeld, nur bekannte Feldnamen (von links nach rechts)"
                            + NOCH_NICHT_IM_PLAN,
                            lambda st: st.get("geometrie", {}).get("schriftfeld_felder")),
+    "kennbuchstabe_netzteil": ("Kennbuchstabe Netzteil (aus Plänen gelernt)",
+                               lambda st: _eindeutig_haeufigster(Counter(st.get("kennbuchstaben", {}).get("netzteil", {})))),
+    "kennbuchstabe_sps_karte": ("Kennbuchstabe SPS-Karte (aus SPS-Kästen gelernt)",
+                                lambda st: _eindeutig_haeufigster(Counter(st.get("kennbuchstaben", {}).get("sps_karte", {})))),
+    "anlagen_feldgeraete": ("Anlagenkennung der Feldgeräte (Aufbau)" + NOCH_NICHT_IM_PLAN, _anlagen_schema),
     "datumsformat": ("Datumsformat im Schriftfeld" + NOCH_NICHT_IM_PLAN, lambda st: st.get("geometrie", {}).get("datumsformat")),
 }
 
@@ -190,6 +209,8 @@ def lerne(pdfs: list[Path]) -> dict[str, Any]:
         }
 
     for key, (beschreibung, wert) in VORGABEN.items():
+        if key in merkmale:                            # aus Plänen gelernt -> Vorgabe nur als Rückfall
+            continue
         merkmale[key] = {"beschreibung": beschreibung, "wert": wert, "status": "vorgeschlagen",
                          "sicherheit": "Vorgabe", "belegt_in": "Vorgabe – noch nicht aus Plänen gelernt",
                          "anteil_gesamt": {}, "je_jahr": {}, "trend": [], "ohne_wert": [], "belege": {}}

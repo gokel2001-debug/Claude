@@ -37,9 +37,10 @@ def test_liste_enthaelt_nur_einzelwerte_beschreibung_zuerst(gelernt):
     _, liste = gelernt
     ws = load_workbook(liste)["Freigabe"]
     assert ws["A1"].value == "Beschreibung"
-    from slpgen.profil import VORGABEN
-    assert list(_zeilen(liste)) == ["feldklemmleiste", "sps_adressschreibweise", "haeufigste_ader_0_75", "spaltenraster",
-                                    "schriftfeld_felder", "datumsformat", *VORGABEN]
+    from slpgen.profil import EINZELWERTE, VORGABEN
+    gelernt_keys = [k for k in EINZELWERTE if k in _merkmale(gelernt[0])]
+    assert list(_zeilen(liste)) == gelernt_keys + [k for k in VORGABEN if k not in gelernt_keys]
+    assert {"kennbuchstabe_netzteil", "kennbuchstabe_sps_karte", "anlagen_feldgeraete"} <= set(gelernt_keys)
 
 
 def test_ja_nein_eigener_wert(gelernt):
@@ -202,12 +203,10 @@ def test_eigener_vorgabewert_bleibt_nach_neuem_lernen(gelernt, tmp_path):
 
 
 def test_offene_punkte_genau_die_unentschiedenen(gelernt):
-    from slpgen.profil import VORGABEN
     pfad, liste = gelernt
     _setze(liste, {"feldklemmleiste": ("JA", None)})
     e = uebernehme_freigaben(pfad, liste)
-    erwartet = {_merkmale(pfad)[k]["beschreibung"] for k in ["sps_adressschreibweise", "haeufigste_ader_0_75", "spaltenraster",
-                                                             "schriftfeld_felder", "datumsformat", *VORGABEN]}
+    erwartet = {v["beschreibung"] for k, v in _merkmale(pfad).items() if k != "feldklemmleiste" and "wert" in v}
     assert set(e["offen"]) == erwartet
 
 

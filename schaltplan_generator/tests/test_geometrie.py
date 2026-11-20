@@ -107,3 +107,19 @@ def test_wortgrenzen_und_leere_seite(tmp_path):
     assert lese_geometrie(tmp_path / "p.pdf")["schriftfeld_felder"] is None
     _seite(tmp_path / "leer.pdf", lambda c: None)
     assert "keine Textebene" in lese_geometrie(tmp_path / "leer.pdf")["hinweis"]
+
+
+def test_kennbuchstaben_und_anlagenschema_gelernt(korpus):
+    """M5b: Kennbuchstaben Netzteil/SPS-Karte und Aufbau der Feldgeräte-Anlagen aus dem Plantext."""
+    ordner, _ = korpus
+    m = lerne(sorted(ordner.glob("*.pdf")))["merkmale"]
+    assert (m["kennbuchstabe_netzteil"]["wert"], m["kennbuchstabe_netzteil"]["sicherheit"]) == ("T", "hoch")
+    assert m["kennbuchstabe_sps_karte"]["wert"] == "K" and "Vorgabe" not in m["kennbuchstabe_sps_karte"]["sicherheit"]
+    assert m["anlagen_feldgeraete"]["wert"].startswith("2 Buchstaben + 2 Ziffern (z. B. ")
+
+
+def test_kennbuchstaben_aus_text():
+    from slpgen.struktur import kennbuchstaben
+    t = "-G1 Netzteil 24V\n-T2 Netzteil 24V\n-T3 Netzteil\n=SA1-KF1\nE0.1\n=B01-X10:2 Klemme"
+    k = kennbuchstaben(t)
+    assert k["netzteil"] == {"G": 1, "T": 2} and k["sps_karte"] == {"KF": 1}

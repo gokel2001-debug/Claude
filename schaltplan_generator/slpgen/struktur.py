@@ -29,6 +29,23 @@ MUSTER = {
 }
 SEITENARTEN_PLAN = {"EFS"}          # Dokumentarten mit Stromlaufplan-Inhalt
 
+# Kennbuchstaben je Geräteart: BMK direkt vor der Gerätebezeichnung („-T1 Netzteil 24V/4A“)   # ANNAHME A42
+GERAETEWOERTER = {"netzteil": r"Netzteil", "koppelrelais": r"Koppelrelais", "motorschutz": r"Motorschutzschalter"}
+RE_KARTE = re.compile(r"=\w+-([A-Z]{1,3})\d+\b(?=[\s\S]{0,60}?(?:%[IQ]W?\d|\b[EA]W?\d+(?:\.[0-7])?\b))")
+
+
+def kennbuchstaben(text: str) -> dict[str, dict[str, int]]:
+    """Kennbuchstaben je Geräteart aus dem Plantext (Zählung), z. B. {"netzteil": {"T": 1}, "sps_karte": {"K": 6}}."""
+    ergebnis: dict[str, dict[str, int]] = {}
+    for art, wort in GERAETEWOERTER.items():
+        z = Counter(m.group(1) for m in re.finditer(rf"(?<![\w/.-])-([A-Z]{{1,3}})\d+\s+{wort}", text))
+        if z:
+            ergebnis[art] = dict(z)
+    karten = Counter(m.group(1) for m in RE_KARTE.finditer(text))
+    if karten:
+        ergebnis["sps_karte"] = dict(karten)
+    return ergebnis
+
 
 def _normalisiert(text: str, anlage: str) -> set[str]:
     """Token-Menge ohne Anlagennamen und Ziffern -> vergleichbar zwischen Anlagen."""
@@ -108,4 +125,6 @@ def lese_struktur(pdf: Path, muster: dict | None = None, schwelle: float = 0.75)
         "aehnlichste_paare": aehnlichste,
         "leere_anlagen": sorted(n for n, e in ergebnis_anlagen.items() if e["leer"]),
         "aderkennzeichnung_gesamt": dict(adern.most_common()),
+        "kennbuchstaben": kennbuchstaben("\n".join(a["text"] for a in anlagen.values())),
+        "anlagen_reihenfolge": list(anlagen),
     }
