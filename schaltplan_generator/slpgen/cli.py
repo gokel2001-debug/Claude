@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import traceback
@@ -32,7 +33,20 @@ def _mapping(loader, node, deep=False):
     return loader.construct_mapping(node, deep=deep)
 
 
+class _ZeilenLader(_Lader):
+    """Wie _Lader; Einträge mit Kennzeichen (Feldgeräte, Motoren) merken sich ihre Zeile für Prüfmeldungen."""
+
+
+def _mapping_mit_zeile(loader, node, deep=False):
+    d = _mapping(loader, node, deep=deep)
+    if "bmk" in d:
+        d["_zeile"] = node.start_mark.line + 1
+    return d
+
+
 _Lader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _mapping)
+_ZeilenLader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _mapping_mit_zeile)
+MENUE = os.environ.get("SLPGEN_MENUE") == "1"          # aus start.bat: Hinweise mit Menüpunkten statt Befehlen
 
 
 RE_KOMMAZAHL = re.compile(r"(:\s*-?\d+),(\d+)(?=\s*[a-zA-Z%²]*\s*[,}])")
@@ -52,7 +66,7 @@ def _bereinige(text: str) -> str:
     return "\n".join(zeilen)
 
 
-def lade_yaml(p: str) -> dict:
+def lade_yaml(p: str, zeilen: bool = False) -> dict:
     roh = Path(p).read_bytes()
     try:
         text = roh.decode("utf-8-sig")
@@ -64,7 +78,7 @@ def lade_yaml(p: str) -> dict:
             raise regeln.RegelFehler(f"{Path(p).name}: Zeile {nr} ist mit Tabulator eingerückt – "
                                      f"bitte Leerzeichen verwenden")
     try:
-        return yaml.load(text, Loader=_Lader)
+        return yaml.load(text, Loader=_ZeilenLader if zeilen else _Lader)
     except yaml.YAMLError as e:
         stelle = getattr(e, "problem_mark", None)
         zeile = f" in Zeile {stelle.line + 1}" if stelle else ""
@@ -79,7 +93,7 @@ def lade_projekt(p: str) -> dict:
     if p.lower().endswith((".xlsx", ".xlsm")):
         from .excel_eingabe import lade_excel
         return lade_excel(p)
-    return lade_yaml(p)
+    return lade_yaml(p, zeilen=True)
 
 
 def _vorgaben(pfad: str | None) -> dict | None:
@@ -136,7 +150,8 @@ def cmd_pruefen(a):
                         "und gib das vollständige Projektmodell erneut als einen YAML-Block aus (gleiche Regeln wie "
                         "vorher, nichts erfinden – Unklares in offene_fragen):\n\n" + str(e) + "\n", encoding="utf-8")
         raise regeln.RegelFehler(f"{e}\n\nSo geht es weiter: Inhalt von {korr} in denselben KI-Chat kopieren, "
-                                 f"die neue Antwort über {Path(a.projekt).name} speichern und erneut prüfen. "
+                                 f"die neue Antwort über {Path(a.projekt).name} speichern und erneut prüfen"
+                                 f"{' (Punkt 9)' if MENUE else ''}. "
                                  f"Kleine Fehler können Sie auch direkt in der Datei (Editor) korrigieren.") from None
     n = len(daten.get("offene_fragen") or []) if isinstance(daten.get("offene_fragen"), list) else 0
     print(f"Projektmodell {Path(a.projekt).name}: vollständig, Plan kann erzeugt werden"
@@ -164,6 +179,12 @@ def cmd_ki_auftrag(a):
               f"Feldgeräten, Motoren und Einspeisung kürzen (Ziel unter {MAX_ZEICHEN:,} Zeichen).".replace(",", "."))
     antwort = quelle.with_name("projektmodell.yaml")
     print("So geht es weiter:")
+    if MENUE:
+        print("1. Der Auftrag liegt in der Zwischenablage: im KI-Chat mit Strg+V einfügen und absenden")
+        print("   (nur eine vom Betrieb freigegebene KI; sonst Kundennamen vorher entfernen).")
+        print(f"2. Es öffnet sich der Editor mit {antwort.name}: Antwort der KI hineinkopieren, speichern.")
+        print(f"3. Hier Punkt 9 wählen und {antwort.name} ins Fenster ziehen.")
+        return
     print("1. Inhalt der Datei vollständig in einen KI-Chat einfügen (nur eine vom Betrieb freigegebene KI;")
     print("   Kundennamen vorher entfernen, wenn die KI nicht freigegeben ist).")
     print(f"2. Antwort der KI mit dem Editor speichern als: {antwort}")

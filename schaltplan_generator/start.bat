@@ -42,6 +42,8 @@ echo   4  Bestands-PDF auswerten (Struktur, Typicals)
 echo   5  Selbsttest
 echo   6  Hausprofil lernen (Ordner mit Bestands-PDFs)
 echo   7  Hausprofil freigeben (Excel-Liste uebernehmen)
+echo   8  KI-Auftrag aus Lastenheft erstellen (fuer einen KI-Chat)
+echo   9  KI-Antwort pruefen und Plan erzeugen
 echo   0  Beenden
 echo.
 set "W="
@@ -50,9 +52,54 @@ if "%W%"=="1" goto :beispiel
 if "%W%"=="2" goto :neu
 if "%W%"=="3" goto :excel
 if "%W%"=="4" goto :struktur
-if "%W%"=="5" goto :selbsttest
+if "%W%"=="5" goto :kiauftrag
+echo Lastenheft (.docx, .pdf oder .txt) in dieses Fenster ziehen und Enter druecken:
+set "LH="
+set /p "LH=> "
+if not defined LH goto :menue
+set "LH=%LH:"=%"
+for %%F in ("%LH%") do (set "LHDIR=%%~dpF" & set "LHNAME=%%~nF")
+set "SLPGEN_MENUE=1"
+%SLP% ki-auftrag "%LH%"
+if errorlevel 1 goto :fehler_lauf
+rem Auftrag in die Zwischenablage (UTF-8, Umlaute bleiben erhalten)
+powershell -NoProfile -Command "Get-Content -Raw -Encoding UTF8 -LiteralPath '%LHDIR%%LHNAME%_KI_Auftrag.txt' | Set-Clipboard"
+if not exist "%LHDIR%projektmodell.yaml" type nul > "%LHDIR%projektmodell.yaml"
+start "" notepad "%LHDIR%projektmodell.yaml"
+pause
+goto :menue
+
+:kiantwort
+echo Gespeicherte KI-Antwort (z. B. projektmodell.yaml) in dieses Fenster ziehen und Enter druecken:
+set "KA="
+set /p "KA=> "
+if not defined KA goto :menue
+set "KA=%KA:"=%"
+for %%F in ("%KA%") do (set "KADIR=%%~dpF" & set "KANAME=%%~nF")
+set "SLPGEN_MENUE=1"
+del "%KADIR%%KANAME%_Korrektur_fuer_KI.txt" 2>nul
+%SLP% pruefen "%KA%"
+if errorlevel 1 goto :ki_korrektur
+%SLP% generieren "%KA%" --ausgabe ausgabe
+if errorlevel 1 goto :fehler_lauf
+start "" "ausgabe"
+pause
+goto :menue
+
+:ki_korrektur
+if not exist "%KADIR%%KANAME%_Korrektur_fuer_KI.txt" goto :fehler_lauf
+echo.
+echo Der Korrekturauftrag fuer die KI liegt jetzt in der Zwischenablage:
+echo im selben KI-Chat mit Strg+V einfuegen, neue Antwort speichern, dann wieder Punkt 9.
+powershell -NoProfile -Command "Get-Content -Raw -Encoding UTF8 -LiteralPath '%KADIR%%KANAME%_Korrektur_fuer_KI.txt' | Set-Clipboard" 2>nul
+pause
+goto :menue
+
+:selbsttest
 if "%W%"=="6" goto :lernen
 if "%W%"=="7" goto :freigabe
+if "%W%"=="8" goto :kiauftrag
+if "%W%"=="9" goto :kiantwort
 if "%W%"=="0" goto :ende
 goto :menue
 

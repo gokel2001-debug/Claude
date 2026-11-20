@@ -128,3 +128,16 @@ def test_echte_ki_rohantwort_ergibt_plan(tmp_path, capsys):
     main(["generieren", str(roh), "--ausgabe", str(tmp_path), "--profil", str(tmp_path / "x.yaml")])
     text = "".join(s.extract_text() for s in PdfReader(str(tmp_path / "P-2026-017_Stromlaufplan.pdf")).pages)
     assert "-M3" in text and "Offene Frage: Reparatur-/Trennschalter" in text
+
+
+def test_menue_modus_nennt_menuepunkte(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr("slpgen.cli.MENUE", True)
+    lh = tmp_path / "lh.md"
+    lh.write_text((B / "lastenheft_beispiel.md").read_text(encoding="utf-8"), encoding="utf-8")
+    main(["ki-auftrag", str(lh)])
+    aus = capsys.readouterr().out
+    assert "Zwischenablage" in aus and "Punkt 9" in aus and "python -m" not in aus
+    kaputt = tmp_path / "projektmodell.yaml"
+    kaputt.write_text("projekt: {nummer: A}\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match=r"\(Punkt 9\)"):
+        main(["pruefen", str(kaputt)])

@@ -130,7 +130,8 @@ def _ort(abschnitt: str, i: int | None, eintrag: Any) -> str:
     if i is None:
         return klar
     bmk = f" {eintrag.get('bmk')}" if isinstance(eintrag, dict) and eintrag.get("bmk") else ""
-    return f"{klar}{bmk} ({i + 1}. Eintrag)"
+    zeile = f", Zeile {eintrag['_zeile']}" if isinstance(eintrag, dict) and eintrag.get("_zeile") else ""
+    return f"{klar}{bmk} ({i + 1}. Eintrag{zeile})"
 
 
 def _leer(w: Any) -> bool:
@@ -178,7 +179,7 @@ def pruefe(daten: Any, stamm: dict) -> list[str]:
                 continue
             namen = {f.name for f in felder}
             for k in e:
-                if k not in namen:
+                if k not in namen and k != "_zeile":
                     l.append(f"{ort}: unbekanntes Feld „{k}“ – erlaubt: {', '.join(sorted(namen))}")
             for f in felder:
                 l.extend(_pruefe_feld(ort, f, e.get(f.name), art, typicals))
@@ -380,6 +381,7 @@ def bereit_machen(daten: Any, stamm: dict, vorgaben: dict | None = None) -> tupl
                     e[f.name] = _ja_nein(e[f.name])
                 elif f.typ == "bmk":
                     e[f.name] = str(e[f.name]).strip().upper()
+            e.pop("_zeile", None)
     ltg = daten["leitungen"]
     if isinstance(ltg.get("i_z_A"), dict):
         ltg["i_z_A"] = {_zahl(q): _zahl(iz) for q, iz in ltg["i_z_A"].items()}

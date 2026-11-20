@@ -202,3 +202,17 @@ def test_fehlende_vorgaben_und_unerwarteter_fehler_ohne_traceback(tmp_path, monk
     with pytest.raises(SystemExit, match="Unerwarteter Programmfehler"):
         main(["pruefen", str(gut)])
     assert "ZeroDivisionError" in (tmp_path / "slpgen_fehler.log").read_text(encoding="utf-8")
+
+
+def test_meldung_nennt_zeile(tmp_path):
+    f = tmp_path / "p.yaml"
+    f.write_text("projekt: {nummer: A, bezeichnung: B}\neinspeisung: {netz: x}\nfeldgeraete:\n"
+                 "  - {bmk: B1, artikel: IND-M12-PNP, funktion: a}\n  - {bmk: B2, artikel: XX, funktion: b}\n",
+                 encoding="utf-8")
+    with pytest.raises(SystemExit, match=r"Feldgerät B2 \(2\. Eintrag, Zeile 5\)"):
+        main(["pruefen", str(f)])
+    from slpgen.cli import lade_projekt
+    modell, _ = bereit_machen(lade_projekt(str(f)).copy() | {"feldgeraete": [{"bmk": "B1", "artikel": "IND-M12-PNP",
+                                                                                  "funktion": "a", "_zeile": 4}]},
+                              STAMM, VORGABEN)
+    assert "_zeile" not in modell["feldgeraete"][0]
