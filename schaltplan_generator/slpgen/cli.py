@@ -53,14 +53,21 @@ RE_KOMMAZAHL = re.compile(r"(:\s*-?\d+),(\d+)(?=\s*[a-zA-Z%²]*\s*[,}])")
 
 
 def _bereinige(text: str) -> str:
-    """KI-Antworten: Codeblock ```yaml … ``` und Einleitungssätze entfernen."""
-    if "```" in text:
-        teile = text.split("```")
-        if len(teile) >= 3:
-            text = teile[1].split("\n", 1)[1] if teile[1].split("\n", 1)[0].strip().isalpha() else teile[1]
+    """KI-Antworten: Codeblock ```yaml … ```, Einleitungs- und Schlusssätze ausblenden.
+
+    Ausgeblendete Zeilen werden leer, nicht entfernt – so stimmen Zeilennummern in Meldungen mit der Datei überein.
+    """
     zeilen = text.splitlines()
-    while zeilen and zeilen[0].strip() and not re.match(r"\s*(#|[\w-]+\s*:|- |---)", zeilen[0]):
-        zeilen.pop(0)
+    zaune = [n for n, z in enumerate(zeilen) if z.lstrip().startswith("```")]
+    if len(zaune) >= 2:
+        a, b = zaune[0], zaune[1]
+        zeilen = ["" if not a < n < b else z for n, z in enumerate(zeilen)]
+    for n, z in enumerate(zeilen):                       # Einleitungssätze vor dem ersten YAML-Inhalt
+        if not z.strip():
+            continue
+        if re.match(r"\s*(#|[\w-]+\s*:|- |---)", z):
+            break
+        zeilen[n] = ""
     # Dezimalkomma in einzeiligen Einträgen {cos_phi: 0,81} würde YAML als zwei Felder lesen -> 0.81
     zeilen = [RE_KOMMAZAHL.sub(r"\1.\2", z) if "{" in z else z for z in zeilen]
     return "\n".join(zeilen)
@@ -130,38 +137,70 @@ def cmd_generieren(a):
     except regeln.RegelFehler as e:            # bisheriger Plan, Stückliste und Modell bleiben erhalten
         print(f"HINWEIS: Hausstil-PDF nicht erzeugt: {e}")
     print(f"Netzteil: {m.bilanz['netzteil']} (Bedarf {m.bilanz['i_bedarf_A']} A)")
+    if MENUE:
+        print(f"FERTIG. {len(m.warnungen)} Hinweise (Annahmen, offene Fragen, nicht geprüfte Punkte) stehen im "
+              f"Auslegungsnachweis – bitte vor Freigabe durchgehen.")
+        return
     for w in m.warnungen:
         print("WARNUNG:", w)
 
 
+KORREKTUR = "_Korrekturauftrag.txt"
+
+
+def _korrekturauftrag(projekt: Path, text: str) -> Path:
+    korr = projekt.with_name(projekt.stem + KORREKTUR)
+    korr.write_text(text, encoding="utf-8")
+    return korr
+
+
+def _weiter(projekt: Path, korr: Path) -> str:
+    if MENUE:
+        return (f"So geht es weiter: Korrekturauftrag in denselben KI-Chat einfügen (siehe unten), die neue Antwort "
+                f"ersetzt den ganzen Inhalt von {projekt.name}, speichern, dann wieder Punkt 9.")
+    return (f"So geht es weiter: Inhalt von {korr} in denselben KI-Chat kopieren, die neue Antwort ersetzt den ganzen "
+            f"Inhalt von {projekt.name}, speichern und erneut prüfen. Kleine Fehler können Sie auch direkt im Editor "
+            f"korrigieren.")
+
+
 def cmd_pruefen(a):
     from .projektmodell import bereit_machen
-    daten = lade_projekt(a.projekt)
-    hinweise = []
-    for titel, k in (("Annahmen der Aufbereitung", "annahmen"), ("Offene Fragen", "offene_fragen")):
-        if isinstance(daten, dict) and isinstance(daten.get(k), list) and daten[k]:
-            hinweise += [f"{titel} (bitte prüfen):", *[f"  • {x}" for x in daten[k]]]
+    pfad = Path(a.projekt)
+    try:
+        daten = lade_projekt(a.projekt)
+    except regeln.RegelFehler as e:
+        if pfad.suffix.lower() in (".xlsx", ".xlsm") or not pfad.is_file() or not pfad.read_bytes().strip():
+            raise
+        korr = _korrekturauftrag(pfad, "Deine Antwort konnte nicht gelesen werden (" + str(e) + "). Bitte gib das "
+                                 "vollständige Projektmodell erneut als genau einen ```yaml-Block aus, ohne Text "
+                                 "davor oder danach, und achte auf die Einrückung mit Leerzeichen.\n")
+        raise regeln.RegelFehler(f"{e}\n\n{_weiter(pfad, korr)}") from None
+    if daten is None:
+        raise regeln.RegelFehler(f"{pfad.name} ist leer – die Antwort der KI hineinkopieren und speichern")
     try:
         _, ergaenzt = bereit_machen(daten, lade_yaml(a.stamm), _vorgaben(a.vorgaben))
     except regeln.RegelFehler as e:
-        print("\n".join(hinweise))
-        korr = Path(a.projekt).with_name(Path(a.projekt).stem + "_Korrektur_fuer_KI.txt")
-        korr.write_text("Die Software hat dein Projektmodell geprüft und diese Punkte gefunden. Bitte korrigiere sie "
-                        "und gib das vollständige Projektmodell erneut als einen YAML-Block aus (gleiche Regeln wie "
-                        "vorher, nichts erfinden – Unklares in offene_fragen):\n\n" + str(e) + "\n", encoding="utf-8")
-        raise regeln.RegelFehler(f"{e}\n\nSo geht es weiter: Inhalt von {korr} in denselben KI-Chat kopieren, "
-                                 f"die neue Antwort über {Path(a.projekt).name} speichern und erneut prüfen"
-                                 f"{' (Punkt 9)' if MENUE else ''}. "
-                                 f"Kleine Fehler können Sie auch direkt in der Datei (Editor) korrigieren.") from None
-    n = len(daten.get("offene_fragen") or []) if isinstance(daten.get("offene_fragen"), list) else 0
-    print(f"Projektmodell {Path(a.projekt).name}: vollständig, Plan kann erzeugt werden"
-          + (f" – {n} offene Frage{'' if n == 1 else 'n'} (stehen im Auslegungsnachweis; Plan kann trotzdem "
-             f"erzeugt werden, vor Fertigstellung klären)." if n else "."))
+        korr = _korrekturauftrag(pfad, "Die Software hat dein Projektmodell geprüft und diese Punkte gefunden. Bitte "
+                                 "korrigiere sie und gib das vollständige Projektmodell erneut als einen YAML-Block "
+                                 "aus (gleiche Regeln wie vorher, nichts erfinden – Unklares in offene_fragen):\n\n"
+                                 + str(e) + "\n")
+        raise regeln.RegelFehler(f"{e}\n\n{_weiter(pfad, korr)}") from None
+    listen = {k: daten[k] for k in ("annahmen", "offene_fragen") if isinstance(daten.get(k), list) and daten[k]}
+    n = len(listen.get("offene_fragen", []))
+    print(f"Projektmodell {pfad.name}: vollständig, Plan kann erzeugt werden"
+          + (f" – {n} offene Frage{'' if n == 1 else 'n'} vor Fertigstellung klären." if n else "."))
+    if MENUE:                                   # knapp; Einzelheiten stehen im Auslegungsnachweis (PDF)
+        teile = [f"{len(listen.get('annahmen', []))} Annahmen der KI", f"{n} offene Fragen",
+                 f"{len(ergaenzt)} Bereiche nach Hausvorgabe"]
+        print("Im Auslegungsnachweis (letzte PDF-Seite) stehen: " + ", ".join(teile) + ".")
+        return
     if ergaenzt:
         print("Aus Hausvorgaben ergänzt (bitte prüfen):")
         print("\n".join(f"  • {x}" for x in ergaenzt))
-    if hinweise:
-        print("\n".join(hinweise))
+    for titel, k in (("Annahmen der Aufbereitung", "annahmen"), ("Offene Fragen", "offene_fragen")):
+        if k in listen:
+            print(f"{titel} (bitte prüfen):")
+            print("\n".join(f"  • {x}" for x in listen[k]))
 
 
 def cmd_ki_auftrag(a):
@@ -177,12 +216,13 @@ def cmd_ki_auftrag(a):
     if len(text) > MAX_ZEICHEN:
         print(f"ACHTUNG: sehr lang – viele KI-Chats nehmen so viel Text nicht auf. Lastenheft auf die Teile mit "
               f"Feldgeräten, Motoren und Einspeisung kürzen (Ziel unter {MAX_ZEICHEN:,} Zeichen).".replace(",", "."))
-    antwort = quelle.with_name("projektmodell.yaml")
+    antwort = quelle.with_name(quelle.stem + "_projektmodell.yaml")
     print("So geht es weiter:")
     if MENUE:
-        print("1. Der Auftrag liegt in der Zwischenablage: im KI-Chat mit Strg+V einfügen und absenden")
-        print("   (nur eine vom Betrieb freigegebene KI; sonst Kundennamen vorher entfernen).")
-        print(f"2. Es öffnet sich der Editor mit {antwort.name}: Antwort der KI hineinkopieren, speichern.")
+        print("1. Auftrag im KI-Chat einfügen und absenden (nur eine vom Betrieb freigegebene KI;")
+        print("   sonst Kundennamen vorher entfernen).")
+        print(f"2. Es öffnet sich der Editor mit {antwort.name}: die ganze Antwort der KI hineinkopieren")
+        print("   (vorhandenen Inhalt ersetzen) und speichern.")
         print(f"3. Hier Punkt 9 wählen und {antwort.name} ins Fenster ziehen.")
         return
     print("1. Inhalt der Datei vollständig in einen KI-Chat einfügen (nur eine vom Betrieb freigegebene KI;")
@@ -327,8 +367,11 @@ def main(argv=None):
     except regeln.RegelFehler as e:
         sys.exit(f"Fehler: {e}")
     except PermissionError as e:
-        sys.exit(f"Datei gesperrt: {e.filename}\n-> Ist die Datei noch in einem PDF-Programm oder Excel geöffnet? "
-                 f"Bitte schließen und erneut starten.")
+        if e.filename and Path(e.filename).exists():
+            sys.exit(f"Datei gesperrt: {e.filename}\n-> Ist die Datei noch in einem PDF-Programm oder Excel geöffnet? "
+                     f"Bitte schließen und erneut starten.")
+        sys.exit(f"In diesen Ordner darf nicht geschrieben werden: {Path(e.filename or '.').parent}\n-> Datei in einen "
+                 f"eigenen Projektordner kopieren (z. B. meine_projekte) und erneut versuchen.")
     except FileNotFoundError as e:
         sys.exit(f"Datei nicht gefunden: {e.filename or e} – Pfad und Namen prüfen")
     except IsADirectoryError as e:

@@ -114,8 +114,8 @@ def test_rohe_chat_antwort_pruefen_und_korrekturauftrag(tmp_path, capsys):
                    encoding="utf-8")
     with pytest.raises(SystemExit) as e:
         main(["pruefen", str(roh)])
-    assert "Kommentar der KI" in str(e.value) and "Korrektur_fuer_KI" in str(e.value)
-    korr = (tmp_path / "projektmodell_Korrektur_fuer_KI.txt").read_text(encoding="utf-8")
+    assert "Kommentar der KI" in str(e.value) and "Korrekturauftrag" in str(e.value)
+    korr = (tmp_path / "projektmodell_Korrekturauftrag.txt").read_text(encoding="utf-8")
     assert "Leitungslänge Schrank–Motor" in korr and "YAML-Block" in korr
 
 
@@ -136,8 +136,8 @@ def test_menue_modus_nennt_menuepunkte(tmp_path, capsys, monkeypatch):
     lh.write_text((B / "lastenheft_beispiel.md").read_text(encoding="utf-8"), encoding="utf-8")
     main(["ki-auftrag", str(lh)])
     aus = capsys.readouterr().out
-    assert "Zwischenablage" in aus and "Punkt 9" in aus and "python -m" not in aus
+    assert "_projektmodell.yaml" in aus and "Punkt 9" in aus and "python -m" not in aus
     kaputt = tmp_path / "projektmodell.yaml"
     kaputt.write_text("projekt: {nummer: A}\n", encoding="utf-8")
-    with pytest.raises(SystemExit, match=r"\(Punkt 9\)"):
+    with pytest.raises(SystemExit, match=r"wieder Punkt 9"):
         main(["pruefen", str(kaputt)])

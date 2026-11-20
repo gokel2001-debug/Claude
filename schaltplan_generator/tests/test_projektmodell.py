@@ -216,3 +216,16 @@ def test_meldung_nennt_zeile(tmp_path):
                                                                                   "funktion": "a", "_zeile": 4}]},
                               STAMM, VORGABEN)
     assert "_zeile" not in modell["feldgeraete"][0]
+
+
+def test_zeilennummer_stimmt_mit_chat_antwort(tmp_path):
+    f = tmp_path / "p.yaml"
+    f.write_text("Hier ist das Ergebnis:\n\n```yaml\nprojekt: {nummer: A, bezeichnung: B}\neinspeisung: {netz: x}\n"
+                 "feldgeraete:\n  - {bmk: B1, artikel: IND-M12-PNP, funktion: a}\n  - {bmk: B2, artikel: XX, funktion: b}\n"
+                 "```\nViel Erfolg!\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match=r"Feldgerät B2 \(2\. Eintrag, Zeile 8\)"):
+        main(["pruefen", str(f)])
+    f.write_text("Ergebnis:\n```yaml\nprojekt:\n  nummer: A\n bezeichnung: x\n```\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="Zeile 5") as e:
+        main(["pruefen", str(f)])
+    assert "Korrekturauftrag" in str(e.value) and (tmp_path / "p_Korrekturauftrag.txt").exists()

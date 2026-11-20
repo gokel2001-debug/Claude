@@ -2,7 +2,7 @@
 
 | Nr. | Schwere | Befund | Erledigung |
 |---|---|---|---|
-| 1 | hoch | Wie Fehler/offene Fragen beheben, unklar | `pruefen` schreibt `<Datei>_Korrektur_fuer_KI.txt` (zurück in den Chat) + Anleitung; offene Fragen: „Plan kann trotzdem erzeugt werden“ |
+| 1 | hoch | Wie Fehler/offene Fragen beheben, unklar | `pruefen` schreibt `<Datei>_Korrekturauftrag.txt` (zurück in den Chat) + Anleitung; offene Fragen: „Plan kann trotzdem erzeugt werden“ |
 | 2 | hoch | Dezimalkomma in `{…}` (cos_phi: 0,81) falsch gelesen | wird vor dem Einlesen zu 0.81; Test |
 | 3 | mittel | .xlsx/.odt → Programmfehler; Log im Programmordner | Formatprüfung im Klartext; Log in .gitignore |
 | 4 | mittel | Word: Sonderzeichen, Tabellen | behoben (wie Software Nr. 4) |
