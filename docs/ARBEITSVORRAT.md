@@ -13,7 +13,7 @@ Reihenfolge der Meilensteine ist verbindlich (ZIEL.md). Ein Paket = in einem 5-h
 | M2d | CI: GitHub Actions (pytest, ruff, Abdeckung) + `pyproject.toml`; Linter-Befunde beheben | Workflow grün | Software | erledigt 20.11. (CI grün auf Ubuntu+Windows, Py 3.12/3.13; ruff ohne Befund; Abdeckung 95 %) |
 | M3a | Planungskern trennen: `plane()` → `planmodell.json` (versioniertes Schema), Ausgabe-Schicht liest nur noch das Planmodell (Laden aus JSON) | PDF aus geladenem `planmodell.json` identisch | Software | erledigt 20.11. (byte-gleich; Prüfung: 1 hoch → behoben) |
 | M3b | Schema `docs/SCHEMA_PLANMODELL.md`, Rundreise-Test JSON ↔ Objekt, EPLAN-Stub-Test gegen Schema | Tests grün | Software | erledigt 20.11. |
-| M4a | P5b SPS-Übersicht im Hausformat (Kartenbelegung je Steckplatz) | Testkorpus ohne Fehler | Elektro, UX | offen |
+| M4a | P5b SPS-Übersicht im Hausformat (Kartenbelegung je Steckplatz) | Testkorpus ohne Fehler | Elektro, UX | umgesetzt 20.11. (c8995e0), Prüfung läuft |
 | M4b | P6 Listen im Hausformat (Klemmenplan, Kabelliste, Stückliste als PDF-Seiten) | Testkorpus ohne Fehler | Elektro, UX, Produkt | offen |
 | M4c | Konsistenzprüfungen (A15 Kanalwert vs. I_z, Querverweise, BMK, Klemmen; 230-V-Geräte nicht in 24-V-Abgangslisten) als Prüfbericht | Prüfbericht ohne Fehler am Testkorpus | Elektro, Software | offen |
 | M4d | Planungskern: 24-V-Abgangsliste ohne 230-V-Geräte, Projektordner-Konzept (alle Ein-/Ausgaben je Projekt) | Test + Einsteiger ohne hoch | Elektro, Einsteiger | offen |
