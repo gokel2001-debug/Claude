@@ -1,10 +1,8 @@
 # ARBEITSVORRAT – Warteschlange für Autostarts und manuelle Läufe
-
 Regel: Jeder Lauf (Autostart oder manuell) nimmt das **oberste offene** Paket, setzt es um
 (Umsetzung → Tests → Commit/Push → Prüfer → Nacharbeit), hakt es hier ab und sorgt dafür, dass
 **mindestens 5 offene Pakete** in der Liste stehen (nächste aus ZIEL.md Abschnitt 3 ableiten).
 Reihenfolge der Meilensteine ist verbindlich (ZIEL.md). Ein Paket = in einem 5-h-Fenster machbar.
-
 | Nr. | Paket | Fertig, wenn | Prüfer | Stand |
 |---|---|---|---|---|
 | M2a | Schema Projektmodell v1 (`docs/SCHEMA_PROJEKTMODELL.md`), Prüfung `slpgen/projektmodell.py` mit allen Lücken im Klartext, Befehl `pruefen`, `generieren` prüft vorher | Tests: gültiges Beispiel ohne Lücke, jede Lückenart erkannt | Software, Einsteiger | erledigt 20.11. (Prüfung: 7 hoch → behoben) |
@@ -17,10 +15,10 @@ Reihenfolge der Meilensteine ist verbindlich (ZIEL.md). Ein Paket = in einem 5-h
 | M4b | P6 Listen im Hausformat (Klemmenplan, Kabelliste, Stückliste als PDF-Seiten; Zeilenlinien, einheitliche Spaltennamen, CPU-Seitenkopf – UX M4a) | Testkorpus ohne Fehler | Elektro, UX, Produkt | erledigt 20.11. (Prüfung: 3 hoch Listen → behoben; Produkt-Befunde → M4c/M5c/M7a/PC7) |
 | M4c | Konsistenzprüfungen als Prüfbericht (Querverweise, BMK, Klemmen, SPS, Absicherung, Texte) + Motorabgänge im Nachweis (I_r, I_z, ΔU) + Kennzahlen Zeitersparnis (Produkt) | Prüfbericht ohne Fehler am Testkorpus | Elektro, Software | erledigt 20.11. (Prüfung: 4 hoch → behoben; A37 offen) |
 | M4d | Projektordner-Konzept (alle Ein-/Ausgaben je Projekt), Feldleitungslängen (A35), Prüfungen Netzteil/DO-Last/Stempel (A37); 230-V-Geräte in 24-V-Liste = Kontaktspeisung (erklärt, M4c) | Test + Einsteiger ohne hoch | Elektro, Einsteiger | erledigt 20.11. (Prüfung: 3 hoch → behoben; A38 offen) |
-| M4e | Strukturteil des Hausstils (Anlagen, Kennzeichen, Seitenpositionen) als eigenes Modul in Schicht B (A27) | Ausgabe enthält keine Zuordnungslogik mehr; Tests grün | Software | offen |
 | M5a | P7 Geometrie/Schriftfeld lernen, Teil 1: Schriftfeldfelder (Datum, Revision, Ersteller) und Spaltenraster aus Vektor-PDFs des synthetischen Korpus auslesen, mit Sicherheitsangabe (A16) | Tests am Korpus; Profil enthält Schriftfeld-Merkmale mit Sicherheit | Software, Einsteiger | erledigt 20.11. (Prüfung: 3 hoch → behoben) |
 | M5c | Lernschleife Grundgerüst: Korrektur erfassen → Regel mit Herkunft/Datum/Geltung im Hausprofil → Regressionstest (Produkt-Befund) | Test: Korrektur wirkt beim nächsten Plan | Software, Produkt | offen |
 | M7a | Import eigener Artikelstamm (Excel/EPLAN-Artikelexport) ins Hausprofil, Abgleich mit Gerätestamm | Test mit synthetischer Exportdatei | Software, Elektro | offen |
 | M2e | Typprüfung (mypy) ohne Befund für alle Module, in CI aufnehmen (ZIEL 4c) | mypy in CI grün | Software | erledigt 20.11. (150 → 0 Befunde; dabei echter Absturz ohne Vorsicherung im Stamm gefunden und behoben) |
 | M5b | P7 Teil 2: Anlagen-/Seitengliederung und Kennbuchstaben aus Vektor-PDFs (Korpus) lernen, mit Sicherheit und Jahrestrend in die Freigabeliste | Tests am Korpus; Freigabeliste enthält die neuen Merkmale | Software, Einsteiger | offen |
 | M6a | P8 Ollama-Anbindung: KI-Auftrag an lokale KI senden (HTTP, Zeitlimit), Antwort wie Chat-Antwort prüfen; Test mit Attrappe des Ollama-Servers | Test: Lastenheft → lokale KI (Attrappe) → gültige YAML | Software, Einsteiger | offen |
+| M4e | Strukturteil des Hausstils (Anlagen, Kennzeichen, Seitenpositionen) als eigenes Modul in Schicht B (A27) | Ausgabe enthält keine Zuordnungslogik mehr; Tests grün | Software | offen (zurückgestellt hinter M5/M6: interner Umbau, Produkt-Empfehlung) |
