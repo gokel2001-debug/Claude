@@ -18,3 +18,4 @@ Reihenfolge der Meilensteine ist verbindlich (ZIEL.md). Ein Paket = in einem 5-h
 | M4c | Konsistenzprüfungen (A15 Kanalwert vs. I_z, Querverweise, BMK, Klemmen; 230-V-Geräte nicht in 24-V-Abgangslisten) als Prüfbericht | Prüfbericht ohne Fehler am Testkorpus | Elektro, Software | offen |
 | M4d | Planungskern: 24-V-Abgangsliste ohne 230-V-Geräte, Projektordner-Konzept (alle Ein-/Ausgaben je Projekt) | Test + Einsteiger ohne hoch | Elektro, Einsteiger | offen |
 | M4e | Strukturteil des Hausstils (Anlagen, Kennzeichen, Seitenpositionen) als eigenes Modul in Schicht B (A27) | Ausgabe enthält keine Zuordnungslogik mehr; Tests grün | Software | offen |
+| M5a | P7 Geometrie/Schriftfeld lernen, Teil 1: Schriftfeldfelder (Datum, Revision, Ersteller) und Spaltenraster aus Vektor-PDFs des synthetischen Korpus auslesen, mit Sicherheitsangabe (A16) | Tests am Korpus; Profil enthält Schriftfeld-Merkmale mit Sicherheit | Software, Einsteiger | offen |
