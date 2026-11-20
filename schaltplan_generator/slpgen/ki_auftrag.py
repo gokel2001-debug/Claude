@@ -40,10 +40,19 @@ def _lese_lastenheft(pfad: Path) -> str:
         return text
     if pfad.suffix.lower() == ".docx":
         import zipfile
-        with zipfile.ZipFile(pfad) as z:
-            xml = z.read("word/document.xml").decode("utf-8")
+        try:
+            with zipfile.ZipFile(pfad) as z:
+                xml = z.read("word/document.xml").decode("utf-8")
+        except (zipfile.BadZipFile, KeyError):
+            raise RegelFehler(f"{pfad.name}: keine gültige Word-Datei (.docx) – in Word als .docx speichern") from None
         return re.sub(r"<[^>]+>", "", xml.replace("</w:p>", "\n"))
-    return pfad.read_text(encoding="utf-8")
+    if pfad.suffix.lower() == ".doc":
+        raise RegelFehler(f"{pfad.name}: altes Word-Format – in Word als .docx oder .txt speichern")
+    roh = pfad.read_bytes()
+    try:
+        return roh.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return roh.decode("cp1252")
 
 
 def erzeuge_auftrag(lastenheft: str | Path, stamm: dict, anleitung: str | Path) -> str:

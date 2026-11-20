@@ -137,6 +137,19 @@ def cmd_pruefen(a):
         print("\n".join(hinweise))
 
 
+def cmd_ki_auftrag(a):
+    from .ki_auftrag import erzeuge_auftrag
+    quelle = Path(a.lastenheft)
+    if not quelle.is_file():
+        raise FileNotFoundError(2, "fehlt", str(quelle))
+    ziel = Path(a.ziel) if a.ziel else quelle.with_name(quelle.stem + "_KI_Auftrag.txt")
+    ziel.write_text(erzeuge_auftrag(quelle, lade_yaml(a.stamm), a.anleitung), encoding="utf-8")
+    print(f"KI-Auftrag -> {ziel}")
+    print("1. Inhalt der Datei vollständig in einen KI-Chat einfügen (nur eine vom Betrieb freigegebene KI).")
+    print("2. Antwort der KI als projektmodell.yaml speichern.")
+    print("3. Prüfen: python -m slpgen pruefen projektmodell.yaml")
+
+
 def cmd_schema(a):
     from .projektmodell import schema_markdown
     Path(a.ziel).write_text(schema_markdown(), encoding="utf-8")
@@ -221,6 +234,12 @@ def main(argv=None):
     pr.add_argument("--stamm", default=STAMM)
     pr.add_argument("--vorgaben", default=VORGABEN)
     pr.set_defaults(f=cmd_pruefen)
+    ka = sub.add_parser("ki-auftrag", help="Lastenheft (.txt/.md/.docx/.pdf) -> Text für einen KI-Chat")
+    ka.add_argument("lastenheft")
+    ka.add_argument("--ziel", help="Ausgabedatei (Standard: <Lastenheft>_KI_Auftrag.txt)")
+    ka.add_argument("--stamm", default=STAMM)
+    ka.add_argument("--anleitung", default=str(PROG.parent / "docs" / "KI_AUFBEREITUNG.md"))
+    ka.set_defaults(f=cmd_ki_auftrag)
     sc = sub.add_parser("schema", help="Schema des Projektmodells als Markdown schreiben")
     sc.add_argument("ziel", nargs="?", default="../docs/SCHEMA_PROJEKTMODELL.md")
     sc.set_defaults(f=cmd_schema)

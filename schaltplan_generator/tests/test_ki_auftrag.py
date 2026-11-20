@@ -42,3 +42,25 @@ def test_motor_nicht_m1_zeichnet_richtige_schutzorgane(tmp_path):
     m = regeln.plane(d, STAMM)
     zeichnen.erzeuge_pdf(m, STAMM, str(tmp_path / "p.pdf"))
     assert m.bm("-M7").daten["mss"] == "-Q2"
+
+
+def test_cli_ki_auftrag(tmp_path, capsys):
+    lh = tmp_path / "Lastenheft Halle.md"
+    lh.write_text((B / "lastenheft_beispiel.md").read_text(encoding="utf-8"), encoding="utf-8")
+    main(["ki-auftrag", str(lh)])
+    ziel = tmp_path / "Lastenheft Halle_KI_Auftrag.txt"
+    assert ziel.exists() and "### LASTENHEFT" in ziel.read_text(encoding="utf-8")
+    assert "KI-Chat einfügen" in capsys.readouterr().out
+
+
+def test_cli_ki_auftrag_docx_und_fehler(tmp_path):
+    import zipfile
+
+    import pytest
+    docx = tmp_path / "lh.docx"
+    with zipfile.ZipFile(docx, "w") as z:
+        z.writestr("word/document.xml", "<w:document><w:p><w:t>Pumpe 1~230 V</w:t></w:p></w:document>")
+    main(["ki-auftrag", str(docx)])
+    assert "Pumpe 1~230 V" in (tmp_path / "lh_KI_Auftrag.txt").read_text(encoding="utf-8")
+    with pytest.raises(SystemExit, match="nicht gefunden"):
+        main(["ki-auftrag", str(tmp_path / "fehlt.md")])
