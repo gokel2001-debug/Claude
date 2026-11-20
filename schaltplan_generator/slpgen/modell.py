@@ -7,7 +7,7 @@ EPLAN-Projekt.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import MISSING, asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
@@ -140,3 +140,39 @@ class Planmodell:
             return cls.aus_dict(d)
         except TypeError as e:
             raise RegelFehler(f"{Path(pfad).name}: Planmodell unvollständig oder beschädigt ({e})") from None
+
+
+# --------------------------------------------------------------------------- #
+# Schema-Dokument (docs/SCHEMA_PLANMODELL.md wird hieraus erzeugt)
+# --------------------------------------------------------------------------- #
+TEILE = {
+    "projekt": ("Objekt", "Kopfdaten aus dem Projektmodell (nummer, bezeichnung, anlage, ort, …; `_netz` = Netzform)"),
+    "betriebsmittel": ("Liste Betriebsmittel", "alle Geräte, Bausteinteile, Kabel, Klemmleisten mit Lage im Plan"),
+    "klemmen": ("Liste Klemme", "Klemmenbelegung innen/außen je Leiste"),
+    "sps_kanaele": ("Liste SpsKanal", "SPS-Kanalzuordnung mit Adresse"),
+    "absicherungen": ("Liste Absicherung", "24-V-Abgänge mit Gruppenstrom und Verbrauchern"),
+    "kabel": ("Liste Kabel", "Leitungsauslegung (Querschnitt, I_z, ΔU)"),
+    "seiten": ("Liste [Nr, Titel, Art, Index]", "Seitenfolge des bisherigen Plans"),
+    "bilanz": ("Objekt", "24-V-Bilanz und Netzteilauswahl"),
+    "warnungen": ("Liste Text", "Auslegungsnachweis: Annahmen, offene Fragen, nicht geprüfte Punkte"),
+    "artikel": ("Objekt Artikel → Daten", "Auszug Gerätestamm, nur verwendete Artikel (Ausgabe braucht keinen Stamm)"),
+}
+
+
+def schema_planmodell_markdown() -> str:
+    import typing
+    z = [f"# Schema Planmodell (`{SCHEMA_PLANMODELL}`)", "",
+         "Erzeugt aus `slpgen/modell.py` (`python -m slpgen schema --planmodell`) – nicht von Hand ändern.", "",
+         "Das Planmodell ist das Ergebnis des Planungskerns (Schicht B) und die **einzige** Eingabe der Ausgabe "
+         "(Schicht C: PDF bisher, PDF Hausstil, Stückliste, später EPLAN-Adapter). Datei: `<Projektnummer>_Planmodell.json`.",
+         "", "| Feld | Art | Inhalt |", "|---|---|---|", "| `schema` | Text | immer „" + SCHEMA_PLANMODELL + "“ |"]
+    z += [f"| `{k}` | {a} | {t} |" for k, (a, t) in TEILE.items()]
+    for typ in (Betriebsmittel, Klemme, SpsKanal, Absicherung, Kabel):
+        hints = typing.get_type_hints(typ)
+        z += ["", f"## {typ.__name__}", "", "| Feld | Typ | Pflicht |", "|---|---|---|"]
+        for f in fields(typ):
+            pflicht = "ja" if f.default is MISSING and f.default_factory is MISSING else "–"
+            h = hints[f.name]
+            name = h.__name__ if isinstance(h, type) else str(h).replace("typing.", "")
+            z.append(f"| `{f.name}` | `{name}` | {pflicht} |")
+    return "\n".join(z) + "\n"

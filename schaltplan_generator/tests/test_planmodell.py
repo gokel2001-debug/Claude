@@ -69,3 +69,29 @@ def test_fehlerhaftes_planmodell_klartext(tmp_path, inhalt, meldung):
     (tmp_path / "pm.json").write_text(inhalt, encoding="utf-8")
     with pytest.raises(RegelFehler, match=meldung):
         Planmodell.lade(tmp_path / "pm.json")
+
+
+@pytest.mark.parametrize("name", ["beispiel", "ki_bausteine", "selektiv"])
+def test_eplan_stub_gegen_schema(tmp_path, name):
+    from slpgen.eplan_adapter import OHNE_ARTIKEL, PFLICHT_BETRIEBSMITTEL, aufbereiten, uebertrage
+    m = regeln.plane(_projekte()[name], STAMM)
+    m.speichere(tmp_path / "pm.json")
+    d = aufbereiten(Planmodell.lade(tmp_path / "pm.json"))         # Adapter liest nur das Planmodell
+    rk = [z["referenzkennzeichen"] for z in d["betriebsmittel"]]
+    assert len(rk) == len(set(rk)) == len(m.betriebsmittel)
+    for z in d["betriebsmittel"]:
+        teil = z["kategorie"] in OHNE_ARTIKEL          # Teilsignal/Kanal/Meldung: Artikel trägt das Hauptgerät
+        pflicht = [f for f in PFLICHT_BETRIEBSMITTEL if not (teil and f == "artikelnummer")]
+        assert all(z[f] not in (None, "") for f in pflicht), z
+        assert not teil or z["teil_von"], z
+    assert all(z["referenzkennzeichen"].startswith(m.projekt.get("anlage", "") + m.projekt.get("ort", ""))
+               for z in d["betriebsmittel"])
+    assert len(d["sps"]) == len(m.sps_kanaele) and len(d["klemmen"]) == len(m.klemmen)
+    with pytest.raises(RegelFehler, match="noch nicht verfügbar"):
+        uebertrage(m, str(tmp_path / "x"))
+
+
+def test_schema_planmodell_dokument_aktuell():
+    from slpgen.modell import schema_planmodell_markdown
+    doku = Path(__file__).resolve().parents[2] / "docs" / "SCHEMA_PLANMODELL.md"
+    assert doku.read_text(encoding="utf-8") == schema_planmodell_markdown(), "python -m slpgen schema --planmodell"

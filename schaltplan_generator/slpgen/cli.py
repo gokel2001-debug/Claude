@@ -245,9 +245,14 @@ def cmd_ki_auftrag(a):
 
 
 def cmd_schema(a):
-    from .projektmodell import schema_markdown
-    Path(a.ziel).write_text(schema_markdown(), encoding="utf-8")
-    print(f"Schema -> {a.ziel}")
+    if a.planmodell:
+        from .modell import schema_planmodell_markdown as erzeuge
+        ziel = a.ziel or str(PROG.parent / "docs" / "SCHEMA_PLANMODELL.md")
+    else:
+        from .projektmodell import schema_markdown as erzeuge
+        ziel = a.ziel or str(PROG.parent / "docs" / "SCHEMA_PROJEKTMODELL.md")
+    Path(ziel).write_text(erzeuge(), encoding="utf-8")
+    print(f"Schema -> {ziel}")
 
 
 def cmd_analysieren(a):
@@ -340,7 +345,8 @@ def main(argv=None):
     ka.add_argument("--anleitung", default=str(PROG.parent / "docs" / "KI_AUFBEREITUNG.md"))
     ka.set_defaults(f=cmd_ki_auftrag)
     sc = sub.add_parser("schema", help="Schema des Projektmodells als Markdown schreiben")
-    sc.add_argument("ziel", nargs="?", default="../docs/SCHEMA_PROJEKTMODELL.md")
+    sc.add_argument("ziel", nargs="?", help="Zieldatei (Standard: docs/SCHEMA_PROJEKTMODELL.md bzw. SCHEMA_PLANMODELL.md)")
+    sc.add_argument("--planmodell", action="store_true", help="Schema des Planmodells statt des Projektmodells")
     sc.set_defaults(f=cmd_schema)
     an = sub.add_parser("analysieren", help="Bestands-PDFs auswerten (Formate, Jahre, Kennbuchstaben)")
     an.add_argument("ordner")
