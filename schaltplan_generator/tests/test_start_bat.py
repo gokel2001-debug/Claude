@@ -14,12 +14,12 @@ def test_crlf_und_keine_einzelnen_lf():
 def test_jede_sprungmarke_einmal_und_jedes_ziel_vorhanden():
     marken = [z[1:].strip().lower() for z in ZEILEN if re.match(r"^:\w", z)]
     assert len(marken) == len(set(marken)), "Sprungmarke doppelt"
-    ziele = {m.lower() for z in ZEILEN for m in re.findall(r"goto :(\w+)", z, re.I)}
+    ziele = {m.lower() for z in ZEILEN for m in re.findall(r"goto :(\w+)", z, re.IGNORECASE)}
     assert ziele - {"eof"} <= set(marken), ziele - set(marken)
 
 
 def test_menue_verteilung_vollstaendig_und_zusammenhaengend():
-    punkte = re.findall(r"^echo\s+(\d)\s{2}", "\n".join(ZEILEN), re.M)
+    punkte = re.findall(r"^echo\s+(\d)\s{2}", "\n".join(ZEILEN), re.MULTILINE)
     i = next(n for n, z in enumerate(ZEILEN) if z.startswith('set /p "W='))
     verteilung = []
     for z in ZEILEN[i + 1:]:
