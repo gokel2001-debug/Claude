@@ -10,3 +10,4 @@
 | 6 | mittel | Schreibschutz als „Datei gesperrt“ gemeldet | eigene Meldung „In diesen Ordner darf nicht geschrieben werden …“ |
 | 7 | gering | gemeinsamer Name `projektmodell.yaml` | abgeleiteter Name, Hinweis „vorhandenen Inhalt ersetzen“ |
 | 8 | gering | Ausgabe nicht beim Projekt | Ausgabe neben dem Lastenheft |
+| 9 | gering | (Nachprüfung) Anführungszeichen als Menüauswahl bricht cmd ab | Anführungszeichen vor dem Vergleich entfernt (Menü und Projektname) |

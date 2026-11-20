@@ -56,6 +56,7 @@ echo   0  Beenden
 echo.
 set "W="
 set /p "W=Auswahl eingeben und Enter druecken: "
+if defined W set "W=%W:"=%"
 if "%W%"=="1" goto :beispiel
 if "%W%"=="2" goto :neu
 if "%W%"=="3" goto :excel
@@ -79,6 +80,7 @@ goto :menue
 :neu
 set "N="
 set /p "N=Name fuer das neue Projekt (ohne Leerzeichen, z. B. Kunde_Anlage1): "
+if defined N set "N=%N:"=%"
 if "%N%"=="" goto :menue
 if exist "meine_projekte\%N%.xlsx" echo Gibt es schon: meine_projekte\%N%.xlsx & pause & goto :menue
 copy "beispiele\Projekt_Vorlage.xlsx" "meine_projekte\%N%.xlsx" >nul

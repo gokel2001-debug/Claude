@@ -23,6 +23,8 @@ def test_menue_verteilung_vollstaendig_und_zusammenhaengend():
     i = next(n for n, z in enumerate(ZEILEN) if z.startswith('set /p "W='))
     verteilung = []
     for z in ZEILEN[i + 1:]:
+        if z.startswith("if defined W"):
+            continue
         mt = re.match(r'if "%W%"=="(\d)" goto :(\w+)$', z)
         if not mt:
             assert z == "goto :menue", f"nach der Verteilung erwartet 'goto :menue', gefunden: {z!r}"
