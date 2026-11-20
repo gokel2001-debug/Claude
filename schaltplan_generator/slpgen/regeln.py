@@ -48,6 +48,23 @@ def waehle_kleinste(stamm: dict, kandidaten: list[str], i_min: float) -> str | N
     return min(passend, key=lambda k: stamm[k]["i_nenn_A"]) if passend else None
 
 
+def _anschluss(g: Betriebsmittel) -> str:
+    """Betriebsmittel im Schrank, an dem der SPS-Kanal direkt hängt (Spule A1, Hilfskontakt 13); leer = Feldklemme.
+
+    Anschlussbezeichnungen nach üblicher Klemmenbezeichnung (Spule A1/A2, Schließer-Hilfskontakt 13/14).
+    """
+    eltern = g.daten.get("eltern", "")
+    if g.daten.get("ueber"):                          # DO über Koppelrelais: Kanal treibt die Spule
+        return f"{eltern}{g.daten['ueber']}:A1"
+    if g.daten.get("quelle"):                         # Rückmeldung über Hilfskontakt eines Schrankgeräts
+        return f"{eltern}{g.daten['quelle']}:13"
+    if g.kategorie == "schuetz":
+        return f"{g.bmk}:A1"
+    if g.kategorie == "motorschutz":
+        return f"{g.bmk}:13"
+    return ""
+
+
 def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     pk = projekt["projekt"]
     m = Planmodell(projekt={k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in pk.items()})
@@ -142,7 +159,9 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                              funktion="Steuerung", kategorie="sps_cpu",
                              seite=SEITE_SPS, spalte=1, daten={"i_A": strom_A(cpu)})]
     modul_nr = 2
-    zaehler: dict[str, int] = {}
+    # ANNAHME A30: Adressen fortlaufend je Bereich (Eingänge DI+AI, Ausgänge DO+AO) in Steckplatzreihenfolge,
+    # je Karte volle Breite inkl. Reserve (digital ceil(Kanäle/8) Byte, analog 2 Byte je Kanal) -> keine Überschneidung
+    naechstes_byte = {"E": 0, "A": 0}
     meldungen = []
     verteilung = str(v24.get("verteilung") or "einzelsicherungen").strip().lower()
     if verteilung not in VERTEILUNGEN:
@@ -162,20 +181,27 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         mod = artikel(mod_key)
         anzahl = math.ceil(len(geraete) / mod["kanaele"])
         module = []
+        bereich = "E" if sig in ("DI", "AI") else "A"
+        digital = sig in ("DI", "DO")
         for i in range(anzahl):
+            start = naechstes_byte[bereich]
+            groesse = math.ceil(mod["kanaele"] / 8) if digital else 2 * mod["kanaele"]
+            naechstes_byte[bereich] = start + groesse
+            adressen = [sps["adressschema"][sig].format(byte=start + k // 8, bit=k % 8, wort=start + 2 * k)
+                        for k in range(mod["kanaele"])]
             mb = Betriebsmittel(bmk=f"-A{modul_nr}", artikel=mod_key, bezeichnung=mod["bezeichnung"],
                                 funktion=f"{sig}-Modul {i + 1}", kategorie=mod["kategorie"],
-                                seite=SEITE_SPS, spalte=modul_nr, daten={"i_A": strom_A(mod)})
+                                seite=SEITE_SPS, spalte=modul_nr,
+                                daten={"i_A": strom_A(mod), "adressen": adressen,
+                                       "bytebereich": [start, start + groesse - 1]})
             module.append(mb)
             sps_bm.append(mb)
             modul_nr += 1
         for idx, g in enumerate(geraete):
             mb = module[idx // mod["kanaele"]]
             kanal = idx % mod["kanaele"]
-            n = zaehler.get(sig, 0)
-            zaehler[sig] = n + 1
-            adr = sps["adressschema"][sig].format(byte=n // 8, bit=n % 8, wort=2 * n)
-            m.sps_kanaele.append(SpsKanal(mb.bmk, kanal, sig, adr, g.bmk, g.funktion))
+            adr = mb.daten["adressen"][kanal]
+            m.sps_kanaele.append(SpsKanal(mb.bmk, kanal, sig, adr, g.bmk, g.funktion, _anschluss(g)))
             g.daten["sps"] = f"{mb.bmk}:{kanal} ({adr})"
             g.daten["adresse"] = adr
 

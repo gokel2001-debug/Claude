@@ -44,7 +44,7 @@ def test_spalten_0_bis_9_und_schriftfeld(plan):
 
 def test_querverweise_in_beide_richtungen(plan):
     feld = _seite(plan, "B01")
-    assert "=SA1/1.2" in feld                    # Feldgerät -> SPS-Karte
+    assert "=SA1/1.0" in feld                    # Feldgerät -> SPS-Karte
     assert "=VT24/1.3" in feld                # Feldgerät -> Absicherung (zweiter Abgang)
     assert "-X10:2" in feld                      # Klemme im SPS-Kasten
     karte = _seite(plan, "SA1")
@@ -127,6 +127,10 @@ def test_sps_uebersicht_karten_mit_reserve_und_klemme(tmp_path):
     di = texte[anlagen.index("SA1")]
     assert "Belegt 8 von 16 Kanälen, Reserve 8" in di and di.count("Reserve") == 9      # Kopfzeile + 8 Kanäle
     assert "%I0.0" in di and "=B01-X10:2" in di and "=B01+SS1-B1" in di
+    assert "%I1.7" in di and "Steckplatz 1" in di and "Versorgung 1L+" in di           # Reserve mit Adresse
+    assert "=M01+SS1-Q1:13" in di and "im Schrank" in di                              # MSS-Rückmeldung: Hilfskontakt
+    ai = texte[anlagen.index("SA3")]
+    assert "%IW2" in ai                                    # nach DI-Karte (Byte 0–1): keine Überschneidung (A30)
     hp = Hausplan(m, lade_hausstil(None))
     assert ("=B01-X10:2", "Signal") == next(z[:2] for z in hp._klemmenzeilen() if z[0] == "=B01-X10:2")
     cpu = texte[anlagen.index("SA0")]

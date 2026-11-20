@@ -66,6 +66,7 @@ class SpsKanal:
     adresse: str
     geraet_bmk: str
     funktion: str
+    anschluss: str = ""           # direkt angeschlossenes Betriebsmittel im Schrank, z. B. "-M1-K1:A1"; leer = Feldklemme
 
 
 @dataclass

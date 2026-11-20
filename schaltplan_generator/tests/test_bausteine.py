@@ -59,7 +59,8 @@ def test_stellantrieb_koppelrelais_kontakt_speisung_und_bilanz():
     kontakt = next(k for k in mit.klemmen if k.ziel_aussen == "-Y9:S/S")
     assert kontakt.ziel_innen == "-Y9-K1:14"                         # DO geht über das Koppelrelais
     ao = next(k for k in mit.sps_kanaele if k.art == "AO")
-    assert ao.adresse == "%QW0" and mit.bm(ao.modul_bmk).artikel == "SPS-AO4"
+    assert ao.adresse == "%QW2"   # nach DO-Karte (Byte 0–1), A30
+    assert mit.bm(ao.modul_bmk).artikel == "SPS-AO4"
     g = mit.bilanz["gruppen"]
     assert g["DO-Last"] == pytest.approx(ohne.bilanz["gruppen"]["DO-Last"] + 0.009, abs=1e-3)   # nur Spule
     assert g["Aktorik"] == pytest.approx(0.150, abs=1e-3)                                       # Antrieb selbst
@@ -175,3 +176,21 @@ def test_bisheriger_plan_mit_pumpen_stueckliste_und_warnungen():
     nur_pumpe.pop("motoren"), nur_pumpe.pop("leitungen")
     with pytest.raises(regeln.RegelFehler, match="-M9: Keine Strombelastbarkeitstabelle"):
         regeln.plane(nur_pumpe, STAMM)
+
+
+def test_sps_kanal_ueber_koppelrelais_und_adressen_ueberschneidungsfrei():
+    """M4a Elektro: Kanal am Koppelrelais/Hilfskontakt nennt das Schrankgerät; E/A-Bytebereiche überlappen nicht."""
+    import yaml as _y
+
+    from slpgen.projektmodell import bereit_machen
+    v = _y.safe_load((B / "hausvorgaben.yaml").read_text(encoding="utf-8"))
+    d, _ = bereit_machen(_y.safe_load((B / "projektmodell_ki_beispiel.yaml").read_text(encoding="utf-8")), STAMM, v)
+    m = regeln.plane(d, STAMM)
+    kan = {k.geraet_bmk: k for k in m.sps_kanaele}
+    assert kan["-M1.1"].anschluss == "-M1-K1:A1" and kan["-M1.5"].anschluss == "-M1-Q1:13" and kan["-B3"].anschluss == ""
+    for bereich in (("sps_di", "sps_ai"), ("sps_do", "sps_ao")):
+        belegt = []
+        for b in m.betriebsmittel:
+            if b.kategorie in bereich:
+                belegt += range(b.daten["bytebereich"][0], b.daten["bytebereich"][1] + 1)
+        assert len(belegt) == len(set(belegt))

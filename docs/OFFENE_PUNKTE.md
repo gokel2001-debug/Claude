@@ -34,3 +34,7 @@ Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Fre
 | A27 | Hausstil-Kennzeichen werden im Planungsablauf mit der Strukturlogik des Hausstil-Moduls vergeben und ins Planmodell geschrieben | Strukturlogik ist mit der Seitenaufteilung verflochten | Strukturteil als eigenes Modul in Schicht B (M4) | `hausstil.kennzeichne`, `cli.py` | – (M4) |
 | A28 | Verbindungen/Potentiale kein eigener Teil des Planmodells | ergeben sich aus Klemmen und Absicherungen | eigener Teil, wenn EPLAN-Import es braucht (M9) | `modell.py` | – |
 | A29 | Steckplatz der E/A-Karten = Reihenfolge im Planmodell (CPU = 0) | kein Hardwarekonfigurator; Karten je Signalart nacheinander | Steckplatz aus Hausprofil/Projekt (M5/M7) | `hausstil._karten` | Reihenfolge im Haus? |
+| A30 | SPS-Adressen fortlaufend je Ein-/Ausgabebereich in Steckplatzreihenfolge, volle Kartenbreite inkl. Reserve | ohne Hardwarekonfiguration keine echte Adressvergabe; vermeidet Überschneidung (Prüfer M4a) | Adressen aus Hardwarekonfiguration/Hausprofil | `regeln.py` | Adressschema im Haus? |
+| A31 | Feldgeräte tragen das Ortskennzeichen des Schranks | bisheriges Verhalten | ohne Ort oder Feldort (+FLD) | `hausstil.voll` | **EF:** Ortsaspekt Feldgeräte? |
+| A32 | Kartenanschlüsse (Frontstecker-Pins) nicht dargestellt | keine Pinbelegung im Gerätestamm | Pinbelegung je Kartenartikel | `geraetestamm.yaml` | – (M7) |
+| A33 | Analogkanäle ohne Signalart/Bezug/Messbereich/Diagnose | Daten fehlen im Projektmodell/Gerätestamm | Felder ergänzen | `projektmodell.py`, Stamm | – (M7) |

@@ -107,6 +107,10 @@ class Ort:
     spalte: int
 
 
+def _kuerze(text: str, n: int) -> str:
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
 class Hausplan:
     """Planmodell -> Anlagen; hält Positionen für Querverweise."""
 
@@ -227,7 +231,7 @@ class Hausplan:
                 self._lokal(mod, kenn, f"-{kb['sps_karte']}{i + 1}", i + 1, 1)
                 self.pos[f"modul:{mod}"] = Ort(kenn, i + 1, 1)
                 for k in [k for k in m.sps_kanaele if k.modul_bmk == mod]:
-                    self.pos[f"karte:{k.geraet_bmk}"] = Ort(kenn, i + 1, 2)      # Kanalliste in Spalte 2
+                    self.pos[f"karte:{k.geraet_bmk}"] = Ort(kenn, i + 1, 0)      # Kanaltabelle: Kanal in Spalte 0
 
         for kenn, titel, art, zeichner, n in (
                 ("KAB", "Kabelübersicht", "KAB", self._s_kabel, len(self._kabelzeilen())),
@@ -724,24 +728,53 @@ class Hausplan:
         tabelle(b, ["Steckplatz", "Karte", "Art", "Artikel", "Kanäle belegt / gesamt", "Reserve", "Seite"],
                 zeilen, [25, 40, 18, 45, 50, 25, 30], y_start=185)
 
+    def _versorgung_karte(self, modul_bmk: str, kennung: str) -> str:
+        teile = []
+        for ab in self.m.absicherungen:
+            if modul_bmk in ab.verbraucher:
+                art = "Lastspannung 2L+" if ab.gruppe == "DO-Last" else "Versorgung 1L+"
+                teile.append(f"{art} {self.ref(self.pos.get(ab.bmk), kennung)}")
+        teile.append(f"M {self.ref(self.pos.get('24M'), kennung)}")
+        return " · ".join(teile)
+
     def _s_karte(self, modul_bmk: str):
         def zeichne(b: Blatt, a: Anlage):
             mod = self.m.bm(modul_bmk)
             kanaele = {k.kanal: k for k in self.m.sps_kanaele if k.modul_bmk == modul_bmk}
-            gesamt = int(self.m.artikel.get(mod.artikel, {}).get("kanaele", len(kanaele)))
+            adressen = mod.daten.get("adressen", [])
+            gesamt = max(len(adressen), int(self.m.artikel.get(mod.artikel, {}).get("kanaele", 0)), len(kanaele))
             art = mod.kategorie[4:].upper()
+            slot = next((i for i, x in enumerate(self._karten(), 1) if x.bmk == modul_bmk), "?")
             b.text(X0 + 6, 266, f"={a.kennung}{self.lokal[modul_bmk][1]}  {mod.bezeichnung}  ({mod.artikel})", 3, True)
-            b.text(X0 + 6, 261, f"Belegt {len(kanaele)} von {gesamt} Kanälen, Reserve {gesamt - len(kanaele)}", 2.3)
-            zeilen = []
-            for nr in range(max(gesamt, max(kanaele, default=-1) + 1)):
+            bereich = mod.daten.get("bytebereich")
+            b.text(X0 + 6, 261, f"Steckplatz {slot} (Übersicht {self.ref(Ort(self.stil['kartenanlagen']['CPU'], 1, 0), a.kennung)})"
+                   f" · Belegt {len(kanaele)} von {gesamt} Kanälen, Reserve {gesamt - len(kanaele)}"
+                   + (f" · Byte {bereich[0]}–{bereich[1]}" if bereich else ""), 2.3)
+            b.text(X0 + 6, 256.5, self._versorgung_karte(modul_bmk, a.kennung), 2.3)
+            belegt, reserve = [], []
+            for nr in range(gesamt):
                 k = kanaele.get(nr)
+                adr = adressen[nr] if nr < len(adressen) else ""
                 if k is None:
-                    zeilen.append((f"{art}{nr}", "", "", "Reserve", "", ""))
+                    reserve.append((f"{art}{nr}", adr, "", "", "", "Reserve"))
                     continue
-                zeilen.append((f"{k.art}{k.kanal}", k.adresse, self._signalklemme(k.geraet_bmk), self.voll(k.geraet_bmk),
-                               k.funktion[:60], self.ref(self.pos.get(f"kanal:{k.geraet_bmk}"), a.kennung)))
-            tabelle(b, ["Kanal", "Adresse", "Klemme", "Gerät", "Funktionstext", "Verweis"], zeilen,
-                    [22, 30, 45, 45, 120, 35], y_start=252)
+                if k.anschluss:                                   # Kanal endet im Schrank (Relais, Hilfskontakt)
+                    geraet, pin = k.anschluss.rsplit(":", 1)
+                    zeile = (self.voll(geraet) + f":{pin}", "im Schrank")
+                else:
+                    zeile = (self.voll(k.geraet_bmk), self._signalklemme(k.geraet_bmk) or "–")
+                belegt.append((f"{k.art}{k.kanal}", k.adresse, self.ref(self.pos.get(f"kanal:{k.geraet_bmk}"), a.kennung),
+                               zeile[0], zeile[1], _kuerze(k.funktion, 70)))
+            kopf = ["Kanal", "Adresse", "Verweis", "Gerät / Anschluss", "Klemme", "Funktionstext"]
+            breiten = [22, 30, 30, 55, 40, 150]
+            tabelle(b, kopf, belegt, breiten, y_start=248)
+            if reserve:                                            # Reserve abgesetzt und grau
+                y = 248 - 7 - len(belegt) * 5.5 - 2              # Abstand, damit die Trennlinie frei liegt
+                b.c.setStrokeGray(0.6)                              # Trennlinie = Kopflinie der Reservetabelle
+                b.c.setFillGray(0.5)
+                tabelle(b, [], reserve, breiten, y_start=y + 7)
+                b.c.setFillGray(0)
+                b.c.setStrokeGray(0)
         return zeichne
 
     # ---- Listen ------------------------------------------------------------------

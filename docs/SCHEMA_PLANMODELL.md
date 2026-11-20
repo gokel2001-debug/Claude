@@ -74,6 +74,7 @@ Verbindungen und Potentiale sind (noch) kein eigener Teil: sie ergeben sich aus 
 | `adresse` | `str` | ja |
 | `geraet_bmk` | `str` | ja |
 | `funktion` | `str` | ja |
+| `anschluss` | `str` | – |
 
 ## Absicherung
 
