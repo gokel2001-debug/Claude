@@ -92,3 +92,18 @@ Im Ordner **`ausgabe`**:
 
 Eigene Projekte liegen in `meine_projekte\` und Ergebnisse in `ausgabe\` – beide Ordner werden **nicht**
 ins Repository übertragen. Kunden-PDFs nur lokal auswerten (Menüpunkt 4), nicht ins Repository kopieren.
+
+## Korrekturen merken (Hausregeln)
+
+Wenn Sie im erzeugten Plan immer wieder dasselbe ändern (z. B. „bei uns induktive statt optischer Sensoren“),
+können Sie die Korrektur als **Hausregel** speichern. Sie wirkt ab dem nächsten Plan automatisch und steht im
+Auslegungsnachweis unter „Angewendete Hausregeln“ (mit Bearbeiter, Datum und Herkunft).
+
+Heute noch über die Kommandozeile (ein Menüpunkt folgt):
+
+- Regel anlegen: `python -m slpgen korrektur <Projektdatei> --art artikel_ersetzen --wenn OPT-REF-PNP --dann IND-M12-PNP --grund "Hausstandard"`
+- Regeln ansehen und prüfen: `python -m slpgen hausregeln`
+- Regel ausschalten, wieder einschalten, löschen: `python -m slpgen hausregel aus R1` (bzw. `ein`, `loeschen`)
+
+Das Programm speichert eine Regel nur, wenn sie wirklich etwas ändert und der Plan damit weiterhin entsteht.
+Die Regeln liegen nur auf diesem PC in `hausprofil\hausregeln.yaml`.

@@ -992,6 +992,8 @@ class Hausplan:
                 gruppen["4 Annahmen"].append(w.split(":", 1)[1].strip())
             elif w.startswith("Offene Frage:"):
                 gruppen["5 Offene Fragen"].append(w.split(":", 1)[1].strip())
+            elif w.startswith(("Hausregel", "Regressionsfall", "Hausregeln bilden")):
+                gruppen.setdefault("9 Angewendete Hausregeln (Lernschleife)", []).append(w)
             elif "nach Hausvorgabe" in w:
                 gruppen["3 Hausvorgaben und Hausstil"].append(w)
             else:

@@ -15,6 +15,7 @@ from . import analyse, regeln, zeichnen
 from .modell import Planmodell
 
 PROG = Path(__file__).resolve().parent.parent          # Programmordner (start.bat liegt dort)
+PROFIL = str(PROG / "hausprofil" / "profil.yaml")      # fester Ort, unabhängig vom aktuellen Ordner
 STAMM = str(PROG / "beispiele" / "geraetestamm.yaml")
 VORGABEN = str(PROG / "beispiele" / "hausvorgaben.yaml")
 
@@ -116,13 +117,19 @@ def _vorgaben(pfad: str | None) -> dict | None:
 def cmd_generieren(a):
     from .projektmodell import bereit_machen
     stamm = lade_yaml(a.stamm)
-    projekt, ergaenzt = bereit_machen(lade_projekt(a.projekt), stamm, _vorgaben(a.vorgaben))
     from .lernschleife import lade_regeln, pruefe_regressionen, wende_an
-    hausregeln = lade_regeln(_hausregeln_pfad(a.profil))
-    projekt, angewendet = wende_an(projekt, hausregeln)          # Lernschleife: Korrekturen wirken vor der Planung
+    regel_pfad = _hausregeln_pfad(a.profil)
+    hausregeln, hinweise = lade_regeln(regel_pfad)
+    daten = lade_projekt(a.projekt)
+    if isinstance(daten, dict):                                 # Lernschleife: Korrekturen wirken VOR Prüfung/Planung
+        daten, angewendet = wende_an(daten, hausregeln)
+    else:
+        angewendet = []
+    projekt, ergaenzt = bereit_machen(daten, stamm, _vorgaben(a.vorgaben))
     m = regeln.plane(projekt, stamm)
-    m.warnungen.extend(angewendet)
-    m.warnungen.extend(pruefe_regressionen(hausregeln))
+    m.warnungen.append(f"Hausregeln: {len(hausregeln)} geladen aus {regel_pfad}" if regel_pfad.is_file()
+                       else f"Hausregeln: keine Datei {regel_pfad} – keine Hausregeln angewendet")
+    m.warnungen.extend(angewendet + hinweise + pruefe_regressionen(hausregeln))
     for titel, k in (("Annahme der Aufbereitung", "annahmen"), ("Offene Frage", "offene_fragen")):
         m.warnungen.extend(f"{titel}: {x}" for x in projekt.get(k) or [])
     m.warnungen.extend(ergaenzt)
@@ -156,24 +163,45 @@ def cmd_pruefbericht(a):
 
 
 def _hausregeln_pfad(profil: str | None) -> Path:
-    return Path(profil or "hausprofil/profil.yaml").with_name("hausregeln.yaml")
+    return Path(profil or PROFIL).with_name("hausregeln.yaml")
 
 
 def cmd_korrektur(a):
     from .lernschleife import ARTEN, erfasse_korrektur
+    from .projektmodell import bereit_machen
+    stamm, vorgaben = lade_yaml(a.stamm), _vorgaben(a.vorgaben)
+
+    def probelauf(projekt: dict) -> None:                       # Regel nur speichern, wenn der Plan entsteht
+        regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0], stamm)
+
     r = erfasse_korrektur(_hausregeln_pfad(a.profil), a.art, a.wenn, a.dann, a.herkunft or Path(a.projekt).name,
-                          a.grund, lade_projekt(a.projekt), lade_yaml(a.stamm), a.gilt_ab)
+                          a.grund, lade_projekt(a.projekt), stamm, a.gilt_ab, a.nur_projekt, a.bearbeiter, probelauf)
     print(f"Hausregel {r['id']} gespeichert ({ARTEN[r['art']]}: {r['wenn']} → {r['dann']}). Sie wirkt ab dem nächsten "
           f"Plan und steht im Auslegungsnachweis.")
 
 
+def cmd_hausregel(a):
+    from .lernschleife import schalte
+    r = schalte(_hausregeln_pfad(a.profil), a.id, a.aktion)
+    print(f"Hausregel {r['id']} ({r['wenn']} → {r['dann']}): " + {"ein": "eingeschaltet", "aus": "ausgeschaltet",
+                                                                  "loeschen": "gelöscht"}[a.aktion])
+
+
 def cmd_hausregeln(a):
-    from .lernschleife import ARTEN, lade_regeln, pruefe_regressionen
-    rs = lade_regeln(_hausregeln_pfad(a.profil))
+    from .lernschleife import ARTEN, bestaetige, lade_regeln, pruefe_regressionen
+    pfad = _hausregeln_pfad(a.profil)
+    if a.bestaetigen:
+        print(f"{bestaetige(pfad)} Regressionsfälle mit dem aktuellen Ergebnis als neuem Soll gespeichert.")
+    rs, hinweise = lade_regeln(pfad)
+    print(f"Hausregeln aus {pfad}:" if pfad.is_file() else f"Keine Hausregeln ({pfad} fehlt).")
+    for h in hinweise:
+        print(h)
     for r in rs:
-        status = "aktiv" if r.get("aktiv", True) else "inaktiv"
-        print(f"{r['id']} [{status}] {ARTEN.get(r['art'], r['art'])}: {r['wenn']} → {r['dann']} "
-              f"(Herkunft {r.get('herkunft')}, {r.get('datum')}; Grund: {r.get('grund') or '–'})")
+        status = "aktiv" if r.get("aktiv", True) else "aus"
+        geltung = ", ".join(x for x in (f"ab {r['gilt_ab']}" if r.get("gilt_ab") else "",
+                                        f"nur Projekt {r['nur_projekt']}" if r.get("nur_projekt") else "") if x) or "immer"
+        print(f"{r['id']} [{status}] {ARTEN.get(r['art'], r['art'])}: {r['wenn']} → {r['dann']} – gilt {geltung} "
+              f"({r.get('bearbeiter', '?')}, {r.get('datum')}, Herkunft {r.get('herkunft')}; Grund: {r.get('grund') or '–'})")
     befunde = pruefe_regressionen(rs)
     print("\n".join(befunde) if befunde else f"Regressionstest: {len(rs)} Fälle unverändert.")
     if befunde:
@@ -386,7 +414,7 @@ def main(argv=None):
     g.add_argument("projekt")
     g.add_argument("--stamm", default=STAMM)
     g.add_argument("--ausgabe", help="Zielordner (Standard: Unterordner „ausgabe“ im Projektordner)")
-    g.add_argument("--profil", default="hausprofil/profil.yaml",
+    g.add_argument("--profil", default=PROFIL,
                    help="Hausprofil; nur freigegebene Werte fließen in den Hausstil ein")
     g.add_argument("--vorgaben", default=VORGABEN,
                    help="Hausvorgaben für fehlende Abschnitte (versorgung_24V, sps, leitungen)")
@@ -399,20 +427,29 @@ def main(argv=None):
     kr.add_argument("--grund", default="", help="Begründung in Klartext")
     kr.add_argument("--herkunft", help="Projekt/Person (Standard: Dateiname)")
     kr.add_argument("--gilt-ab", dest="gilt_ab", help="Projektdatum JJJJ-MM-TT, ab dem die Regel gilt")
+    kr.add_argument("--nur-projekt", dest="nur_projekt", help="Projektnummer, für die allein die Regel gilt")
+    kr.add_argument("--bearbeiter", help="Name (Standard: Windows-Anmeldename)")
+    kr.add_argument("--vorgaben", default=VORGABEN)
     kr.add_argument("--stamm", default=STAMM)
-    kr.add_argument("--profil", default="hausprofil/profil.yaml")
+    kr.add_argument("--profil", default=PROFIL)
     kr.set_defaults(f=cmd_korrektur)
     hr = sub.add_parser("hausregeln", help="Hausregeln auflisten und Regressionstest ausführen")
-    hr.add_argument("--profil", default="hausprofil/profil.yaml")
+    hr.add_argument("--profil", default=PROFIL)
+    hr.add_argument("--bestaetigen", action="store_true", help="aktuelles Ergebnis aller Fälle als neues Soll übernehmen")
     hr.set_defaults(f=cmd_hausregeln)
+    hs = sub.add_parser("hausregel", help="Hausregel ein-/ausschalten oder löschen")
+    hs.add_argument("aktion", choices=["ein", "aus", "loeschen"])
+    hs.add_argument("id", help="z. B. R3")
+    hs.add_argument("--profil", default=PROFIL)
+    hs.set_defaults(f=cmd_hausregel)
     pb = sub.add_parser("pruefbericht", help="Konsistenzprüfung eines Planmodells (JSON) mit Kennzahlen")
     pb.add_argument("planmodell")
-    pb.add_argument("--profil", default="hausprofil/profil.yaml")
+    pb.add_argument("--profil", default=PROFIL)
     pb.set_defaults(f=cmd_pruefbericht)
     ze = sub.add_parser("zeichnen", help="PDFs und Listen aus einem vorhandenen Planmodell (JSON)")
     ze.add_argument("planmodell")
     ze.add_argument("--ausgabe", help="Zielordner (Standard: Ordner des Planmodells)")
-    ze.add_argument("--profil", default="hausprofil/profil.yaml")
+    ze.add_argument("--profil", default=PROFIL)
     ze.set_defaults(f=cmd_zeichnen)
     pr = sub.add_parser("pruefen", help="Projektmodell (YAML/Excel) prüfen, alle Lücken im Klartext")
     pr.add_argument("projekt")
@@ -459,10 +496,10 @@ def main(argv=None):
     ko.set_defaults(f=cmd_korpus)
     le = sub.add_parser("lernen", help="Hausprofil aus einem Ordner mit Bestands-PDFs lernen")
     le.add_argument("ordner")
-    le.add_argument("--profil", default="hausprofil/profil.yaml")
+    le.add_argument("--profil", default=PROFIL)
     le.set_defaults(f=cmd_lernen)
     fr = sub.add_parser("freigabe", help="Freigaben aus profil_freigabe.xlsx ins Hausprofil übernehmen")
-    fr.add_argument("--profil", default="hausprofil/profil.yaml")
+    fr.add_argument("--profil", default=PROFIL)
     fr.add_argument("--liste", default="hausprofil/profil_freigabe.xlsx")
     fr.set_defaults(f=cmd_freigabe)
     a = p.parse_args(argv)

@@ -1,19 +1,22 @@
 """Lernschleife (M5c, ZIEL 4c): Korrektur erfassen -> Hausregel mit Herkunft/Datum/Geltung -> wirkt beim nächsten
 Plan -> Regressionstest.
 
-Hausregeln liegen lokal in `hausprofil/hausregeln.yaml` (vertraulich, nie im Repository). Jede Regel ändert das
-Projektmodell VOR der Planung (Schicht A -> B) und wird im Auslegungsnachweis genannt. Zu jeder Regel wird der
-Fall gespeichert, an dem sie erfasst wurde (Eingabe-Ausschnitt + erwartetes Ergebnis); `pruefe_regressionen`
-spielt alle Fälle erneut durch und meldet, wenn eine spätere Regel einen früheren Fall verändert.
+Hausregeln liegen lokal in `hausprofil/hausregeln.yaml` (vertraulich, nie im Repository). Sie ändern das
+Projektmodell VOR dessen Prüfung und Planung (Schicht A -> B) und stehen im Auslegungsnachweis unter
+„Angewendete Hausregeln“. Zu jeder Regel wird der Fall gespeichert, an dem sie erfasst wurde (betroffene
+Feldgeräte vorher/nachher, Projektdatum); `pruefe_regressionen` spielt alle Fälle erneut durch.
 
 Regelarten (Grundgerüst, erweiterbar):
-  artikel_ersetzen  wenn ein Feldgerät Artikel `wenn` hat, wird `dann` eingesetzt (z. B. Hausstandard-Hersteller)
-  gruppe_setzen     Feldgeräte mit Artikel `wenn` bekommen die 24-V-Gruppe `dann`
+  artikel_ersetzen  Feldgerät mit Artikel `wenn` bekommt `dann` (gleiche Kategorie und gleiches Signal)
+  gruppe_setzen     Feldgeräte mit Artikel `wenn` bekommen die 24-V-Gruppe `dann` (nicht für DO-Aktoren)
+Geltung: immer, ab Projektdatum (`gilt_ab`) und/oder nur für ein Projekt (`nur_projekt`).
 """
 from __future__ import annotations
 
 import copy
 import datetime as dt
+import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -22,17 +25,31 @@ import yaml
 from .modell import RegelFehler
 
 ARTEN = {"artikel_ersetzen": "Artikel ersetzen", "gruppe_setzen": "24-V-Gruppe setzen"}
+PFLICHT = ("id", "art", "wenn", "dann")
+MAX_DURCHLAEUFE = 10                 # Regelketten A→B→C; mehr Durchläufe = Kreis
 
 
-def lade_regeln(pfad: str | Path) -> list[dict[str, Any]]:
+def lade_regeln(pfad: str | Path) -> tuple[list[dict[str, Any]], list[str]]:
+    """-> (gültige Regeln, Klartext-Hinweise zu fehlerhaften Einträgen). Fehlerhafte Regeln werden übersprungen."""
     p = Path(pfad)
     if not p.is_file():
-        return []
+        return [], []
     try:
-        daten = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-    except yaml.YAMLError:
-        raise RegelFehler(f"{p.name} ist beschädigt – Sicherung {p.name}.bak zurückkopieren") from None
-    return list(daten.get("regeln", []))
+        daten = yaml.safe_load(p.read_text(encoding="utf-8"))
+    except (yaml.YAMLError, UnicodeDecodeError):
+        return [], [f"Hausregeln: {p.name} ist beschädigt und wird nicht verwendet – Sicherung {p.name}.bak zurückkopieren"]
+    roh = daten.get("regeln") if isinstance(daten, dict) else None
+    if not isinstance(roh, list):
+        return [], [f"Hausregeln: {p.name} hat kein gültiges Format („regeln:“ mit Liste) – nicht verwendet"]
+    regeln, hinweise = [], []
+    for i, r in enumerate(roh, 1):
+        fehlt = [k for k in PFLICHT if not isinstance(r, dict) or not isinstance(r.get(k), str) or not r.get(k)]
+        if fehlt or r["art"] not in ARTEN or not isinstance(r.get("aktiv", True), bool):
+            grund = f"fehlt/ungültig: {', '.join(fehlt)}" if fehlt else "Art oder „aktiv“ (true/false) ungültig"
+            hinweise.append(f"Hausregeln: Eintrag {i} übersprungen ({grund})")
+            continue
+        regeln.append(r)
+    return regeln, hinweise
 
 
 def speichere_regeln(pfad: str | Path, regeln: list[dict[str, Any]]) -> None:
@@ -44,69 +61,145 @@ def speichere_regeln(pfad: str | Path, regeln: list[dict[str, Any]]) -> None:
                  + yaml.safe_dump({"regeln": regeln}, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
 
-def _gilt(regel: dict[str, Any], stichtag: str | None) -> bool:
-    ab = str(regel.get("gilt_ab", ""))
-    return not ab or not stichtag or str(stichtag) >= ab
+def _datum(text: Any) -> dt.date | None:
+    try:
+        return dt.date.fromisoformat(str(text)) if text else None
+    except ValueError:
+        return None
+
+
+def _gilt(regel: dict[str, Any], projekt: dict[str, Any]) -> bool:
+    kopf = projekt.get("projekt") or {}
+    if regel.get("nur_projekt") and str(kopf.get("nummer", "")) != str(regel["nur_projekt"]):
+        return False
+    ab, stichtag = _datum(regel.get("gilt_ab")), _datum(kopf.get("datum"))
+    return not ab or not stichtag or stichtag >= ab
 
 
 def wende_an(projekt: dict[str, Any], regeln: list[dict[str, Any]]) -> tuple[dict[str, Any], list[str]]:
-    """Regeln auf das Projektmodell anwenden. -> (geändertes Modell, Klartext je Änderung für den Nachweis)."""
+    """Regeln (auch als Kette A→B→C) auf die Feldgeräte anwenden. -> (geändertes Modell, Klartext je Änderung)."""
     neu = copy.deepcopy(projekt)
-    stichtag = str((neu.get("projekt") or {}).get("datum", "")) or None
     meldungen: list[str] = []
-    for r in regeln:
-        if not r.get("aktiv", True) or not _gilt(r, stichtag):
-            continue
-        for fg in neu.get("feldgeraete") or []:
-            if not isinstance(fg, dict) or fg.get("artikel") != r["wenn"]:
-                continue
-            if r["art"] == "artikel_ersetzen":
-                fg["artikel"] = r["dann"]
-            elif r["art"] == "gruppe_setzen":
-                fg["gruppe"] = r["dann"]
-            else:
-                continue
-            meldungen.append(f"Hausregel {r['id']} ({ARTEN[r['art']]}): {fg.get('bmk')} {r['wenn']} → {r['dann']} "
-                             f"– Herkunft: {r.get('herkunft', '?')}, {r.get('datum', '?')}")
-    return neu, meldungen
+    aktiv = [r for r in regeln if r.get("aktiv", True) is True and _gilt(r, neu)]
+    for _ in range(MAX_DURCHLAEUFE):
+        geaendert = False
+        for r in aktiv:
+            feld = "artikel" if r["art"] == "artikel_ersetzen" else "gruppe"
+            for fg in neu.get("feldgeraete") or []:
+                if not isinstance(fg, dict) or fg.get("artikel") != r["wenn"] or fg.get(feld) == r["dann"]:
+                    continue
+                fg[feld] = r["dann"]
+                geaendert = True
+                meldungen.append(f"Hausregel {r['id']} ({ARTEN[r['art']]}): {fg.get('bmk')} {r['wenn']} → {r['dann']} "
+                                 f"– {r.get('bearbeiter', '?')}, {r.get('datum', '?')}, Herkunft {r.get('herkunft', '?')}")
+        if not geaendert:
+            return neu, meldungen
+    raise RegelFehler("Hausregeln bilden einen Kreis (z. B. A → B → A) – eine der Regeln abschalten (Befehl hausregel aus)")
+
+
+def _naechste_id(regeln: list[dict[str, Any]]) -> str:
+    nummern = [int(r["id"][1:]) for r in regeln if str(r.get("id", "")).startswith("R") and r["id"][1:].isdigit()]
+    return f"R{max(nummern, default=0) + 1}"
 
 
 def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft: str, grund: str,
-                      projekt: dict[str, Any], stamm: dict[str, Any], gilt_ab: str | None = None) -> dict[str, Any]:
-    """Korrektur als Hausregel speichern, samt Regressionsfall (betroffene Feldgeräte vorher/nachher)."""
+                      projekt: dict[str, Any], stamm: dict[str, Any], gilt_ab: str | None = None,
+                      nur_projekt: str | None = None, bearbeiter: str | None = None,
+                      probelauf: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
+    """Korrektur als Hausregel speichern, samt Regressionsfall. Speichert nur, wenn die Regel wirkt und der
+    Probelauf (Prüfung + Planung mit allen Regeln) gelingt."""
     if art not in ARTEN:
         raise RegelFehler(f"Regelart „{art}“ unbekannt – möglich: {', '.join(ARTEN)}")
     artikel = stamm.get("artikel", {})
     if wenn not in artikel:
         raise RegelFehler(f"Artikel „{wenn}“ gibt es nicht im Gerätestamm")
-    if art == "artikel_ersetzen" and dann not in artikel:
-        raise RegelFehler(f"Ersatzartikel „{dann}“ gibt es nicht im Gerätestamm")
-    betroffen = [fg for fg in projekt.get("feldgeraete") or [] if isinstance(fg, dict) and fg.get("artikel") == wenn]
-    if not betroffen:
-        raise RegelFehler(f"Im Projekt kommt Artikel „{wenn}“ nicht vor – Korrektur würde nichts ändern")
-    regeln = lade_regeln(pfad)
+    if art == "artikel_ersetzen":
+        if dann not in artikel:
+            raise RegelFehler(f"Ersatzartikel „{dann}“ gibt es nicht im Gerätestamm")
+        a, b = artikel[wenn], artikel[dann]
+        if (a.get("kategorie"), a.get("signal")) != (b.get("kategorie"), b.get("signal")):
+            raise RegelFehler(f"Ersatzartikel „{dann}“ passt nicht: {b.get('kategorie')}/{b.get('signal')} statt "
+                              f"{a.get('kategorie')}/{a.get('signal')} – nur gleichartige Geräte ersetzen")
+    if art == "gruppe_setzen" and (artikel[wenn].get("signal") == "DO" or dann == "DO-Last"):
+        raise RegelFehler("DO-Aktoren laufen immer über die Lastspannung der DO-Karte (Gruppe DO-Last) – "
+                          "diese Zuordnung ist nicht per Hausregel änderbar")
+    if gilt_ab and _datum(gilt_ab) is None:
+        raise RegelFehler(f"Datum „{gilt_ab}“ ungültig – bitte JJJJ-MM-TT, z. B. 2027-01-01")
+    regeln, hinweise = lade_regeln(pfad)
+    if hinweise:
+        raise RegelFehler("Hausregel-Datei fehlerhaft – erst reparieren: " + "; ".join(hinweise))
     widerspruch = [r for r in regeln if r.get("aktiv", True) and r["art"] == art and r["wenn"] == wenn and r["dann"] != dann]
     if widerspruch:
         raise RegelFehler(f"Widerspruch zu Hausregel {widerspruch[0]['id']} ({wenn} → {widerspruch[0]['dann']}) – "
-                          f"alte Regel erst deaktivieren")
-    regel: dict[str, Any] = {"id": f"R{len(regeln) + 1}", "art": art, "wenn": wenn, "dann": dann, "aktiv": True,
-             "herkunft": herkunft, "grund": grund, "datum": dt.date.today().isoformat(),
-             "gilt_ab": gilt_ab or "",
-             "fall": {"eingabe": copy.deepcopy(betroffen), "erwartet": None}}
-    nachher, _ = wende_an({"feldgeraete": copy.deepcopy(betroffen)}, [*regeln, regel])
-    regel["fall"]["erwartet"] = nachher["feldgeraete"]
+                          f"alte Regel erst abschalten: hausregel aus {widerspruch[0]['id']}")
+    mit_bisherigen, _ = wende_an(projekt, regeln)                 # Korrektur bezieht sich auf den erzeugten Plan
+    betroffen = [fg for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict) and fg.get("artikel") == wenn]
+    if not betroffen:
+        raise RegelFehler(f"Im Plan kommt Artikel „{wenn}“ nicht vor (ggf. schon durch eine Hausregel ersetzt) – "
+                          f"Korrektur würde nichts ändern")
+    kopf = projekt.get("projekt") or {}
+    regel: dict[str, Any] = {
+        "id": _naechste_id(regeln), "art": art, "wenn": wenn, "dann": dann, "aktiv": True,
+        "herkunft": herkunft, "bearbeiter": bearbeiter or os.environ.get("USERNAME") or os.environ.get("USER") or "unbekannt",
+        "grund": grund, "datum": dt.date.today().isoformat(), "gilt_ab": gilt_ab or "", "nur_projekt": nur_projekt or "",
+        "fall": {"projekt": {"nummer": kopf.get("nummer", ""), "datum": str(kopf.get("datum", ""))},
+                 "eingabe": copy.deepcopy(betroffen), "erwartet": None}}
+    fall = {"projekt": regel["fall"]["projekt"], "feldgeraete": copy.deepcopy(betroffen)}
+    ohne, _ = wende_an(fall, regeln)
+    mit, _ = wende_an(fall, [*regeln, regel])
+    if mit["feldgeraete"] == ohne["feldgeraete"]:
+        raise RegelFehler("Die neue Regel ändert nichts (Geltung passt nicht zum Projekt oder eine andere Regel "
+                          "verdeckt sie)")
+    if probelauf:
+        try:
+            probelauf(wende_an(projekt, [*regeln, regel])[0])
+        except RegelFehler as e:
+            raise RegelFehler(f"Korrektur nicht gespeichert – mit ihr wäre der Plan nicht erzeugbar: {e}") from None
+    regel["fall"]["erwartet"] = mit["feldgeraete"]
     speichere_regeln(pfad, [*regeln, regel])
     return regel
 
 
+def schalte(pfad: str | Path, regel_id: str, aktion: str) -> dict[str, Any]:
+    """Regel ein-/ausschalten oder löschen (aktion: ein | aus | loeschen)."""
+    regeln, hinweise = lade_regeln(pfad)
+    if hinweise:
+        raise RegelFehler("Hausregel-Datei fehlerhaft – erst reparieren: " + "; ".join(hinweise))
+    treffer = [r for r in regeln if r["id"] == regel_id]
+    if not treffer:
+        raise RegelFehler(f"Hausregel {regel_id} gibt es nicht – vorhanden: {', '.join(r['id'] for r in regeln) or 'keine'}")
+    if aktion == "loeschen":
+        regeln = [r for r in regeln if r["id"] != regel_id]
+    else:
+        treffer[0]["aktiv"] = aktion == "ein"
+    speichere_regeln(pfad, regeln)
+    return treffer[0]
+
+
 def pruefe_regressionen(regeln: list[dict[str, Any]]) -> list[str]:
-    """Jeden gespeicherten Fall mit ALLEN aktiven Regeln erneut durchspielen; Abweichungen im Klartext."""
+    """Jeden gespeicherten Fall (mit seinem Projektdatum) mit ALLEN aktiven Regeln erneut durchspielen."""
     befunde = []
     for r in regeln:
-        if not r.get("aktiv", True):
+        if r.get("aktiv", True) is not True or not isinstance(r.get("fall"), dict):
             continue
-        ist, _ = wende_an({"feldgeraete": copy.deepcopy(r["fall"]["eingabe"])}, regeln)
-        if ist["feldgeraete"] != r["fall"]["erwartet"]:
-            befunde.append(f"Regressionsfall zu {r['id']} ({r['wenn']} → {r['dann']}) liefert jetzt ein anderes Ergebnis "
-                           f"– eine spätere Regel verändert ihn")
+        fall = {"projekt": r["fall"].get("projekt", {}), "feldgeraete": copy.deepcopy(r["fall"].get("eingabe", []))}
+        try:
+            ist, _ = wende_an(fall, regeln)
+        except RegelFehler as e:
+            befunde.append(str(e))
+            continue
+        if ist["feldgeraete"] != r["fall"].get("erwartet"):
+            befunde.append(f"Regressionsfall zu {r['id']} ({r['wenn']} → {r['dann']}) liefert jetzt ein anderes Ergebnis – "
+                           f"eine spätere Regel verändert ihn (gewollt? dann: hausregeln --bestaetigen)")
     return befunde
+
+
+def bestaetige(pfad: str | Path) -> int:
+    """Aktuelles Ergebnis aller Fälle als neues Soll übernehmen (nach bewusster Regeländerung)."""
+    regeln, _ = lade_regeln(pfad)
+    for r in regeln:
+        if isinstance(r.get("fall"), dict):
+            fall = {"projekt": r["fall"].get("projekt", {}), "feldgeraete": copy.deepcopy(r["fall"].get("eingabe", []))}
+            r["fall"]["erwartet"] = wende_an(fall, regeln)[0]["feldgeraete"]
+    speichere_regeln(pfad, regeln)
+    return len(regeln)
