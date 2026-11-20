@@ -275,7 +275,10 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         m.warnungen.append(f"Σ I 400 V = {m.bilanz['i_400V_max_A']} A > Hauptschalter {artikel(hs_key)['i_nenn_A']} A")
     ls_kand = [k for k, a in art.items() if a["kategorie"] == "schutz"]
     ls_key = waehle_kleinste(art, ls_kand, nt["vorsicherung_A"])
-    if ls_key is None or art[ls_key]["i_nenn_A"] != nt["vorsicherung_A"]:
+    if ls_key is None:
+        raise RegelFehler(f"Keine Vorsicherung ≥ {nt['vorsicherung_A']} A (Datenblatt {nt_key}) im Gerätestamm – "
+                          f"Leitungsschutzschalter ergänzen")
+    if art[ls_key]["i_nenn_A"] != nt["vorsicherung_A"]:
         m.warnungen.append(f"Vorsicherung {nt['vorsicherung_A']} A laut Datenblatt {nt_key} nicht exakt im "
                            f"Stamm; gewählt: {ls_key}")
     m.betriebsmittel.append(Betriebsmittel("-F1", ls_key, art[ls_key]["bezeichnung"],
@@ -371,9 +374,9 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         k.seite, k.spalte = eltern.seite, eltern.spalte
     for w in m.kabel:                # Leitungen der Netzgeräte: Seite des Geräts (bisheriger Plan)
         if w.seite is None:
-            eltern = next((f for f in feld if f.bmk == w.nach), None)
-            if eltern:
-                w.seite, w.spalte = eltern.seite, eltern.spalte
+            geraet = next((f for f in feld if f.bmk == w.nach), None)
+            if geraet:
+                w.seite, w.spalte = geraet.seite, geraet.spalte
     m.klemmen.sort(key=lambda k: (k.leiste, k.nr))
     n_x2 = len([k for k in m.klemmen if k.leiste == "-X2"])
     if n_x2:                         # Stückliste: tatsächliche Zahl der Leistungsklemmen
@@ -436,7 +439,7 @@ def _leistungsteil(m: Planmodell, b: Betriebsmittel, a: dict, lst: dict, fg: dic
     try:
         if laenge in (None, ""):
             a_mm2, i_z, du = waehle_querschnitt(i_n, 0.0, cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))
-            du = None
+            du = None  # type: ignore[assignment]  # ΔU ungeprüft ohne Länge
             m.warnungen.append(f"{b.bmk}: Spannungsfall nicht geprüft – Leitungslänge fehlt (Excel-Spalte Länge)")
         else:
             a_mm2, i_z, du = waehle_querschnitt(i_n, laenge, cos_phi, ltg, lst.get("u_V", 230), lst.get("phasen", 1))

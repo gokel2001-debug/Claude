@@ -21,3 +21,8 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["slpgen"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true      # reportlab, openpyxl, pypdf ohne Typangaben
+check_untyped_defs = true

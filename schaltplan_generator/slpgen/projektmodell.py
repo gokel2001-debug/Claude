@@ -172,7 +172,7 @@ def pruefe(daten: Any, stamm: dict) -> list[str]:
         if not liste and not isinstance(wert, dict):
             luecken.append(f"Abschnitt „{name}“ muss Einträge der Form „feld: wert“ enthalten")
             continue
-        for i, e in (enumerate(wert) if liste else [(None, wert)]):
+        for i, e in (enumerate(wert or []) if liste else [(None, wert)]):
             ort = _ort(name, i, e)
             if not isinstance(e, dict):
                 luecken.append(f"{ort}: Eintrag muss die Form „feld: wert“ haben")

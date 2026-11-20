@@ -48,7 +48,7 @@ def _feldklemmleiste(st: dict) -> str | None:
     """Leiste, auf die Feldsignale geführt sind: bevorzugt Klemmenbezüge (-X20:3) aus
     Funktionsanlagen, sonst X-Leisten unter deren Betriebsmitteln."""
     funktion = [a for name, a in st["anlagen"].items() if not a["leer"] and not name.startswith(INFRASTRUKTUR)]
-    bezuege = Counter()
+    bezuege: Counter[str] = Counter()
     for a in funktion:
         bezuege.update(a.get("klemmenbezuege", {}))
     z = bezuege or Counter(b for a in funktion for b in a["bmk"] if RE_LEISTE.fullmatch(b))
@@ -147,7 +147,8 @@ def lerne(pdfs: list[Path]) -> dict[str, Any]:
         je_jahr: dict[int, Counter] = defaultdict(Counter)
         belege: dict[str, list[str]] = defaultdict(list)
         for datei, jahr, w in werte:
-            belege[w].append(datei)
+            if w is not None:
+                belege[w].append(datei)
             if jahr:
                 je_jahr[jahr][w] += 1
         bloecke = _bloecke(je_jahr)
@@ -176,7 +177,9 @@ def lerne(pdfs: list[Path]) -> dict[str, Any]:
                          "anteil_gesamt": {}, "je_jahr": {}, "trend": [], "ohne_wert": [], "belege": {}}
 
     # Häufigkeits-Merkmale: über alle Pläne zählen
-    leitungen, dokarten, adern = Counter(), Counter(), Counter()
+    leitungen: Counter[str] = Counter()
+    dokarten: Counter[str] = Counter()
+    adern: Counter[str] = Counter()
     for _, _, _, st in plaene:
         leitungen.update({_norm_leitung(lt) for a in st["anlagen"].values() for lt in a["leitungstypen"]})
         dokarten.update(st["seiten_je_dokumentart"].keys())

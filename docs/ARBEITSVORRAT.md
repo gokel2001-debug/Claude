@@ -21,4 +21,4 @@ Reihenfolge der Meilensteine ist verbindlich (ZIEL.md). Ein Paket = in einem 5-h
 | M5a | P7 Geometrie/Schriftfeld lernen, Teil 1: Schriftfeldfelder (Datum, Revision, Ersteller) und Spaltenraster aus Vektor-PDFs des synthetischen Korpus auslesen, mit Sicherheitsangabe (A16) | Tests am Korpus; Profil enthält Schriftfeld-Merkmale mit Sicherheit | Software, Einsteiger | offen |
 | M5c | Lernschleife Grundgerüst: Korrektur erfassen → Regel mit Herkunft/Datum/Geltung im Hausprofil → Regressionstest (Produkt-Befund) | Test: Korrektur wirkt beim nächsten Plan | Software, Produkt | offen |
 | M7a | Import eigener Artikelstamm (Excel/EPLAN-Artikelexport) ins Hausprofil, Abgleich mit Gerätestamm | Test mit synthetischer Exportdatei | Software, Elektro | offen |
-| M2e | Typprüfung (mypy) ohne Befund für alle Module, in CI aufnehmen (ZIEL 4c) | mypy in CI grün | Software | offen |
+| M2e | Typprüfung (mypy) ohne Befund für alle Module, in CI aufnehmen (ZIEL 4c) | mypy in CI grün | Software | erledigt 20.11. (150 → 0 Befunde; dabei echter Absturz ohne Vorsicherung im Stamm gefunden und behoben) |

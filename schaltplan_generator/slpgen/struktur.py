@@ -80,22 +80,22 @@ def lese_struktur(pdf: Path, muster: dict | None = None, schwelle: float = 0.75)
     tok = {n: _normalisiert(anlagen[n]["text"], n) for n in namen}
     gruppe = {n: n for n in namen}
 
-    def wurzel(n):
+    def wurzel(n: str) -> str:
         while gruppe[n] != n:
             n = gruppe[n]
         return n
 
-    for i, a in enumerate(namen):
-        for b in namen[i + 1:]:
-            if jaccard(tok[a], tok[b]) >= schwelle:
-                gruppe[wurzel(b)] = wurzel(a)
+    for i, n1 in enumerate(namen):
+        for n2 in namen[i + 1:]:
+            if jaccard(tok[n1], tok[n2]) >= schwelle:
+                gruppe[wurzel(n2)] = wurzel(n1)
     aehnlichste = sorted(((round(jaccard(tok[a], tok[b]), 2), a, b) for i, a in enumerate(namen)
                           for b in namen[i + 1:]), reverse=True)[:15]
     typicals: dict[str, list[str]] = defaultdict(list)
     for n in namen:
         typicals[wurzel(n)].append(n)
 
-    adern = Counter()
+    adern: Counter[str] = Counter()
     for e in ergebnis_anlagen.values():
         adern.update(e["adern"])
     return {

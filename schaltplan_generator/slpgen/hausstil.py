@@ -14,7 +14,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import yaml
 from reportlab.lib.pagesizes import A3, landscape
@@ -59,7 +59,7 @@ LEITER_Y = {"L1": 262, "L2": 256, "L3": 250, "N": 244, "PE": 238}   # Lage der N
 
 def lade_hausstil(profil_pfad: str | Path | None) -> dict:
     """Standard + freigegebene Werte aus dem Hausprofil (nur Status `freigegeben` zählt)."""
-    stil = copy.deepcopy(HAUSSTIL_STANDARD)
+    stil: dict[str, Any] = copy.deepcopy(HAUSSTIL_STANDARD)
     stil["quelle"], stil["warnungen"] = {}, []
     if profil_pfad and Path(profil_pfad).exists():
         profil = yaml.safe_load(Path(profil_pfad).read_text(encoding="utf-8")) or {}
@@ -162,8 +162,8 @@ class Hausplan:
         self._neu(self.VT, "24 V DC Verteilung").seiten.append(("Potentialverteilung 24 V DC", self._s_verteilung))
         self.pos["24M"] = Ort(self.VT, 1, 0)
         module = [b for b in m.betriebsmittel if b.kategorie == "selektivmodul"]
-        for j, mod in enumerate(module):                    # Selektivmodule: lokal -F1, -F2 …
-            self._lokal(mod.bmk, self.VT, f"-F{j + 1}", 1, 1)
+        for j, sel in enumerate(module):                    # Selektivmodule: lokal -F1, -F2 …
+            self._lokal(sel.bmk, self.VT, f"-F{j + 1}", 1, 1)
         sammel = any(k.geraet_bmk == SAMMELMELDUNG for k in m.sps_kanaele)
         n = len(m.absicherungen) + (1 if sammel else 0)
         if n > 9:
@@ -939,7 +939,8 @@ class Hausplan:
                 e[2] = "m"
             else:                                       # nach Feldmaß
                 e[1] += 1
-        kauf, beistellung = [], []
+        kauf: list[tuple] = []
+        beistellung: list[tuple] = []
         for menge, offen, einheit, hersteller, benennung, artikel in summe.values():
             text = f"{_zahl(menge)} {einheit}" if einheit else ""
             if offen:
@@ -977,9 +978,10 @@ class Hausplan:
             for kab in self.m.kabel:
                 kenn, lok = self.lokal.get(kab.bmk, ("", kab.bmk))
                 mss = schutz.get(kab.bmk)
-                i_r = self.m.bm(mss).daten.get("i_r_A", "") if mss else ""
+                i_r = self.m.bm(mss).daten.get("i_r_A") if mss else None
                 z.append((f"={kenn}{lok} ({_zahl(kab.laenge_m)} m)", f"{kab.adern}G{_zahl(kab.querschnitt_mm2)} mm²",
-                          _zahl(kab.i_b_A), _zahl(i_r) if i_r != "" else "–", _zahl(kab.i_z_A), _zahl(round(kab.du_prozent, 2))))
+                          _zahl(kab.i_b_A), _zahl(float(i_r)) if i_r is not None else "–", _zahl(kab.i_z_A),
+                          _zahl(round(kab.du_prozent, 2))))
         gruppen: dict[str, list[str]] = {"3 Hausvorgaben und Hausstil": [], "4 Annahmen": [], "5 Offene Fragen": [],
                                          "6 Nicht geprüft / nicht freigegeben": []}
         gruppen["3 Hausvorgaben und Hausstil"] += [f"Hausstil: {w}" for w in self.stil["quelle"].values()]

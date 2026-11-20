@@ -40,7 +40,7 @@ def blattformat(breite_pt: float, hoehe_pt: float) -> str:
 def analysiere_pdf(pfad: Path) -> dict:
     r = PdfReader(str(pfad))
     text = "\n".join((s.extract_text() or "") for s in r.pages)
-    jahre = Counter()
+    jahre: Counter[int] = Counter()
     for mt in RE_DATUM.finditer(text):
         jahr = mt.group(3) or mt.group(4)
         jahre[int(jahr)] += 1
@@ -69,8 +69,8 @@ def analysiere_bestand(ordner: Path, ziel: Path) -> dict:
     for p in sorted(ordner.rglob("*.pdf")):
         try:
             ergebnisse.append(analysiere_pdf(p))
-        except Exception as e:  # defekte/verschlüsselte PDFs nicht abbrechen lassen
-            ergebnisse.append({"datei": p.name, "fehler": str(e)})
+        except Exception as fehler:
+            ergebnisse.append({"datei": p.name, "fehler": str(fehler)})
     (ziel / "plaene.json").write_text(json.dumps(ergebnisse, indent=2, ensure_ascii=False), encoding="utf-8")
 
     # Entwicklung der Kennbuchstaben je Jahr (Anteil an allen BMK des Jahres)

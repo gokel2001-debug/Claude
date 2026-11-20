@@ -15,8 +15,10 @@ Pumpen-DI ab E2.0 (=SA1-K2), Analogeingänge ab EW256, Analogausgänge ab AW256,
 from __future__ import annotations
 
 import random
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from reportlab.lib.pagesizes import A3, landscape
 from reportlab.lib.units import mm
@@ -152,9 +154,9 @@ def erzeuge_korpus(ordner: str | Path, anzahl: int = 10, seed: int = 1,
         leiste = "-X20" if jahr < WECHSELJAHR else "-X10"
         n_di, n_ai = rnd.randint(2, 6), rnd.randint(1, 3)
         mit_pumpe = rnd.random() < 0.6
-        seiten = [("EIN", "Einspeisung 230V", _seite_einspeisung),
+        seiten: list[tuple[str, str, Callable[..., Any]]] = [("EIN", "Einspeisung 230V", _seite_einspeisung),
                   ("NT24", "24V DC Erzeugung", _seite_24v)]
-        typ = {"zaehler_di": [], "messstelle_ai": [], "pumpe": []}
+        typ: dict[str, list[str]] = {"zaehler_di": [], "messstelle_ai": [], "pumpe": []}
         for k in range(n_di):
             a = f"ZD{k + 1:02d}"
             typ["zaehler_di"].append(a)

@@ -23,20 +23,18 @@ from .modell import (
     eltern_bmk,
 )
 
-LAYOUT = {
-    "rand_links": 20, "rand": 10, "spaltenleiste": 7, "schriftfeld": 30,
-    "schrift": "Helvetica", "schrift_fett": "Helvetica-Bold",
-}
-W, H = (v / mm for v in landscape(A3))   # 420 x 297 mm
-X0, X1 = LAYOUT["rand_links"], W - LAYOUT["rand"]
-Y0, Y1 = LAYOUT["rand"], H - LAYOUT["rand"]
-YS = Y0 + LAYOUT["schriftfeld"]           # Oberkante Schriftfeld
-YL = Y1 - LAYOUT["spaltenleiste"]         # Unterkante Spaltenleiste
+MASSE: dict[str, float] = {"rand_links": 20, "rand": 10, "spaltenleiste": 7, "schriftfeld": 30}   # mm
+LAYOUT: dict[str, str | float] = {**MASSE, "schrift": "Helvetica", "schrift_fett": "Helvetica-Bold"}
+W, H = (float(v) / mm for v in landscape(A3))   # 420 x 297 mm
+X0, X1 = MASSE["rand_links"], W - MASSE["rand"]
+Y0, Y1 = MASSE["rand"], H - MASSE["rand"]
+YS = Y0 + MASSE["schriftfeld"]           # Oberkante Schriftfeld
+YL = Y1 - MASSE["spaltenleiste"]         # Unterkante Spaltenleiste
 COLW = (X1 - X0) / SPALTEN_JE_SEITE
 
 
-def sx(spalte: int) -> float:
-    return X0 + (spalte - 0.5) * COLW
+def sx(spalte: int | None) -> float:
+    return X0 + ((spalte or 0) - 0.5) * COLW
 
 
 class Blatt:
@@ -402,7 +400,7 @@ def s_motor_steuer(b: Blatt, m: Planmodell, seite: int, idx: int):
         b.linie(x, 150, x, y0v)
         b.kreis(x, y0v, 0.6, True)
         for i, kontakt in enumerate(("1-2", "3-4", "5-6")):
-            b.text(x - 6, 88 - i * 3.5, f"{kontakt}  {verweis(k.seite, k.spalte - 1)}", 1.9)
+            b.text(x - 6, 88 - i * 3.5, f"{kontakt}  {verweis(k.seite, (k.spalte or 1) - 1)}", 1.9)
         # Spalte b: Rückmeldung Motorschutzschalter
         xb = sx(q.daten["steuer_spalte"])
         fa = m.bm(q.daten["absicherung"])
