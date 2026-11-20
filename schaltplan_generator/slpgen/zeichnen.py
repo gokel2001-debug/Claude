@@ -423,11 +423,13 @@ def hat_pruefbericht_fehler(m: Planmodell) -> bool:
 
 def stempel_nicht_fertigung(b: Blatt) -> None:
     """Roter Vermerk auf jeder Seite, wenn der Prüfbericht FEHLER enthält."""
-    b.c.saveState()
+    b.c.saveState()                                   # im oberen Seitenrand: verdeckt keinen Inhalt
+    b.c.setFillColorRGB(1, 1, 1)
+    b.c.rect((X1 - 160) * mm, (Y1 + 1) * mm, 156 * mm, (H - Y1 - 2) * mm, stroke=0, fill=1)
     b.c.setFillColorRGB(0.8, 0, 0)
     b.c.setStrokeColorRGB(0.8, 0, 0)
-    b.rechteck(X1 - 152, YL - 16, 148, 12, 0.6)
-    b.text(X1 - 78, YL - 12, "NICHT FÜR FERTIGUNG – Prüfbericht enthält FEHLER (Auslegungsnachweis)", 3.2, True, "m")
+    b.rechteck(X1 - 160, Y1 + 1, 156, H - Y1 - 2, 0.6)
+    b.text(X1 - 82, Y1 + 3.4, "NICHT FÜR FERTIGUNG – Prüfbericht enthält FEHLER (Auslegungsnachweis)", 3.4, True, "m")
     b.c.restoreState()
 
 
@@ -561,6 +563,7 @@ def erzeuge_pdf(m: Planmodell, pfad: str) -> list[tuple[int, str]]:
 
 
 def stueckliste_csv(m: Planmodell) -> str:
-    zeilen = ["Pos;Menge;Artikel;Hersteller;Bezeichnung;BMK"]
+    zeilen = ["NICHT FÜR FERTIGUNG – Prüfbericht enthält FEHLER"] if hat_pruefbericht_fehler(m) else []
+    zeilen += ["Pos;Menge;Artikel;Hersteller;Bezeichnung;BMK"]
     zeilen += [";".join(str(x) for x in z) for z in stueckliste_zeilen(m)]
     return "\n".join(zeilen) + "\n"

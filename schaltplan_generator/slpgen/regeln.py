@@ -241,7 +241,10 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     i_bedarf = i_summe * g * (1 + r)
     nt_key = waehle_kleinste(art, v24["netzteile"], i_bedarf)
     if nt_key is None:
-        raise RegelFehler(f"Kein Netzteil für {i_bedarf:.2f} A in {v24['netzteile']}")
+        groesstes = max(v24["netzteile"], key=lambda k: art[k]["i_nenn_A"])
+        raise RegelFehler(f"24-V-Bedarf {i_bedarf:.2f} A (mit Gleichzeitigkeit und {r:.0%} Reserve) übersteigt das größte "
+                          f"erlaubte Netzteil {groesstes} ({art[groesstes]['i_nenn_A']} A) – unter 24-V-Versorgung "
+                          f"(Hausvorgaben) ein größeres Netzteil ergänzen".replace(".", ","))
     nt = art[nt_key]
     p_aus = nt["u_aus_V"] * nt["i_nenn_A"]
     i_primaer = p_aus / nt["wirkungsgrad"] / nt["u_ein_V"]

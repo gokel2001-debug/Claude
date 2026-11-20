@@ -181,6 +181,8 @@ def _ausgabe(m: Planmodell, ziel: Path, profil: str | None) -> None:
             print(f"FERTIG. {len(m.warnungen)} Hinweise (Annahmen, offene Fragen, nicht geprüfte Punkte) stehen im "
                   f"Auslegungsnachweis – bitte vor Freigabe durchgehen.")
             return
+        raise regeln.RegelFehler(f"PDFs liegen in {ziel}, aber rot gestempelt NICHT FÜR FERTIGUNG. Prüfbericht: "
+                                 + "; ".join(f"{b.text} ({b.quelle})" for b in fehler[:3]))
     for w in m.warnungen:
         print("WARNUNG:", w)
     if fehler:

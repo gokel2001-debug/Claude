@@ -37,7 +37,7 @@ REGEL_FELDER = [
 VORZEICHEN = {"anlage": "=", "ort": "+"}
 FELD_SPALTEN = ["BMK", "Artikel", "Funktion", "Gruppe"]
 BAUSTEIN_SPALTE = "Baustein (optional)"     # Typical aus der Bibliothek, z. B. zaehler_di
-LAENGE_SPALTE = "Leitungslänge m (optional)" # nur für netzversorgte Bausteine (Spannungsfall)
+LAENGE_SPALTE = "Leitungslänge m (optional)" # Pflicht bei Leistungsteil, sonst für die Kabelliste
 MOTOR_SPALTEN = ["BMK", "Funktion", "P_kW", "I_N_A", "cos_phi", "Laenge_m"]
 FETT = Font(bold=True)
 KOPF = PatternFill("solid", fgColor="DDDDDD")

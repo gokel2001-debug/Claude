@@ -82,24 +82,27 @@ set "N="
 set /p "N=Name fuer das neue Projekt (ohne Leerzeichen, z. B. Kunde_Anlage1): "
 if defined N set "N=%N:"=%"
 if "%N%"=="" goto :menue
-if exist "meine_projekte\%N%.xlsx" echo Gibt es schon: meine_projekte\%N%.xlsx & pause & goto :menue
-copy "beispiele\Projekt_Vorlage.xlsx" "meine_projekte\%N%.xlsx" >nul
-echo Angelegt: meine_projekte\%N%.xlsx  - wird jetzt in Excel geoeffnet.
-echo Nach dem Ausfuellen speichern und hier Punkt 3 waehlen.
-start "" "meine_projekte\%N%.xlsx"
+if exist "meine_projekte\%N%" echo Gibt es schon: meine_projekte\%N% & pause & goto :menue
+mkdir "meine_projekte\%N%"
+copy "beispiele\Projekt_Vorlage.xlsx" "meine_projekte\%N%\%N%.xlsx" >nul
+echo Angelegt: Projektordner meine_projekte\%N%  - die Excel-Datei wird jetzt geoeffnet.
+echo Nach dem Ausfuellen speichern und hier Punkt 3 waehlen. Ergebnisse landen in meine_projekte\%N%\ausgabe.
+start "" "meine_projekte\%N%\%N%.xlsx"
 pause
 goto :menue
 
 :excel
 echo Excel-Datei mit der Maus in dieses Fenster ziehen und Enter druecken
-echo (oder Pfad eintippen, z. B. meine_projekte\Kunde_Anlage1.xlsx):
+echo (oder Pfad eintippen, z. B. meine_projekte\Kunde_Anlage1\Kunde_Anlage1.xlsx):
 set "XL="
 set /p "XL=> "
 if not defined XL goto :menue
 set "XL=%XL:"=%"
-%SLP% generieren "%XL%" --ausgabe ausgabe
-if errorlevel 1 goto :fehler_lauf
-start "" "ausgabe"
+for %%F in ("%XL%") do (set "XLDIR=%%~dpF")
+set "SLPGEN_MENUE=1"
+%SLP% generieren "%XL%"
+if errorlevel 1 goto :plan_mit_fehler
+start "" "%XLDIR%ausgabe"
 pause
 goto :menue
 
@@ -171,8 +174,9 @@ set "SLPGEN_MENUE=1"
 del "%KADIR%%KANAME%_Korrekturauftrag.txt" 2>nul
 %SLP% pruefen "%KA%"
 if errorlevel 1 goto :ki_korrektur
+set "XLDIR=%KADIR%"
 %SLP% generieren "%KA%" --ausgabe "%KADIR%ausgabe"
-if errorlevel 1 goto :fehler_lauf
+if errorlevel 1 goto :plan_mit_fehler
 start "" "%KADIR%ausgabe"
 pause
 goto :menue
@@ -224,6 +228,14 @@ echo Abhilfe: Ordner ".venv" loeschen und erneut starten; sonst Python 3.13 zusa
 echo Details: ANLEITUNG_EINSTEIGER.md, Abschnitt "Probleme"
 pause
 goto :ende
+
+:plan_mit_fehler
+rem Plan kann trotz Fehler entstanden sein (rot gestempelt) - dann Ordner zeigen
+if not exist "%XLDIR%ausgabe" goto :fehler_lauf
+echo.
+echo Falls PDFs entstanden sind, sind sie rot gestempelt NICHT FUER FERTIGUNG (Ordner oeffnet sich).
+start "" "%XLDIR%ausgabe"
+goto :fehler_lauf
 
 :fehler_lauf
 echo.

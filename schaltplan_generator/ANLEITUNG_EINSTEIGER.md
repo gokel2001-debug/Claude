@@ -50,14 +50,14 @@ Danach erscheint ein Menü:
 | **8** | KI-Auftrag aus Lastenheft erstellen | Lastenheft (.docx, .pdf, .txt) ins Fenster ziehen, Enter. Der Auftrag liegt danach in der **Zwischenablage**: im KI-Chat mit Strg+V einfügen und absenden (nur eine vom Betrieb freigegebene KI, sonst Kundennamen vorher entfernen). Der Editor öffnet `<Lastenheft>_projektmodell.yaml` neben dem Lastenheft: die **ganze Antwort der KI** hineinkopieren (vorhandenen Inhalt ersetzen) und speichern. Klappt die Zwischenablage nicht, öffnet sich der Auftrag im Editor: Strg+A, Strg+C. |
 | **9** | KI-Antwort prüfen und Plan erzeugen | `<Lastenheft>_projektmodell.yaml` ins Fenster ziehen, Enter. Ist alles vollständig, entstehen die PDFs im Unterordner `ausgabe` **neben dem Lastenheft** (öffnet sich); Annahmen und offene Fragen der KI stehen im Auslegungsnachweis. Fehlt etwas, liegt ein **Korrekturauftrag** in der Zwischenablage: im selben Chat einfügen, neue Antwort speichern, wieder Punkt 9. |
 
-**Projektordner:** Legen Sie je Projekt einen eigenen Ordner an (Lastenheft, KI-Antwort bzw. Excel-Datei). Die Ergebnisse (PDFs, Stückliste, Planmodell) entstehen im Unterordner `ausgabe` dieses Ordners. Steht auf den Seiten rot **„NICHT FÜR FERTIGUNG“**, enthält der Prüfbericht Fehler – Einzelheiten im Auslegungsnachweis (letzte Seiten).
+**Projektordner:** Jedes Projekt hat einen eigenen Ordner (Punkt 2 legt ihn unter `meine_projekte\<Name>` an; beim KI-Weg der Ordner des Lastenhefts). Die Ergebnisse (PDFs, Stückliste, Planmodell) entstehen im Unterordner `ausgabe` dieses Ordners (Ausnahme: Beispielplan und Selbsttest, Punkt 1 und 5, im Programmordner). Steht auf den Seiten rot **„NICHT FÜR FERTIGUNG“**, enthält der Prüfbericht Fehler – Einzelheiten im Auslegungsnachweis (letzte Seiten).
 
 ## 4 Die Excel-Vorlage ausfüllen
 
 | Blatt | Was eintragen | Hinweise |
 |---|---|---|
 | **Projekt** | Nummer, Bezeichnung, Kunde, Anlage, Ort, Datum … | Anlage/Ort **ohne** `=`/`+` eingeben (sonst hält Excel es für eine Formel) |
-| **Feldgeraete** | je Zeile ein Gerät: BMK (z. B. `B7`), Artikel, Funktion, Gruppe, optional **Baustein** | Artikel aus der **Auswahlliste** wählen (Liste = Blatt *Artikel*). Für Geräte mit mehreren Signalen (z. B. Zähler mit Impuls + Drahtbruch, Pumpe) in Spalte „Baustein“ einen Eintrag aus Blatt *Bausteine* wählen; bei Pumpen zusätzlich die Leitungslänge in m eintragen (für den Spannungsfall) |
+| **Feldgeraete** | je Zeile ein Gerät: BMK (z. B. `B7`), Artikel, Funktion, Gruppe, optional **Baustein** | Artikel aus der **Auswahlliste** wählen (Liste = Blatt *Artikel*). Für Geräte mit mehreren Signalen (z. B. Zähler mit Impuls + Drahtbruch, Pumpe) in Spalte „Baustein“ einen Eintrag aus Blatt *Bausteine* wählen; Spalte „Leitungslänge m“: Pflicht bei Pumpen (Spannungsfall), sonst für die Kabelliste (leer = „nach Feldmaß“) |
 | **Motoren** | BMK, Funktion, Leistung kW, Nennstrom A, cos φ, Kabellänge m | Werte vom Typenschild |
 | **Regeln** | Reserve, Absicherungsfaktor, Netzteile, SPS-Module, Leitungswerte | erst ändern, wenn klar ist, was es bewirkt |
 | **Artikel** | nur zum Nachschlagen | neue Artikel kommen in `beispiele\geraetestamm.yaml` |

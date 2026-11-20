@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2, M3, M4a–M4c erledigt → nächstes: M4d (Projektordner, Feldleitungslängen) |
+| Aktuelles Paket | M2, M3, M4a–M4d, M2e erledigt → nächstes: M4e (Strukturteil Hausstil in Schicht B) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 210/210 grün |
+| Tests | 216/216 grün (ruff, mypy ohne Befund) |
 
 ## Paketübersicht
 | Paket | Status |
@@ -48,3 +48,4 @@
 | 20.11.2026 | manuell | M4a SPS-Übersicht (Kartenseiten mit allen Kanälen, Reserve, Feldklemme/Schrankanschluss, Versorgung; CPU-Steckplatzübersicht); Prüfer Elektro+UX: 2 hoch (falsches Gerät bei Relais/Hilfskontakt, Adressüberschneidung AI/DI) → behoben im Planungskern; 186/186 Tests |
 | 20.11.2026 | manuell | M4b Listen im Hausformat (Klemmenplan je Leiste, Summenstückliste, Nachweis gegliedert); Prüfer Elektro+UX+Produkt: 3 hoch (Artikelnummer verändert, Benennung abgeschnitten) → behoben; Produkt: Zeitersparnis, Lernschleife, Artikelstamm, EPLAN → M4c/M5c/M7a/PC7 |
 | 20.11.2026 | manuell | M4c Prüfbericht (Kennzeichen, Verweise, Klemmen, Potentiale, SPS, Absicherung, Leitungsschutz, Motorschutz, Texte; Quelle je Regel) bei jeder Ausgabe, Befehl pruefbericht, Kennzahlen; Prüfer Elektro+Software: 4 hoch → behoben; 210/210 Tests |
+| 20.11.2026 | Autostart Fr 22:07 | M4d Projektordner, Feldleitungslängen, Prüfungen Netzteil/DO-Last, Stempel NICHT FÜR FERTIGUNG; M2e mypy 150 → 0 (in CI); Prüfer Elektro+Einsteiger: 3 hoch → behoben (u. a. erneuter Einfügefehler in start.bat, vom neuen Test sofort erkannt); 216/216 Tests |

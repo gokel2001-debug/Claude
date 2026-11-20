@@ -164,3 +164,21 @@ def test_feldleitungslaenge_aus_projektmodell():
     kab = {z[0]: z[4] for z in hp._kabelzeilen()}
     assert kab["=B01-W1"] == "17 m" and kab["=B02-W1"] == "nach Feldmaß"
     assert any(z[4] == "17 m" and z[3] == "-W1" for z in hp._stl_zeilen())
+
+
+def test_netzteil_zu_klein_klartext():
+    p = copy.deepcopy(BEISPIEL)
+    p["versorgung_24V"]["netzteile"] = ["NT-24-05"]
+    p["feldgeraete"] += [{"bmk": f"Y{20 + i}", "artikel": "MV-24-4W", "funktion": f"Ventil {i}", "gruppe": "DO-Last"}
+                         for i in range(25)]
+    with pytest.raises(Exception, match="größte.*NT-24-05.*größeres Netzteil ergänzen") as e:
+        regeln.plane(p, STAMM)
+    assert "[" not in str(e.value)                                   # keine Python-Listenschreibweise
+
+
+def test_stempel_im_rand_und_csv(tmp_path):
+    from slpgen.zeichnen import stueckliste_csv
+    m = _plan()
+    assert not stueckliste_csv(m).startswith("NICHT")
+    _stoere_adresse(m)
+    assert stueckliste_csv(m).startswith("NICHT FÜR FERTIGUNG")
