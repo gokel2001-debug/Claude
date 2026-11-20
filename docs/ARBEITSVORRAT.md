@@ -22,3 +22,5 @@ Reihenfolge der Meilensteine ist verbindlich (ZIEL.md). Ein Paket = in einem 5-h
 | M5c | Lernschleife Grundgerüst: Korrektur erfassen → Regel mit Herkunft/Datum/Geltung im Hausprofil → Regressionstest (Produkt-Befund) | Test: Korrektur wirkt beim nächsten Plan | Software, Produkt | offen |
 | M7a | Import eigener Artikelstamm (Excel/EPLAN-Artikelexport) ins Hausprofil, Abgleich mit Gerätestamm | Test mit synthetischer Exportdatei | Software, Elektro | offen |
 | M2e | Typprüfung (mypy) ohne Befund für alle Module, in CI aufnehmen (ZIEL 4c) | mypy in CI grün | Software | erledigt 20.11. (150 → 0 Befunde; dabei echter Absturz ohne Vorsicherung im Stamm gefunden und behoben) |
+| M5b | P7 Teil 2: Anlagen-/Seitengliederung und Kennbuchstaben aus Vektor-PDFs (Korpus) lernen, mit Sicherheit und Jahrestrend in die Freigabeliste | Tests am Korpus; Freigabeliste enthält die neuen Merkmale | Software, Einsteiger | offen |
+| M6a | P8 Ollama-Anbindung: KI-Auftrag an lokale KI senden (HTTP, Zeitlimit), Antwort wie Chat-Antwort prüfen; Test mit Attrappe des Ollama-Servers | Test: Lastenheft → lokale KI (Attrappe) → gültige YAML | Software, Einsteiger | offen |
