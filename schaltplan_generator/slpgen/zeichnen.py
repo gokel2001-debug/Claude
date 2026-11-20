@@ -418,19 +418,26 @@ def s_motor_steuer(b: Blatt, m: Planmodell, seite: int, idx: int):
         sps_box(b, m, xb, 156, q.bmk)
 
 
-def tabelle(b: Blatt, kopf, zeilen, breiten, y_start=None, groesse=2.5):
+def tabelle(b: Blatt, kopf, zeilen, breiten, y_start=None, groesse=2.5, fett=frozenset(), linien=True):
+    """Liste mit Kopfzeile; dünne graue Zeilenlinien (Lesehilfe), Zeilen in `fett` hervorgehoben (z. B. Gruppenkopf)."""
     y = y_start or YL - 12
     x = X0 + 6
     for t, w in zip(kopf, breiten):
         b.text(x, y, t, groesse, True)
         x += w
-    b.linie(X0 + 4, y - 2, X1 - 4, y - 2)
+    if kopf:
+        b.linie(X0 + 4, y - 2, X1 - 4, y - 2)
     for i, z in enumerate(zeilen):
         x = X0 + 6
         yy = y - 7 - i * 5.5
         for t, w in zip(z, breiten):
-            b.text(x, yy, t, groesse)
+            b.text(x, yy, t, groesse, i in fett)
             x += w
+        if linien:
+            b.c.saveState()
+            b.c.setStrokeGray(0.8)
+            b.linie(X0 + 4, yy - 1.8, X1 - 4, yy - 1.8, 0.1)
+            b.c.restoreState()
 
 
 def teil(zeilen: list, idx: int) -> list:

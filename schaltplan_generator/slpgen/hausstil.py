@@ -235,9 +235,10 @@ class Hausplan:
 
         for kenn, titel, art, zeichner, n in (
                 ("KAB", "Kabelübersicht", "KAB", self._s_kabel, len(self._kabelzeilen())),
-                ("KPL", "Klemmenplan", "KPL", self._s_klemmen, len(self._klemmenzeilen())),
+                ("KPL", "Klemmenplan", "KPL", self._s_klemmen, len(self._klemmenplan()[0])),
                 ("STL", "Artikelstückliste", "STL", self._s_stueckliste, len(self._stl_zeilen())),
-                ("AUS", "Auslegungsnachweis", "AUS", self._s_auslegung, 1)):
+                ("SUM", "Summenstückliste", "STL", self._s_summe, len(self._summenzeilen())),
+                ("AUS", "Auslegungsnachweis", "AUS", self._s_auslegung, len(self._auslegungszeilen()))):
             self._listenanlage(kenn, titel, art, zeichner, n)
 
         # Inhaltsverzeichnis zuletzt: seine Seitenzahl hängt von der Gesamtseitenzahl ab (inkl. eigener Seiten)
@@ -709,24 +710,24 @@ class Hausplan:
 
     def _s_cpu(self, b: Blatt, a: Anlage):
         cpu = self.m.bm("-A1")
-        x = self.x(1)
-        b.rechteck(x - 15, 200, 60, 60, 0.4)
-        b.text(x, 252, self.lokal["-A1"][1], 3.5, True)
-        b.text(x, 246, cpu.bezeichnung, 2.4)
-        b.text(x, 241, cpu.artikel, 2)
-        fa = self.pos.get(next((ab.bmk for ab in self.m.absicherungen if "-A1" in ab.verbraucher), ""))
-        b.text(x, 205, f"Versorgung 24L+ {self.ref(fa, a.kennung)}", 2.2)
-        # Steckplatzübersicht: welche Karte, wie voll, wo im Plan
-        zeilen = [("0", f"={a.kennung}{self.lokal['-A1'][1]}", "CPU", cpu.artikel, "–", "–", "")]
-        for slot, mod in enumerate(self._karten(), 1):
+        karten = self._karten()
+        b.text(X0 + 6, 266, f"={a.kennung}{self.lokal['-A1'][1]}  {cpu.bezeichnung}  ({cpu.artikel})", 3, True)
+        b.text(X0 + 6, 261, f"Steckplatz 0 · {len(karten)} E/A-Karten", 2.3)
+        b.text(X0 + 6, 256.5, self._versorgung_karte("-A1", a.kennung), 2.3)
+        zeilen = [("0", f"={a.kennung}{self.lokal['-A1'][1]}", "CPU", cpu.artikel, "–", "–", "–", "")]
+        summe_b = summe_g = 0
+        for slot, mod in enumerate(karten, 1):
             belegt = len([k for k in self.m.sps_kanaele if k.modul_bmk == mod.bmk])
             gesamt = int(self.m.artikel.get(mod.artikel, {}).get("kanaele", belegt))
+            summe_b, summe_g = summe_b + belegt, summe_g + gesamt
             kenn, lok = self.lokal[mod.bmk]
-            seite = self.pos.get(f"modul:{mod.bmk}")
+            bereich = mod.daten.get("bytebereich")
             zeilen.append((str(slot), f"={kenn}{lok}", mod.kategorie[4:].upper(), mod.artikel, f"{belegt} / {gesamt}",
-                           str(gesamt - belegt), self.ref(seite, a.kennung)))
-        tabelle(b, ["Steckplatz", "Karte", "Art", "Artikel", "Kanäle belegt / gesamt", "Reserve", "Seite"],
-                zeilen, [25, 40, 18, 45, 50, 25, 30], y_start=185)
+                           str(gesamt - belegt), f"{bereich[0]}–{bereich[1]}" if bereich else "",
+                           self.ref(self.pos.get(f"modul:{mod.bmk}"), a.kennung)))
+        zeilen.append(("Σ", "", "", "", f"{summe_b} / {summe_g}", str(summe_g - summe_b), "", ""))
+        tabelle(b, ["Steckplatz", "Karte", "Art", "Artikel", "Kanäle belegt / gesamt", "Reserve", "Byte", "Verweis"],
+                zeilen, [25, 40, 18, 45, 50, 25, 25, 30], y_start=248, fett={len(zeilen) - 1})
 
     def _versorgung_karte(self, modul_bmk: str, kennung: str) -> str:
         teile = []
@@ -770,7 +771,8 @@ class Hausplan:
             tabelle(b, kopf, belegt, breiten, y_start=248)
             if reserve:                                            # Reserve abgesetzt und grau
                 y = 248 - 7 - len(belegt) * 5.5 - 2              # Abstand, damit die Trennlinie frei liegt
-                b.c.setStrokeGray(0.6)                              # Trennlinie = Kopflinie der Reservetabelle
+                b.c.setStrokeGray(0.6)
+                b.linie(X0 + 4, y + 5, X1 - 4, y + 5)                # Trennlinie belegt | Reserve
                 b.c.setFillGray(0.5)
                 tabelle(b, [], reserve, breiten, y_start=y + 7)
                 b.c.setFillGray(0)
@@ -793,17 +795,20 @@ class Hausplan:
         for alt in self._feldgeraete():
             kenn, lok = self.lokal[alt]
             z.append((f"={kenn}-W1", f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75 mm²",
-                      f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}"))
+                      f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}", "lt. Feld",
+                      self.ref(Ort(kenn, 1, 4), "")))
         for w in self.m.kabel:
             kenn, lok = self.lokal[w.bmk]
             ziel = self.lokal.get(w.nach, (kenn, w.nach))[1]
             z.append((f"={kenn}{lok}", f"{w.adern}G{w.querschnitt_mm2:g} mm² ({w.artikel})".replace(".", ","),
-                      f"={kenn}-X1", f"={kenn}{ziel}"))
+                      f"={kenn}-X1", f"={kenn}{ziel}", f"{w.laenge_m:g} m".replace(".", ","),
+                      self.ref(self.pos.get(w.bmk), "")))
         return z
 
     def _s_kabel(self, b: Blatt, a: Anlage, idx: int):
-        tabelle(b, ["Kabelnummer", "Kabeltyp", "Quelle", "Ziel"],
-                self._kabelzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE], [50, 90, 90, 90])
+        tabelle(b, ["Kabelnummer", "Kabeltyp", "Quelle", "Ziel", "Länge", "Verweis"],
+                self._kabelzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE],
+                [50, 90, 80, 80, 30, 30])
 
     POTENTIAL: ClassVar[dict[str, str]] = {"+24V": "24L+", "0V": "24M", "Signal": "Signal", "Kontakt": "Kontakt 14",
                                            "Kontakt-Rück": "Kontakt 11",
@@ -844,10 +849,23 @@ class Hausplan:
                       ziel, f"{lok}:{k.ziel_aussen.split(':', 1)[1]}", seite))
         return z
 
+    def _klemmenplan(self) -> tuple[list[tuple], set[int]]:
+        """Klemmenplan je Leiste: Kopfzeile „Klemmleiste =Anlage-Leiste (n Klemmen)“, darunter die Klemmen."""
+        zeilen, kopf, je_leiste = [], set(), OrderedDict()
+        for z in self._klemmenzeilen():
+            je_leiste.setdefault(z[0].split(":")[0], []).append(z)
+        for leiste, klemmen in je_leiste.items():
+            kopf.add(len(zeilen))
+            zeilen.append((f"Klemmleiste {leiste}", f"{len(klemmen)} Klemmen", "", "", ""))
+            zeilen += klemmen
+        return zeilen, kopf
+
     def _s_klemmen(self, b: Blatt, a: Anlage, idx: int):
-        tabelle(b, ["Klemme", "Potential", "Ziel innen", "Ziel außen", "Seite"],
-                self._klemmenzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE],
-                [55, 30, 110, 80, 30])
+        zeilen, kopf = self._klemmenplan()
+        von = idx * ZEILEN_JE_LISTENSEITE
+        tabelle(b, ["Klemme", "Potential", "Ziel innen", "Ziel außen", "Verweis"],
+                zeilen[von:von + ZEILEN_JE_LISTENSEITE], [55, 30, 110, 80, 30],
+                fett={i - von for i in kopf if von <= i < von + ZEILEN_JE_LISTENSEITE})
 
     def _stl_zeilen(self):
         ort = self.m.projekt.get("ort", "")
@@ -881,24 +899,51 @@ class Hausplan:
                 self._stl_zeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE],
                 [14, 28, 20, 20, 18, 38, 38, 160])
 
-    def _s_auslegung(self, b: Blatt, a: Anlage, _idx: int):
+    def _summenzeilen(self) -> list[tuple]:
+        """Summenstückliste: je Artikel eine Zeile mit Gesamtmenge (Stück bzw. Meter)."""
+        summe: OrderedDict[str, list] = OrderedDict()
+        for _, _, _, _, menge, hersteller, artikel, benennung in self._stl_zeilen():
+            e = summe.setdefault(artikel, [0.0, 0, "", hersteller, benennung])
+            if menge.endswith(" Stk"):
+                e[0] += float(menge.split()[0])
+                e[2] = "Stk"
+            elif menge.endswith(" m"):
+                e[0] += float(menge.split()[0].replace(",", "."))
+                e[2] = "m"
+            else:                                       # Länge lt. Feld
+                e[1] += 1
+        zeilen = []
+        for i, (artikel, (menge, offen, einheit, hersteller, benennung)) in enumerate(summe.items(), 1):
+            text = f"{menge:g} {einheit}".replace(".", ",") if einheit else ""
+            if offen:
+                text = (text + " + " if text else "") + f"{offen}× Länge lt. Feld"
+            zeilen.append((i, text, hersteller, artikel, benennung))
+        return zeilen
+
+    def _s_summe(self, b: Blatt, a: Anlage, idx: int):
+        tabelle(b, ["Pos.", "Menge", "Hersteller", "Artikel", "Benennung"],
+                self._summenzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE],
+                [14, 50, 40, 45, 200])
+
+    def _auslegungszeilen(self) -> list[tuple]:
+        """Auslegungsnachweis als Liste (mehrseitig): Abgänge, Bilanz, Hausstil-Quellen, Hinweise."""
         bil = self.m.bilanz
-        zeilen = [(f"={self.VT}{self.lokal[ab.bmk][1]}", ab.gruppe, f"{ab.i_gruppe_A:.3f}", f"{ab.i_nenn_A:g}")
-                  for ab in self.m.absicherungen]
-        tabelle(b, ["Abgang", "Gruppe", "Σ I [A]", "Sicherung [A]"], zeilen, [50, 40, 30, 30])
-        y = YL - 12 - 7 - len(zeilen) * 5.5 - 10
+        z: list[tuple] = [("Abgang", "Gruppe", "Σ I [A]", "Sicherung [A]", "")]
+        z += [(f"={self.VT}{self.lokal[ab.bmk][1]}", ab.gruppe, f"{ab.i_gruppe_A:.3f}", f"{ab.i_nenn_A:g}", "")
+              for ab in self.m.absicherungen]
         texte = [f"Summenstrom 24 V: Σ I = {bil['i_summe_A']} A; Bedarf mit g und Reserve = {bil['i_bedarf_A']} A",
                  f"Netzteil {bil['netzteil']} ({bil['i_nenn_A']} A, Auslastung {bil['auslastung']:.0%})"]
         if self.m.kabel:
             texte.append(f"Motoren Σ I_N = {bil['i_motoren_A']} A; 400 V gesamt ≤ {bil['i_400V_max_A']} A")
-        for w in self.stil["quelle"].values():
-            texte.append(f"Hausstil: {w}")
-        for w in self.stil.get("warnungen", []):
-            texte.append(f"Achtung {w}")
-        for t in texte + ["Hinweise:"] + [f"• {w}" for w in self.m.warnungen or ["keine"]]:
-            b.text(X0 + 6, y, t, 2.6)
-            y -= 6
+        texte += [f"Hausstil: {w}" for w in self.stil["quelle"].values()]
+        texte += [f"Achtung {w}" for w in self.stil.get("warnungen", [])]
+        texte += ["Hinweise:"] + [f"• {w}" for w in self.m.warnungen or ["keine"]]
+        return z + [("", "", "", "", "")] + [(t,) for t in texte]
 
+    def _s_auslegung(self, b: Blatt, a: Anlage, idx: int):
+        zeilen = self._auslegungszeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE]
+        fett = {i for i, z in enumerate(zeilen) if z[0] in ("Abgang", "Hinweise:")}
+        tabelle(b, [], zeilen, [50, 40, 30, 30, 10], y_start=YL - 5, fett=fett, linien=False)
 
 def kennzeichne(m: Planmodell, stil: dict | None = None) -> dict[str, list[str]]:
     """Kennzeichen im Hausstil (Anlage je Funktion + lokales BMK) für das Planmodell festlegen.

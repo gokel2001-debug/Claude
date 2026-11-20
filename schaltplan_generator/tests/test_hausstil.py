@@ -30,7 +30,7 @@ def test_anlagen_reihenfolge_und_seitenzaehlung(plan):
     seiten, _ = plan
     anlagen = list(dict.fromkeys(a for a, _, _ in seiten))
     assert anlagen[:5] == ["DBL", "INH", "EIN", "NT24", "VT24"]
-    assert anlagen[-4:] == ["KAB", "KPL", "STL", "AUS"]
+    assert anlagen[-5:] == ["KAB", "KPL", "STL", "SUM", "AUS"]
     assert [nr for a, nr, _ in seiten if a == "M01"] == [1, 2]      # Zählung je Anlage
     feld = [a for a in anlagen if a[0] in "BYP" and a[1:].isdigit()]
     assert len(feld) == len(PROJEKT["feldgeraete"])                    # eine Anlage je Feldgerät
@@ -135,3 +135,24 @@ def test_sps_uebersicht_karten_mit_reserve_und_klemme(tmp_path):
     assert ("=B01-X10:2", "Signal") == next(z[:2] for z in hp._klemmenzeilen() if z[0] == "=B01-X10:2")
     cpu = texte[anlagen.index("SA0")]
     assert "Steckplatz" in cpu and "8 / 16" in cpu and "1 / 8" in cpu and "=SA1/1.1" in cpu
+
+
+def test_listen_im_hausformat(tmp_path):
+    """M4b: Klemmenplan je Leiste, Kabelübersicht mit Länge/Verweis, Summenstückliste, Auslegungsnachweis mehrseitig."""
+    from slpgen.hausstil import ZEILEN_JE_LISTENSEITE, Hausplan
+    m = regeln.plane(PROJEKT, STAMM)
+    hp = Hausplan(m, lade_hausstil(None))
+    zeilen, kopf = hp._klemmenplan()
+    assert zeilen[min(kopf)][0].startswith("Klemmleiste =") and len(kopf) == len({z[0].split(":")[0]
+                                                                                  for z in hp._klemmenzeilen()})
+    kab = hp._kabelzeilen()
+    assert all(len(z) == 6 for z in kab) and any(z[4].endswith(" m") for z in kab) and any(z[4] == "lt. Feld" for z in kab)
+    summe = {z[3]: z[1] for z in hp._summenzeilen()}
+    stl = [z for z in hp._stl_zeilen() if z[6] == "IND-M12-PNP"]
+    assert summe["IND-M12-PNP"] == f"{len(stl)} Stk" and "Länge lt. Feld" in summe[hp.stil["feldkabel_typ"] + " 3x0,75"]
+    m.warnungen += [f"Hinweis {i}" for i in range(60)]                     # viele Hinweise -> Folgeseiten
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
+    aus = [s for s in seiten if s[0] == "AUS"]
+    assert len(aus) == -(-len(Hausplan(m, lade_hausstil(None))._auslegungszeilen()) // ZEILEN_JE_LISTENSEITE) >= 2
+    text = "".join(p.extract_text() for p in PdfReader(str(tmp_path / "h.pdf")).pages)
+    assert "Hinweis 59" in text and "Summenstückliste" in text
