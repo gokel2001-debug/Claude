@@ -1,0 +1,23 @@
+[project]
+name = "slpgen"
+version = "0.2.0"
+description = "Stromlaufplan-Generator (Prototyp)"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 135
+target-version = "py312"
+
+[tool.ruff.lint]
+# Fehlerquellen, Importe, Modernisierung, Bugbear – Stil (Zeilenlänge) bewusst großzügig
+select = ["E", "F", "W", "I", "B", "UP", "RUF"]
+ignore = [
+    "RUF001", "RUF002", "RUF003",   # deutsche Typografie („“ – ·) ist gewollt
+    "B905",                         # zip() kürzt bewusst (Spaltenbreiten, Klemmenzuordnung)
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["slpgen"]

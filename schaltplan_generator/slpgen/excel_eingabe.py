@@ -174,7 +174,7 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
         wa.append([k, stamm["artikel"][k]["kategorie"], stamm["artikel"][k]["bezeichnung"]])
 
     wf = wb.create_sheet("Feldgeraete", 2)
-    _kopf(wf, FELD_SPALTEN + [BAUSTEIN_SPALTE, LAENGE_SPALTE])
+    _kopf(wf, [*FELD_SPALTEN, BAUSTEIN_SPALTE, LAENGE_SPALTE])
     for g in projekt["feldgeraete"]:
         wf.append([g["bmk"], g["artikel"], g.get("funktion", ""), g.get("gruppe", ""), g.get("typical", ""),
                    g.get("laenge_m")])

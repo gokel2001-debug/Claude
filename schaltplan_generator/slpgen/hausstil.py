@@ -11,9 +11,10 @@ from __future__ import annotations
 import copy
 import re
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import ClassVar
 
 import yaml
 from reportlab.lib.pagesizes import A3, landscape
@@ -22,8 +23,21 @@ from reportlab.pdfgen.canvas import Canvas
 from .freigabe import pruefe_eigenen_wert
 from .modell import Planmodell, RegelFehler, eltern_bmk
 from .regeln import SAMMELMELDUNG
-from .zeichnen import (X0, X1, Y0, Y1, YL, YS, Blatt, potential_pfeil, s_deckblatt, sym_klemme,
-                       sym_schliesser, sym_sicherung, tabelle)
+from .zeichnen import (
+    X0,
+    X1,
+    Y0,
+    Y1,
+    YL,
+    YS,
+    Blatt,
+    potential_pfeil,
+    s_deckblatt,
+    sym_klemme,
+    sym_schliesser,
+    sym_sicherung,
+    tabelle,
+)
 
 HAUSSTIL_STANDARD = {
     "spalten": 10,                                   # Spaltenleiste 0..9
@@ -99,7 +113,7 @@ class Hausplan:
 
     def __init__(self, m: Planmodell, stamm: dict, stil: dict):
         self.m, self.stamm, self.stil = m, stamm, stil
-        self.anlagen: "OrderedDict[str, Anlage]" = OrderedDict()
+        self.anlagen: OrderedDict[str, Anlage] = OrderedDict()
         self.pos: dict[str, Ort] = {}            # Schlüssel: altes BMK oder "kanal:<geraet>" / "karte:<geraet>"
         self.lokal: dict[str, tuple[str, str]] = {}   # altes BMK -> (Anlage, lokales BMK)
         self._aufbauen()
@@ -223,13 +237,13 @@ class Hausplan:
         n_inh = 1
         while -(-(sum(len(a.seiten) for a in self.anlagen.values()) + n_inh) // ZEILEN_JE_LISTENSEITE) > n_inh:
             n_inh += 1
-        self.anlagen["INH"].seiten = [("Inhaltsverzeichnis", (lambda i: lambda b, a: self._s_inhalt(b, a, i))(i))
+        self.anlagen["INH"].seiten = [("Inhaltsverzeichnis", (lambda i: lambda b, a: self._s_inhalt(b, a, i))(i))  # noqa: B023 – i sofort gebunden
                                       for i in range(n_inh)]
 
     def _listenanlage(self, kenn, titel, art, zeichner, n):
         an = self._neu(kenn, titel, art)
         for i in range(max(1, -(-n // ZEILEN_JE_LISTENSEITE))):
-            an.seiten.append((titel, (lambda i: lambda b, a: zeichner(b, a, i))(i)))
+            an.seiten.append((titel, (lambda i: lambda b, a: zeichner(b, a, i))(i)))  # noqa: B023 – i sofort gebunden
 
     def _feldklemmen(self, geraet: str):
         """Signalklemmen eines Feldgeräts (Leistungsklemmen L/N/PE liegen auf eigener Leiste)."""
@@ -606,7 +620,7 @@ class Hausplan:
         ac = self.stil["ader_ac"]
         x = self.x(4)
         self._kette(b, a)
-        for d, (lt, y) in zip((-6, 0, 6), (("L1", 262), ("L2", 256), ("L3", 250))):
+        for d, (_lt, y) in zip((-6, 0, 6), (("L1", 262), ("L2", 256), ("L3", 250))):
             b.kreis(x + d, y, 0.6, True)
             b.linie(X0 + 8, y, x + d, y)
             b.linie(x + d, y, x + d, 222)
@@ -640,7 +654,7 @@ class Hausplan:
         b.text(x + 14, 80, f"P = {mot.daten['p_kW']:g} kW  I_N = {mot.daten['i_N_A']:g} A", 2)
 
     def _s_motor_steuer(self, b: Blatt, a: Anlage):
-        mot, q, k, w = self._motor(a)
+        _mot, q, k, _w = self._motor(a)
         ad = self.stil["ader"]
         x = self.x(2)
         self._sps_kasten(b, x, 215, k.bmk, a.kennung, "-K1:A1")
@@ -723,9 +737,10 @@ class Hausplan:
         tabelle(b, ["Kabelnummer", "Kabeltyp", "Quelle", "Ziel"],
                 self._kabelzeilen()[idx * ZEILEN_JE_LISTENSEITE:(idx + 1) * ZEILEN_JE_LISTENSEITE], [50, 90, 90, 90])
 
-    POTENTIAL = {"+24V": "24L+", "0V": "24M", "Signal": "Signal", "Kontakt": "Kontakt 14", "Kontakt-Rück": "Kontakt 11",
+    POTENTIAL: ClassVar[dict[str, str]] = {"+24V": "24L+", "0V": "24M", "Signal": "Signal", "Kontakt": "Kontakt 14",
+                                           "Kontakt-Rück": "Kontakt 11",
                  "Bezug": "M (Analog)"}
-    SCHUETZ_ANSCHLUSS = {"U": "2", "V": "4", "W": "6"}
+    SCHUETZ_ANSCHLUSS: ClassVar[dict[str, str]] = {"U": "2", "V": "4", "W": "6"}
 
     def _klemmenzeilen(self):
         z = []

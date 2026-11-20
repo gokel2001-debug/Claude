@@ -175,7 +175,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     # ---- 24-V-Bilanz und Netzteilwahl ---------------------------------------
     # DO-Aktoren werden über die Lastspannung des Ausgabemoduls versorgt; ihr
     # Strom zählt daher zum Abgang, der die DO-Module speist (nicht zur Feldgruppe).
-    gruppen: "OrderedDict[str, list[Betriebsmittel]]" = OrderedDict()
+    gruppen: OrderedDict[str, list[Betriebsmittel]] = OrderedDict()
     gruppen["SPS"] = [b for b in sps_bm if b.kategorie != "sps_do"]
     do_last = [b for b in sps_bm if b.kategorie == "sps_do"]
     for b in motor_signale:          # Schützspulen -> DO-Last, MSS-Rückmeldung -> SPS
@@ -423,7 +423,7 @@ def _selektivmodul_kanalwert(einstellwerte: list[float], i_min: float) -> float 
     return passend[0] if passend else None
 
 
-def _selektivmodule(m: Planmodell, gruppen: "OrderedDict[str, list[Betriebsmittel]]", v24: dict, mod: dict,
+def _selektivmodule(m: Planmodell, gruppen: OrderedDict[str, list[Betriebsmittel]], v24: dict, mod: dict,
                     mod_key: str, fak: float, nt: dict) -> None:
     """24-V-Verteilung über Selektivmodule: je Gruppe ein Kanal mit einstellbarem Strom, Module -F2, -F3, …"""
     kmax = mod["kanaele"]

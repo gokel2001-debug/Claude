@@ -146,50 +146,50 @@ def pruefe(daten: Any, stamm: dict) -> list[str]:
         return ["Die Datei enthält kein Projektmodell (oberste Ebene muss aus Abschnitten wie „projekt:“ bestehen)"]
     art = stamm.get("artikel", {})
     typicals = stamm.get("typicals", {})
-    l: list[str] = []
+    luecken: list[str] = []
     if "schema" in daten and daten["schema"] != SCHEMA:
-        l.append(f"schema: „{daten['schema']}“ wird nicht unterstützt – erwartet „{SCHEMA}“")
+        luecken.append(f"schema: „{daten['schema']}“ wird nicht unterstützt – erwartet „{SCHEMA}“")
     for k in daten:
         if k not in ABSCHNITTE and k not in ZUSATZ and isinstance(daten[k], str) and " " in daten[k]:
-            l.append(f"„{k}: {daten[k][:40]}…“ ist vermutlich ein Kommentar der KI – diese Zeile löschen")
+            luecken.append(f"„{k}: {daten[k][:40]}…“ ist vermutlich ein Kommentar der KI – diese Zeile löschen")
         elif k not in ABSCHNITTE and k not in ZUSATZ:
-            l.append(f"Unbekannter Abschnitt „{k}“ – erlaubt: {', '.join([*ABSCHNITTE, *ZUSATZ])} "
+            luecken.append(f"Unbekannter Abschnitt „{k}“ – erlaubt: {', '.join([*ABSCHNITTE, *ZUSATZ])} "
                      f"(Tippfehler oder falsch eingerückt?)")
     for k in ("annahmen", "offene_fragen"):
         if not _leer(daten.get(k)) and not (isinstance(daten[k], list) and all(isinstance(x, str) for x in daten[k])):
-            l.append(f"„{k}“ muss eine Liste von Sätzen sein (je Zeile „- …“)")
+            luecken.append(f"„{k}“ muss eine Liste von Sätzen sein (je Zeile „- …“)")
     for name in PFLICHT_ABSCHNITTE:
         if _leer(daten.get(name)):
-            l.append(f"Abschnitt „{name}“ ({ABSCHNITTE[name][3]}) fehlt oder ist leer")
+            luecken.append(f"Abschnitt „{name}“ ({ABSCHNITTE[name][3]}) fehlt oder ist leer")
     gesehen: dict[str, str] = {}
     for name, (_, liste, felder, _, _) in ABSCHNITTE.items():
         wert = daten.get(name)
         if _leer(wert):
             continue
         if liste and not isinstance(wert, list):
-            l.append(f"Abschnitt „{name}“ muss eine Liste sein (je Eintrag eine Zeile mit „- “)")
+            luecken.append(f"Abschnitt „{name}“ muss eine Liste sein (je Eintrag eine Zeile mit „- “)")
             continue
         if not liste and not isinstance(wert, dict):
-            l.append(f"Abschnitt „{name}“ muss Einträge der Form „feld: wert“ enthalten")
+            luecken.append(f"Abschnitt „{name}“ muss Einträge der Form „feld: wert“ enthalten")
             continue
         for i, e in (enumerate(wert) if liste else [(None, wert)]):
             ort = _ort(name, i, e)
             if not isinstance(e, dict):
-                l.append(f"{ort}: Eintrag muss die Form „feld: wert“ haben")
+                luecken.append(f"{ort}: Eintrag muss die Form „feld: wert“ haben")
                 continue
             namen = {f.name for f in felder}
             for k in e:
                 if k not in namen and k != "_zeile":
-                    l.append(f"{ort}: unbekanntes Feld „{k}“ – erlaubt: {', '.join(sorted(namen))}")
+                    luecken.append(f"{ort}: unbekanntes Feld „{k}“ – erlaubt: {', '.join(sorted(namen))}")
             for f in felder:
-                l.extend(_pruefe_feld(ort, f, e.get(f.name), art, typicals))
+                luecken.extend(_pruefe_feld(ort, f, e.get(f.name), art, typicals))
             if name in ("feldgeraete", "motoren") and isinstance(e.get("bmk"), str):
                 kurz = e["bmk"].strip().lstrip("-").upper()
                 if kurz in gesehen:
-                    l.append(f"{ort}: Kennzeichen {kurz} ist schon bei {gesehen[kurz]} vergeben")
+                    luecken.append(f"{ort}: Kennzeichen {kurz} ist schon bei {gesehen[kurz]} vergeben")
                 gesehen.setdefault(kurz, ort)
-    l.extend(_pruefe_zusammenhang(daten, art, typicals))
-    return l
+    luecken.extend(_pruefe_zusammenhang(daten, art, typicals))
+    return luecken
 
 
 def _pruefe_feld(ort: str, f: Feld, w: Any, art: dict, typicals: dict) -> list[str]:
@@ -245,7 +245,7 @@ def _pruefe_artikel(ort: str, was: str, w: Any, kat: str, art: dict) -> list[str
 
 
 def _pruefe_zusammenhang(daten: dict, art: dict, typicals: dict) -> list[str]:
-    l = []
+    luecken = []
     braucht_leitungen = not _leer(daten.get("motoren"))
     for i, fg in enumerate(daten.get("feldgeraete") or [] if isinstance(daten.get("feldgeraete"), list) else []):
         if not isinstance(fg, dict) or not isinstance(fg.get("artikel"), str) or fg["artikel"] not in art:
@@ -253,47 +253,47 @@ def _pruefe_zusammenhang(daten: dict, art: dict, typicals: dict) -> list[str]:
         a = art[fg["artikel"]]
         tname = fg.get("typical") if isinstance(fg.get("typical"), str) else None
         if not tname and a.get("kategorie") in FELD_KATEGORIEN and not a.get("signal"):
-            l.append(f"{_ort('feldgeraete', i, fg)}: Artikel {fg['artikel']} hat kein Signal – Baustein (typical) angeben")
+            luecken.append(f"{_ort('feldgeraete', i, fg)}: Artikel {fg['artikel']} hat kein Signal – Baustein (typical) angeben")
         tp = typicals.get(tname) if tname else None
         if tp and tp.get("leistung"):
             braucht_leitungen = True
             if _leer(fg.get("laenge_m")):
-                l.append(f"{_ort('feldgeraete', i, fg)}: Baustein {tname} hat einen Leistungsteil – "
+                luecken.append(f"{_ort('feldgeraete', i, fg)}: Baustein {tname} hat einen Leistungsteil – "
                          f"Leitungslänge in m („laenge_m“) fehlt")
     sps = daten.get("sps")
     if isinstance(sps, dict):
-        l.extend(_pruefe_sps(sps, art))
+        luecken.extend(_pruefe_sps(sps, art))
     v24 = daten.get("versorgung_24V")
     if isinstance(v24, dict) and v24.get("verteilung", "einzelsicherungen") not in ("einzelsicherungen", "selektivmodul"):
-        l.append(f"24-V-Versorgung: verteilung = „{v24['verteilung']}“ – erlaubt: einzelsicherungen, selektivmodul")
+        luecken.append(f"24-V-Versorgung: verteilung = „{v24['verteilung']}“ – erlaubt: einzelsicherungen, selektivmodul")
     if isinstance(v24, dict) and v24.get("verteilung") == "selektivmodul" and _leer(v24.get("selektivmodul")):
-        l.append("24-V-Versorgung: verteilung = selektivmodul, aber kein Artikel bei „selektivmodul“")
+        luecken.append("24-V-Versorgung: verteilung = selektivmodul, aber kein Artikel bei „selektivmodul“")
     ltg = daten.get("leitungen")
     if isinstance(ltg, dict) and isinstance(ltg.get("i_z_A"), dict):
         for q, iz in ltg["i_z_A"].items():
             if not (_zahl(q) or 0) > 0 or not (_zahl(iz) or 0) > 0:
-                l.append(f"Leitungsauslegung: Strombelastbarkeit „{q}: {iz}“ ungültig – Querschnitt mm²: Strom A, "
+                luecken.append(f"Leitungsauslegung: Strombelastbarkeit „{q}: {iz}“ ungültig – Querschnitt mm²: Strom A, "
                          f"z. B. 1.5: 13.1")
     if braucht_leitungen and not (isinstance(ltg, dict) and ltg.get("i_z_A")):
-        l.append("Leitungsauslegung: Motoren/Pumpen vorhanden, aber keine Strombelastbarkeitstabelle („i_z_A“)")
-    return l
+        luecken.append("Leitungsauslegung: Motoren/Pumpen vorhanden, aber keine Strombelastbarkeitstabelle („i_z_A“)")
+    return luecken
 
 
 def _pruefe_sps(sps: dict, art: dict) -> list[str]:
-    l = []
+    luecken = []
     mk, ad = sps.get("module_kandidaten"), sps.get("adressschema")
     for k, tab in (("module_kandidaten", mk), ("adressschema", ad)):
         if isinstance(tab, dict):
             fehlt = [s for s in SIGNALARTEN if s not in tab]
             if fehlt:
-                l.append(f"SPS: „{k}“ ohne Eintrag für {', '.join(fehlt)}")
+                luecken.append(f"SPS: „{k}“ ohne Eintrag für {', '.join(fehlt)}")
     if isinstance(mk, dict):
         for s, a in mk.items():
             kat = f"sps_{str(s).lower()}"
             if not isinstance(a, str) or a not in art:
-                l.append(f"SPS: E/A-Karte {s} „{a}“ gibt es nicht im Gerätestamm")
+                luecken.append(f"SPS: E/A-Karte {s} „{a}“ gibt es nicht im Gerätestamm")
             elif art[a].get("kategorie") != kat or not art[a].get("kanaele"):
-                l.append(f"SPS: E/A-Karte {s} „{a}“ ist ein(e) {art[a].get('kategorie')}, erwartet {kat} mit Kanalzahl")
+                luecken.append(f"SPS: E/A-Karte {s} „{a}“ ist ein(e) {art[a].get('kategorie')}, erwartet {kat} mit Kanalzahl")
     if isinstance(ad, dict):
         for s, muster in ad.items():
             try:
@@ -301,9 +301,9 @@ def _pruefe_sps(sps: dict, art: dict) -> list[str]:
             except (KeyError, ValueError, IndexError, AttributeError):
                 ok = False
             if not ok:
-                l.append(f"SPS: Adressformat {s} „{muster}“ ungültig – erlaubt sind Text und die Platzhalter "
+                luecken.append(f"SPS: Adressformat {s} „{muster}“ ungültig – erlaubt sind Text und die Platzhalter "
                          f"{{byte}}, {{bit}}, {{wort}}, z. B. %I{{byte}}.{{bit}}")
-    return l
+    return luecken
 
 
 def _kurz(w: Any) -> str:

@@ -52,7 +52,7 @@ def test_zu_grosser_gruppenstrom_und_fehlender_artikel():
 
 def test_ausgaben_und_stueckliste(tmp_path):
     m = regeln.plane(_selektiv(), STAMM)
-    assert [z for z in stueckliste_zeilen(m, STAMM) if z[2] == "SEL-24-4K"][0][1] == "1 Stk"   # Modul einmal
+    assert next(z for z in stueckliste_zeilen(m, STAMM) if z[2] == "SEL-24-4K")[1] == "1 Stk"   # Modul einmal
     seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     vt = texte[[a for a, _, _ in seiten].index("VT24")]

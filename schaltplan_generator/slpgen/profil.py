@@ -12,11 +12,13 @@ from __future__ import annotations
 
 import datetime as dt
 import errno
+import itertools
 import re
 import shutil
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import yaml
 
@@ -116,7 +118,7 @@ def _trend(bloecke: list[dict]) -> list[dict]:
     return [{"ab_jahr": b["von"], "von": a["wert"], "nach": b["wert"], "belege_vorher": a["belege"],
              "belege_nachher": b["belege"],
              "sicherheit": "hoch" if min(a["belege"], b["belege"]) >= MIN_PLAENE_JE_SEITE_TREND else "unsicher"}
-            for a, b in zip(bloecke, bloecke[1:])]
+            for a, b in itertools.pairwise(bloecke)]
 
 
 def _norm_leitung(lt: str) -> str:

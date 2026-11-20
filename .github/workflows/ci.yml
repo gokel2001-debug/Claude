@@ -1,0 +1,29 @@
+# Prüfung bei jedem Push/Pull-Request: Linter, Tests, Abdeckung Planungskern (ZIEL.md Abschnitt 4c)
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: schaltplan_generator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Abhängigkeiten
+        run: python -m pip install -r requirements-dev.txt
+      - name: Linter
+        run: python -m ruff check slpgen tests
+      - name: Tests mit Abdeckung
+        run: python -m pytest -q --cov --cov-report=term
+      - name: Abdeckung Planungskern >= 90 %
+        run: python -m coverage report --include="slpgen/regeln.py,slpgen/motor.py,slpgen/projektmodell.py,slpgen/modell.py" --fail-under=90

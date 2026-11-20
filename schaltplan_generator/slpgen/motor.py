@@ -90,7 +90,7 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
                            {"signal": "DO", "i_A": art[sch_key]["spule_W"] / 24.0, "gruppe": "DO-Last",
                             "steuer_seite": s_steu, "steuer_spalte": sp,
                             "funktion_sps": f"Ein {mbmk} {mo.get('funktion', '')}".strip()})
-        w = Kabel(f"-W{nr}", kab[0], f"-X2", mbmk, 4, a_mm2, float(mo["laenge_m"]), i_n,
+        w = Kabel(f"-W{nr}", kab[0], "-X2", mbmk, 4, a_mm2, float(mo["laenge_m"]), i_n,
                   round(i_z, 2), round(du, 2), s_last, sp + 1)
         mot = Betriebsmittel(mbmk, mo.get("artikel", "KUNDE"), f"Drehstrommotor {mo['p_kW']} kW",
                              mo.get("funktion", ""), "motor", s_last, sp,

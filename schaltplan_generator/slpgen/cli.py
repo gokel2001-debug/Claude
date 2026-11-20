@@ -376,7 +376,7 @@ def main(argv=None):
         sys.exit(f"Datei nicht gefunden: {e.filename or e} – Pfad und Namen prüfen")
     except IsADirectoryError as e:
         sys.exit(f"Das ist ein Ordner, keine Datei: {e.filename}")
-    except Exception:  # noqa: BLE001 – Sicherheitsnetz: nie Traceback für den Anwender
+    except Exception:
         log = Path("slpgen_fehler.log")
         log.write_text(traceback.format_exc(), encoding="utf-8")
         sys.exit(f"Unerwarteter Programmfehler – bitte die Datei {log.resolve()} an den Betreuer schicken.")

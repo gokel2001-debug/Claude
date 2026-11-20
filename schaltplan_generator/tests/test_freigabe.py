@@ -133,7 +133,9 @@ def test_fehlerfaelle_klartext(gelernt, tmp_path):
 def test_vorgaben_freigeben_wirken_im_hausstil(gelernt, tmp_path):
     import copy
     from pathlib import Path
+
     from pypdf import PdfReader
+
     from slpgen import regeln
     from slpgen.hausstil import erzeuge_hausstil_pdf, lade_hausstil
     B = Path(__file__).resolve().parent.parent / "beispiele"
