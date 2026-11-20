@@ -921,7 +921,7 @@ class Hausplan:
     def _summenzeilen(self) -> list[tuple]:
         """Summenstückliste: je Artikel eine Zeile mit Gesamtmenge; Beistellungen am Ende („nicht bestellen“)."""
         summe: OrderedDict[str, list] = OrderedDict()
-        for _, _, _, lok, menge, hersteller, artikel, benennung in self._stl_zeilen():
+        for _, _, _, _lok, menge, hersteller, artikel, benennung in self._stl_zeilen():
             schluessel = f"{artikel}|{benennung}" if artikel == "KUNDE" else artikel
             e = summe.setdefault(schluessel, [0.0, 0, "", hersteller, benennung, artikel])
             if menge.endswith(" Stk"):
@@ -963,6 +963,12 @@ class Hausplan:
         if self.m.kabel:
             z.append((f"Motoren Σ I_N = {_zahl(bil['i_motoren_A'])} A; Strom je Außenleiter höchstens "
                       f"{_zahl(bil['i_400V_max_A'])} A",))
+            z += [("",), ("2a Leitungen Motor-/Leistungsabgänge (Quelle: Tabelle i_z_A der Hausvorgabe, nicht freigegeben)",),
+                  ("Kabel", "Querschnitt", "I_B / I_r [A]", "I_z·f [A]", "ΔU [%]")]
+            for w in self.m.kabel:
+                kenn, lok = self.lokal.get(w.bmk, ("", w.bmk))
+                z.append((f"={kenn}{lok} ({_zahl(w.laenge_m)} m)", f"{w.adern}G{_zahl(w.querschnitt_mm2)} mm²",
+                          _zahl(w.i_b_A), _zahl(w.i_z_A), _zahl(round(w.du_prozent, 2))))
         gruppen: dict[str, list[str]] = {"3 Hausvorgaben und Hausstil": [], "4 Annahmen": [], "5 Offene Fragen": [],
                                          "6 Nicht geprüft / nicht freigegeben": []}
         gruppen["3 Hausvorgaben und Hausstil"] += [f"Hausstil: {w}" for w in self.stil["quelle"].values()]
@@ -977,6 +983,15 @@ class Hausplan:
                 gruppen["3 Hausvorgaben und Hausstil"].append(w)
             else:
                 gruppen["6 Nicht geprüft / nicht freigegeben"].append(w)
+        gruppen["7 Prüfbericht (Konsistenz)"] = []
+        for titel in list(gruppen["6 Nicht geprüft / nicht freigegeben"]):
+            if titel.startswith(("Prüfbericht", "FEHLER", "HINWEIS")):
+                gruppen["6 Nicht geprüft / nicht freigegeben"].remove(titel)
+                gruppen["7 Prüfbericht (Konsistenz)"].append(titel)
+        from .konsistenz import MINUTEN_JE, kennzahlen  # reine Zählung am Planmodell (keine Planungslogik)
+        k = kennzahlen(self.m, sum(len(a.seiten) for a in self.anlagen.values()))
+        gruppen["8 Kennzahlen (Zeitansatz je Element: " + ", ".join(f"{n} {_zahl(v)} min" for n, v in MINUTEN_JE.items())
+                + " – Annahme A36)"] = [f"{n}: {_zahl(v)}" for n, v in k.items()]
         for titel, eintraege in gruppen.items():
             z += [("",), (titel,)] + [(f"• {e}",) for e in (eintraege or ["keine"])]
         return z

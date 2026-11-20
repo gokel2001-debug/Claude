@@ -146,3 +146,16 @@ def bericht_text(befunde: list[Befund]) -> list[str]:
     n_f = sum(1 for x in befunde if x.art == FEHLER)
     kopf = f"Prüfbericht: {n_f} Fehler, {len(befunde) - n_f} Hinweise"
     return [kopf] + [f"{x.art} ({x.pruefung}): {x.text}" for x in sorted(befunde, key=lambda x: x.art != FEHLER)]
+
+
+# Zeitansatz für die Kennzahl „Zeichenaufwand“ – ANNAHME A36: Erfahrungswerte fehlen; Werte sind Platzhalter,
+# bis Stundensätze aus dem Hausprofil bzw. aus der Abnahme M8 vorliegen.
+MINUTEN_JE = {"Seite": 20.0, "Betriebsmittel": 3.0, "Klemme": 1.0, "SPS-Kanal": 2.0, "Kabel": 2.0}
+
+
+def kennzahlen(m: Planmodell, seiten_hausstil: int | None = None) -> dict[str, float]:
+    mengen = {"Seite": float(seiten_hausstil if seiten_hausstil is not None else len(m.seiten)),
+              "Betriebsmittel": float(len([b for b in m.betriebsmittel if b.kategorie not in ("teilsignal",)])),
+              "Klemme": float(len(m.klemmen)), "SPS-Kanal": float(len(m.sps_kanaele)), "Kabel": float(len(m.kabel))}
+    mengen["Stunden (Zeichenaufwand, Annahme A36)"] = round(sum(mengen[k] * MINUTEN_JE[k] for k in MINUTEN_JE) / 60, 1)
+    return mengen
