@@ -251,3 +251,33 @@ def test_geometrie_werte_vereinheitlicht(gelernt):
     assert m["spaltenraster"]["wert"] == "10 Spalten à 40,5 mm" and m["datumsformat"]["wert"] == "JJJJ-MM-TT"
     assert m["schriftfeld_felder"]["wert"] == "Datum, Erstellt, Blatt"
     assert "wirkt im Plan noch nicht" in m["spaltenraster"]["beschreibung"]
+
+
+def test_gelernter_kennbuchstabe_nach_frueherer_vorgabe_wird_angeboten(gelernt, tmp_path):
+    """Software-Befund M5b 1: altes Profil mit freigegebener Vorgabe T, Pläne zeigen G -> G als neuer Vorschlag."""
+    pfad, _ = gelernt
+    profil = yaml.safe_load(pfad.read_text(encoding="utf-8"))
+    profil["merkmale"]["kennbuchstabe_netzteil"].update(wert="G", status="freigegeben", sicherheit="Vorgabe")
+    pfad.write_text(yaml.safe_dump(profil, allow_unicode=True), encoding="utf-8")
+    lerne_ordner(tmp_path / "k", pfad)                                  # Korpus zeigt -T1 Netzteil
+    m = _merkmale(pfad)["kennbuchstabe_netzteil"]
+    assert m["wert"] == "G" and m["vorschlag_neu"]["wert"] == "T"
+
+
+def test_gelernter_kennbuchstabe_wirkt_nach_freigabe_im_plan(gelernt, tmp_path):
+    """Ende zu Ende: lernen -> JA mit eigenem Wert G -> lade_hausstil -> -G1 im Hausstil-Plan."""
+    from pathlib import Path
+
+    from pypdf import PdfReader
+
+    from slpgen import regeln
+    from slpgen.hausstil import erzeuge_hausstil_pdf, lade_hausstil
+    pfad, liste = gelernt
+    assert _merkmale(pfad)["kennbuchstabe_netzteil"]["sicherheit"] != "Vorgabe"
+    _setze(liste, {"kennbuchstabe_netzteil": ("JA", "G")})
+    uebernehme_freigaben(pfad, liste)
+    b = Path(__file__).resolve().parent.parent / "beispiele"
+    stamm = yaml.safe_load((b / "geraetestamm.yaml").read_text(encoding="utf-8"))
+    projekt = yaml.safe_load((b / "projekt_beispiel.yaml").read_text(encoding="utf-8"))
+    erzeuge_hausstil_pdf(regeln.plane(projekt, stamm), str(tmp_path / "h.pdf"), lade_hausstil(pfad))
+    assert "-G1" in "".join(x.extract_text() for x in PdfReader(str(tmp_path / "h.pdf")).pages)

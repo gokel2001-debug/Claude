@@ -90,6 +90,7 @@ FORM = {
     "spaltenraster": "Anzahl und Breite, z. B. 10 Spalten à 39 mm",
     "schriftfeld_felder": "Feldnamen mit Komma, z. B. Datum, Bearb., Rev. (auch Felder, die das Programm nicht kennt)",
     "datumsformat": "TT.MM.JJJJ, TT.MM.JJ oder JJJJ-MM-TT",
+    "anlagen_feldgeraete": "z. B. 2 Buchstaben + 2 Ziffern (z. B. ZD01)",
 }
 
 
@@ -134,6 +135,11 @@ def pruefe_eigenen_wert(key: str, wert: str) -> str:
         if not mt or not 4 <= int(mt.group(1)) <= 20:
             raise RegelFehler(FORM["spaltenraster"])
         wert = f"{int(mt.group(1))} Spalten à {mt.group(2).replace('.', ',')} mm"
+    elif key == "anlagen_feldgeraete":
+        mt = re.match(r"(\d) buchstaben \+ (\d) ziffern", wert.lower())
+        if not mt:
+            raise RegelFehler(FORM["anlagen_feldgeraete"])
+        wert = f"{mt.group(1)} Buchstaben + {mt.group(2)} Ziffern" + wert[mt.end():]
     elif key == "datumsformat":
         erlaubt = {"TT.MM.JJJJ", "JJJJ-MM-TT", "TT.MM.JJ"}
         if wert.upper() not in erlaubt:

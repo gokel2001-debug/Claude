@@ -29,16 +29,21 @@ MUSTER = {
 }
 SEITENARTEN_PLAN = {"EFS"}          # Dokumentarten mit Stromlaufplan-Inhalt
 
-# Kennbuchstaben je Geräteart: BMK direkt vor der Gerätebezeichnung („-T1 Netzteil 24V/4A“)   # ANNAHME A42
+# Kennbuchstaben je Geräteart: BMK (auch vollständig =Anlage+Ort-BMK) direkt vor der Gerätebezeichnung
+# („-T1 Netzteil 24V/4A“)   # ANNAHME A42
 GERAETEWOERTER = {"netzteil": r"Netzteil", "koppelrelais": r"Koppelrelais", "motorschutz": r"Motorschutzschalter"}
-RE_KARTE = re.compile(r"=\w+-([A-Z]{1,3})\d+\b(?=[\s\S]{0,60}?(?:%[IQ]W?\d|\b[EA]W?\d+(?:\.[0-7])?\b))")
+BMK_VOLL = r"(?:^|[\s(])(?:=[\w.]+)?(?:\+[\w.]+)?-([A-Z]{1,3})\d+"
+# SPS-Karte: Kennzeichen =Anlage(+Ort)-BMK, dem binnen 60 Zeichen eine VOLLE SPS-Adresse folgt (E0.1, EW256, %I0.1);
+# Spulen-/Klemmenanschlüsse wie A1/A2 zählen nicht
+RE_KARTE = re.compile(r"=[\w.]+(?:\+[\w.]+)?-([A-Z]{1,3})\d+\b"
+                      r"(?=[^=]{0,60}?(?:%[IQ]W?\d+(?:\.[0-7])?|\b[EA]\d{1,4}\.[0-7]\b|\b[EA]W\d{1,5}\b))")
 
 
 def kennbuchstaben(text: str) -> dict[str, dict[str, int]]:
     """Kennbuchstaben je Geräteart aus dem Plantext (Zählung), z. B. {"netzteil": {"T": 1}, "sps_karte": {"K": 6}}."""
     ergebnis: dict[str, dict[str, int]] = {}
     for art, wort in GERAETEWOERTER.items():
-        z = Counter(m.group(1) for m in re.finditer(rf"(?<![\w/.-])-([A-Z]{{1,3}})\d+\s+{wort}", text))
+        z = Counter(m.group(1) for m in re.finditer(BMK_VOLL + rf"\s+{wort}", text, re.M))
         if z:
             ergebnis[art] = dict(z)
     karten = Counter(m.group(1) for m in RE_KARTE.finditer(text))

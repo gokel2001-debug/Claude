@@ -123,3 +123,25 @@ def test_kennbuchstaben_aus_text():
     t = "-G1 Netzteil 24V\n-T2 Netzteil 24V\n-T3 Netzteil\n=SA1-KF1\nE0.1\n=B01-X10:2 Klemme"
     k = kennbuchstaben(t)
     assert k["netzteil"] == {"G": 1, "T": 2} and k["sps_karte"] == {"KF": 1}
+
+
+@pytest.mark.parametrize("text, erwartet", [
+    ("=SA2-K1 Koppelrelais\nA1 A2", {"koppelrelais": {"K": 1}}),       # A1/A2 sind keine SPS-Adresse
+    ("=M01-Q1 Motorschutz\n13 14 A1", {}),
+    ("=B01-X10:2\n-K3\nA1", {}),
+    ("=NT24-T1 Netzteil 24V", {"netzteil": {"T": 1}}),                # vollständiges Kennzeichen
+    ("=NT24+S1-T1 Netzteil", {"netzteil": {"T": 1}}),
+    ("=SA1+S1-K1\nE0.0", {"sps_karte": {"K": 1}}),
+    ("=SA3-K1 EW256", {"sps_karte": {"K": 1}}),
+])
+def test_kennbuchstaben_negativ_und_voll(text, erwartet):
+    from slpgen.struktur import kennbuchstaben
+    assert kennbuchstaben(text) == erwartet
+
+
+def test_anlagenschema_ohne_infrastruktur():
+    from slpgen.profil import _anlagen_schema
+    st = {"anlagen_reihenfolge": ["EIN", "NT24", "VT24", "AC01", "DC01", "B001"],
+          "anlagen": {"EIN": {"sps_adressen": []}, "NT24": {"sps_adressen": []}, "VT24": {"sps_adressen": []},
+                      "AC01": {"sps_adressen": ["E0.0"]}, "DC01": {"sps_adressen": ["E0.1"]}, "B001": {"sps_adressen": []}}}
+    assert _anlagen_schema(st) == "2 Buchstaben + 2 Ziffern (z. B. AC01)"

@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2–M4, M2e, M5a erledigt → nächstes: M5b (Anlagengliederung/Kennbuchstaben lernen); M4e zurückgestellt |
+| Aktuelles Paket | M2–M4, M2e, M5a, M5b erledigt → nächstes: M5c (Lernschleife); M4e zurückgestellt |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 228/228 grün (ruff, mypy ohne Befund) |
+| Tests | 240/240 grün (ruff, mypy ohne Befund) |
 
 ## Paketübersicht
 | Paket | Status |
@@ -50,3 +50,4 @@
 | 20.11.2026 | manuell | M4c Prüfbericht (Kennzeichen, Verweise, Klemmen, Potentiale, SPS, Absicherung, Leitungsschutz, Motorschutz, Texte; Quelle je Regel) bei jeder Ausgabe, Befehl pruefbericht, Kennzahlen; Prüfer Elektro+Software: 4 hoch → behoben; 210/210 Tests |
 | 20.11.2026 | Autostart Fr 22:07 | M4d Projektordner, Feldleitungslängen, Prüfungen Netzteil/DO-Last, Stempel NICHT FÜR FERTIGUNG; M2e mypy 150 → 0 (in CI); Prüfer Elektro+Einsteiger: 3 hoch → behoben (u. a. erneuter Einfügefehler in start.bat, vom neuen Test sofort erkannt); 216/216 Tests |
 | 20.11.2026 | Autostart Fr 22:07 | M5a Spaltenraster, Schriftfeld, Datumsformat lernen, Planjahr aus Schriftfeld (A16); Prüfer Software+Einsteiger: 3 hoch (Änderungsdatum als Planjahr, eigene Werte ungeprüft, Wirkung unklar) → behoben; M4e hinter M5 gestellt (interner Umbau, Produkt-Empfehlung); 228/228 Tests |
+| 21.11.2026 | Autostart Fr 22:07 | M5b Kennbuchstaben Netzteil/SPS-Karte und Anlagenaufbau aus Plänen lernen; Prüfer Software: 2 hoch (gelernter Wert still verworfen, A1 als SPS-Adresse) → behoben; 240/240 Tests |

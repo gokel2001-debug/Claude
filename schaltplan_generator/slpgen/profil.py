@@ -74,10 +74,16 @@ def _haeufigste_ader_075(st: dict) -> str | None:
 
 
 def _anlagen_schema(st: dict) -> str | None:
-    """Aufbau der Feldgeräte-Anlagen, z. B. „2 Buchstaben + 2 Ziffern (ZD01)“; Infrastruktur-Anlagen zählen nicht."""
+    """Aufbau der Feldgeräte-Anlagen, z. B. „2 Buchstaben + 2 Ziffern (ZD01)“.
+
+    Feldgeräte-Anlage = Anlage mit SPS-Adressen (Infrastruktur wie Einspeisung/Netzteil und leere Anlagen zählen nicht).
+    """
     schemas: Counter[str] = Counter()
     beispiel: dict[str, str] = {}
-    for name in st.get("anlagen_reihenfolge", st.get("anlagen", {})):
+    anlagen = st.get("anlagen", {})
+    for name in st.get("anlagen_reihenfolge", anlagen):
+        if not anlagen.get(name, {}).get("sps_adressen"):
+            continue
         mt = re.fullmatch(r"([A-Z]{1,3})(\d{2,3})", name)
         if mt:
             sch = f"{len(mt.group(1))} Buchstaben + {len(mt.group(2))} Ziffern"
@@ -250,7 +256,10 @@ def zusammenfuehren(alt: dict | None, neu: dict) -> dict:
         if not isinstance(m_alt, dict):
             continue
         m_neu = neu["merkmale"].get(key)
-        if key in VORGABEN and m_alt.get("status") in ("freigegeben", "abgelehnt"):  # ANNAHME A18
+        # ANNAHME A18: nur echte Vorgaben (nicht aus Plänen gelernt) werden nach Entscheidung nicht neu angeboten;
+        # ein gelernter Wert läuft wie jedes Merkmal über vorschlag_neu
+        if (key in VORGABEN and (m_neu is None or m_neu.get("sicherheit") == "Vorgabe")
+                and m_alt.get("status") in ("freigegeben", "abgelehnt")):
             neu["merkmale"][key] = {k: v for k, v in m_alt.items() if k != "vorschlag_neu"}
             continue                                 # Vorgabe ist kein Lernergebnis: Entscheidung bleibt bestehen
         if m_alt.get("status") == "abgelehnt" and m_neu and _vergleichswert(m_neu) == _vergleichswert(m_alt):
