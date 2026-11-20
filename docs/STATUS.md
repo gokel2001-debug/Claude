@@ -2,12 +2,12 @@
 
 | Feld | Inhalt |
 |---|---|
-| Stand | 19.11.2026, Dauerlauf (manuell gestartet) |
-| Aktuelles Paket | **ZIEL.md übernommen** (hat Vorrang) → M1: offene Fehler aus P5a |
-| Nächster Schritt | M1 (siehe docs/ROADMAP.md), Sammelbericht in docs/STATUSBERICHT.md |
+| Stand | 20.11.2026, manuell |
+| Aktuelles Paket | M1 **erledigt** → als Nächstes M2 (Projektmodell-Schema, KI_AUFBEREITUNG.md) |
+| Nächster Schritt | M2 (siehe docs/ROADMAP.md, schaltplan_generator/docs/ZIEL.md) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 83/83 grün |
+| Tests | 90/90 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -38,3 +38,4 @@
 | 19.11.2026 | Dauerlauf (manuell) | P4c Selektivmodul; Prüfer (Elektro+Qualität): 6 Befunde (2 hoch: Spaltenüberlauf ab 5 Gruppen, Sammelmeldung nicht als Reihe/Ruhestrom) → behoben; bisheriger Plan zeigt Kanäle weiterhin als Einzelsymbole (läuft aus, E11); 74/74 Tests grün |
 | 20.11.2026 | manuell | ZIEL.md übernommen: CLAUDE.md, Roadmap M1–M9, 6 Prüfer-Agenten (.claude/agents), OFFENE_PUNKTE (A1–A16), PC_AUFGABEN, STATUSBERICHT; Autostarts lesen jetzt zuerst ZIEL.md |
 | 20.11.2026 | manuell | M1 umgesetzt: eigene Werte in der Freigabeliste geprüft (Klartext), Vorgaben ohne erneutes Angebot, Auslegungsnachweis mit Beschreibung + Wert, Annahmen im Code markiert; 83/83 Tests grün |
+| 20.11.2026 | manuell | M1 geprüft (Software, Einsteiger): 0 kritisch/hoch, 3 mittel, 6 gering → alle behoben (Farbliste IEC 60757 + A17, alle Fehler auf einmal, Spalte „Erlaubte Form“, Nachprüfung alter Profile); M1 erledigt; 90/90 Tests grün |

@@ -206,7 +206,7 @@ def zusammenfuehren(alt: dict | None, neu: dict) -> dict:
         if not isinstance(m_alt, dict):
             continue
         m_neu = neu["merkmale"].get(key)
-        if key in VORGABEN and m_alt.get("status") in ("freigegeben", "abgelehnt"):
+        if key in VORGABEN and m_alt.get("status") in ("freigegeben", "abgelehnt"):  # ANNAHME A18
             neu["merkmale"][key] = {k: v for k, v in m_alt.items() if k != "vorschlag_neu"}
             continue                                 # Vorgabe ist kein Lernergebnis: Entscheidung bleibt bestehen
         if m_alt.get("status") == "abgelehnt" and m_neu and _vergleichswert(m_neu) == _vergleichswert(m_alt):

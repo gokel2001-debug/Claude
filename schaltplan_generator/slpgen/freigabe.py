@@ -23,7 +23,8 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from .modell import RegelFehler
 
 SPALTEN = ["Beschreibung", "Zur Freigabe", "Bisher freigegeben", "Belegt in", "Sicherheit",
-           "Änderung über die Jahre", "Freigabe (JA/NEIN)", "Eigener Wert (nur mit JA)", "Merkmal (intern)"]
+           "Änderung über die Jahre", "Freigabe (JA/NEIN)", "Eigener Wert (nur mit JA)", "Merkmal (intern)",
+           "Erlaubte Form / Beispiel"]
 S_BESCHR, S_VORSCHLAG, S_BISHER, S_FREIGABE, S_EIGENER, S_KEY = 0, 1, 2, 6, 7, 8
 JA, NEIN = "JA", "NEIN"
 NEU_LERNEN = "Liste bitte neu erzeugen: Menüpunkt 6 (Hausprofil lernen) erneut ausführen"
@@ -59,7 +60,7 @@ def schreibe_freigabeliste(profil: dict, pfad: str | Path) -> None:
             belegt, sicher = quelle.get("belegt_in", ""), quelle.get("sicherheit", "")
         # nur vorbelegen, wenn es nichts Neues zu entscheiden gibt
         vorbelegt = "" if _offener_vorschlag(m) else {"freigegeben": JA, "abgelehnt": NEIN}.get(m.get("status"), "")
-        ws.append([m["beschreibung"], _zur_freigabe(m), str(bisher), belegt, sicher, trend, vorbelegt, None, key])
+        ws.append([m["beschreibung"], _zur_freigabe(m), str(bisher), belegt, sicher, trend, vorbelegt, None, key, erlaubte_form(key)])
     dv = DataValidation(type="list", formula1=f'"{JA},{NEIN}"', allow_blank=True,
                         showErrorMessage=True, errorTitle="Freigabe", error="Bitte JA oder NEIN wählen")
     ws.add_data_validation(dv)
@@ -67,29 +68,69 @@ def schreibe_freigabeliste(profil: dict, pfad: str | Path) -> None:
     for zeile in ws.iter_rows(min_row=2):
         zeile[S_EIGENER].number_format = "@"      # als Text: Excel macht aus „1,5“ sonst die Zahl 1.5
         zeile[S_KEY].font = Font(color="999999")
-    for spalte, breite in zip("ABCDEFGHI", (52, 22, 20, 20, 12, 40, 18, 24, 22)):
+    for spalte, breite in zip("ABCDEFGHIJ", (52, 22, 20, 20, 12, 40, 18, 24, 22, 60)):
         ws.column_dimensions[spalte].width = breite
     ws.freeze_panes = "A2"
     wb.save(pfad)
 
 
-# Zulässige eigene Werte je Merkmalsart (Klartext-Hinweis bei Verstoß)
-PRUEFUNG = [
-    ("kennbuchstabe_", re.compile(r"[A-Z]{1,3}"), "Kennbuchstabe: 1–3 Großbuchstaben ohne Ziffer, z. B. T oder KF"),
-    ("ader_", re.compile(r"[A-Z]{2,4}(/[A-Z]{2,4})?"),
-     "Aderfarbe als Farbkürzel nach IEC 60757, z. B. DBU oder DBU/WH (Querschnitt nicht hier eintragen)"),
-    ("feldklemmleiste", re.compile(r"-X[A-Z]?\d{1,3}"), "Klemmleiste wie -X10 oder -XD1"),
-]
+# Farbkürzel nach IEC 60757:1983 (GNYE = Schutzleiter grün-gelb)
+FARBEN_IEC60757 = {"BK", "BN", "RD", "OG", "YE", "GN", "BU", "VT", "GY", "WH", "PK", "GD", "TQ", "SR", "GNYE"}
+HAUS_FARBEN = {"DBU", "LBU"}            # ANNAHME A17: dunkel-/hellblau als Hausregel (im Bestand üblich)
+ADRESS_SCHREIBWEISEN = {"iec": "IEC (%I/%Q/%IW)", "deutsch": "deutsch (E/A/EW/AW)"}
+DEUTSCHE_FARBEN = {"SW", "BR", "RT", "OR", "GE", "BL", "VI", "GR", "WS", "RS", "GNGE"}
+
+# Erlaubte Form je Merkmal – steht auch als Spalte „Erlaubte Form / Beispiel“ in der Excel-Liste
+FORM = {
+    "kennbuchstabe_": "1–3 Großbuchstaben ohne Ziffer, z. B. T oder KF",
+    "ader_": "Farbkürzel nach IEC 60757, z. B. DBU oder DBU/WH (Querschnitt nicht hier eintragen)",
+    "feldklemmleiste": "Klemmleiste wie -X10 oder -XD1",
+    "haeufigste_ader_0_75": "Farbkürzel und Querschnitt, z. B. DBU 0,75",
+    "sps_adressschreibweise": "IEC oder deutsch",
+}
+
+
+def erlaubte_form(key: str) -> str:
+    return next((f for p, f in FORM.items() if key.startswith(p)), "")
+
+
+def _farbe(text: str) -> str:
+    """„gn/ye“ -> „GNYE“, „DBU/WH“ bleibt; wirft RegelFehler bei unbekanntem Kürzel."""
+    teile = text.replace("GN/YE", "GNYE").split("/")
+    for t in teile:
+        if t in DEUTSCHE_FARBEN and t not in FARBEN_IEC60757:
+            raise RegelFehler(f"„{t}“ ist ein deutsches Kürzel – bitte IEC 60757 verwenden, z. B. RD statt RT")
+        if t not in FARBEN_IEC60757 | HAUS_FARBEN:
+            raise RegelFehler(FORM["ader_"])
+    if len(teile) > 2:
+        raise RegelFehler(FORM["ader_"])
+    return "/".join(teile)
 
 
 def pruefe_eigenen_wert(key: str, wert: str) -> str:
     """Eigenen Wert vereinheitlichen und prüfen; liefert den bereinigten Wert oder wirft RegelFehler (Hinweis)."""
-    wert = wert.strip().upper()
-    if key == "feldklemmleiste" and wert.startswith("X"):
-        wert = "-" + wert
-    for praefix, muster, hinweis in PRUEFUNG:
-        if key.startswith(praefix) and not muster.fullmatch(wert):
-            raise RegelFehler(hinweis)
+    wert = " ".join(wert.split())
+    if key.startswith("kennbuchstabe_"):
+        wert = wert.upper()
+        if not re.fullmatch(r"[A-Z]{1,3}", wert):
+            raise RegelFehler(FORM["kennbuchstabe_"])
+    elif key.startswith("ader_"):
+        wert = _farbe(wert.upper())
+    elif key == "feldklemmleiste":
+        wert = wert.upper()
+        wert = "-" + wert if wert.startswith("X") else wert
+        if not re.fullmatch(r"-X[A-Z]?\d{1,3}", wert):
+            raise RegelFehler(FORM["feldklemmleiste"])
+    elif key == "haeufigste_ader_0_75":
+        mt = re.fullmatch(r"(\S+) 0[,.]75", wert.upper())
+        if not mt:
+            raise RegelFehler(FORM["haeufigste_ader_0_75"])
+        wert = f"{_farbe(mt.group(1))} 0,75"
+    elif key == "sps_adressschreibweise":
+        treffer = [v for k, v in ADRESS_SCHREIBWEISEN.items() if wert.lower().startswith(k)]
+        if not treffer:
+            raise RegelFehler(FORM["sps_adressschreibweise"])
+        wert = treffer[0]
     return wert
 
 
@@ -130,7 +171,7 @@ def uebernehme_freigaben(profil_pfad: str | Path, liste_pfad: str | Path) -> dic
     if [c.value for c in ws[1]][:len(SPALTEN)] != SPALTEN:
         raise RegelFehler(f"{liste_pfad.name}: Spaltenköpfe wurden verändert – {NEU_LERNEN}")
 
-    entscheidungen = []
+    entscheidungen, fehler = [], []
     for nr, z in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         key = z[S_KEY]
         if not key:
@@ -142,17 +183,24 @@ def uebernehme_freigaben(profil_pfad: str | Path, liste_pfad: str | Path) -> dic
             raise RegelFehler(f"Zeile {nr} ({m['beschreibung']}): Liste ist veraltet, das Profil wurde inzwischen "
                               f"neu gelernt – {NEU_LERNEN}")
         wahl = str(z[S_FREIGABE] or "").strip().upper()
-        eigener = None if z[S_EIGENER] is None or not _als_text(z[S_EIGENER]) else _als_text(z[S_EIGENER])
+        roh = "" if z[S_EIGENER] is None else _als_text(z[S_EIGENER])
+        eigener = roh or None
+        if wahl not in ("", JA, NEIN):
+            fehler.append(f"Zeile {nr}: „{z[S_FREIGABE]}“ – bitte JA, NEIN oder leer eintragen")
+            continue
+        if eigener is not None and wahl != JA:
+            fehler.append(f"Zeile {nr} ({m['beschreibung']}): eigener Wert nur zusammen mit JA möglich")
+            continue
         if eigener is not None:
             try:
                 eigener = pruefe_eigenen_wert(key, eigener)
             except RegelFehler as e:
-                raise RegelFehler(f"Zeile {nr} ({m['beschreibung']}): eigener Wert „{z[S_EIGENER]}“ ungültig – {e}") from None
-        if wahl not in ("", JA, NEIN):
-            raise RegelFehler(f"Zeile {nr}: „{z[S_FREIGABE]}“ – bitte JA, NEIN oder leer eintragen")
-        if eigener is not None and wahl != JA:
-            raise RegelFehler(f"Zeile {nr} ({m['beschreibung']}): eigener Wert nur zusammen mit JA möglich")
+                fehler.append(f"Zeile {nr} ({m['beschreibung']}): eigener Wert „{roh}“ ungültig – {e}")
+                continue
         entscheidungen.append((m, wahl, eigener))
+    if fehler:
+        raise RegelFehler("Es wurde nichts übernommen. Bitte in der Liste korrigieren, speichern und "
+                          "Menüpunkt 7 erneut ausführen:\n" + "\n".join(f"  • {f}" for f in fehler))
 
     ergebnis: dict[str, list[str]] = {"freigegeben": [], "abgelehnt": [], "offen": []}
     for m, wahl, eigener in entscheidungen:      # erst alles prüfen, dann ändern

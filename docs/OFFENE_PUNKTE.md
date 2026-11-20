@@ -21,3 +21,5 @@ Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Fre
 | A14 | Selektivmodul wählbar, Sammelmeldung Ruhestrom (E17) | im Bestand beobachtet | Einzelsicherungen | `regeln.py` | Standard für neue Projekte? |
 | A15 | Kanalwert/Sicherung wird nicht gegen I_z des 24-V-Abgangs geprüft | Prüfer-Befund P4c (mittel) | Prüfung ergänzen (M4) | `regeln.py` | – (M4) |
 | A16 | Plan-Jahr = häufigstes Datum im Text | Schriftfeldfelder noch nicht getrennt lesbar | Erstelldatum aus Feld (M5) | `analyse.py` | – (M5) |
+| A17 | Aderfarben DBU (dunkelblau) und LBU (hellblau) zusätzlich zu IEC 60757 zulässig | im Bestand üblich, IEC 60757 kennt nur BU | nur IEC-Kürzel | `freigabe.py` | **EF:** Hausregel so beibehalten? |
+| A18 | Freigegebene/abgelehnte Vorgaben werden beim Lernen nicht neu angeboten | Vorgaben werden noch nicht aus Plänen gelernt | Lernen der Vorgaben (M5) | `profil.py` | – (M5) |

@@ -44,12 +44,12 @@ def test_liste_enthaelt_nur_einzelwerte_beschreibung_zuerst(gelernt):
 def test_ja_nein_eigener_wert(gelernt):
     pfad, liste = gelernt
     _setze(liste, {"feldklemmleiste": ("ja", None), "sps_adressschreibweise": ("NEIN", None),
-                   "haeufigste_ader_0_75": ("JA", 1.5)})          # als Zahl eingegeben
+                   "haeufigste_ader_0_75": ("JA", "dbu 0.75")})
     e = uebernehme_freigaben(pfad, liste)
     assert len(e["freigegeben"]) == 2 and len(e["abgelehnt"]) == 1
     m = _merkmale(pfad)
     assert m["feldklemmleiste"]["status"] == "freigegeben"
-    assert (m["haeufigste_ader_0_75"]["wert"], m["haeufigste_ader_0_75"]["quelle"]) == ("1,5", "manuell")
+    assert (m["haeufigste_ader_0_75"]["wert"], m["haeufigste_ader_0_75"]["quelle"]) == ("DBU 0,75", "manuell")
     assert pfad.with_suffix(".yaml.bak").exists()
     assert _zeilen(liste)["feldklemmleiste"][2] == "-X10"           # „Bisher freigegeben“ aktualisiert
 
@@ -156,6 +156,10 @@ def test_vorgaben_freigeben_wirken_im_hausstil(gelernt, tmp_path):
     ("kennbuchstabe_sps_karte", "K-", "Großbuchstaben"),
     ("ader_DI", 1.5, "Farbkürzel"),                 # Querschnitt in falsche Spalte
     ("ader_0V", "DBU/", "Farbkürzel"),
+    ("ader_DI", "XYZ", "Farbkürzel"),
+    ("ader_L", "RT", "deutsches Kürzel"),
+    ("haeufigste_ader_0_75", "DBU", "Querschnitt"),
+    ("sps_adressschreibweise", "Siemens", "IEC oder deutsch"),
     ("feldklemmleiste", "X", "Klemmleiste"),
 ])
 def test_ungueltige_eigene_werte_klar_abgelehnt(gelernt, key, wert, hinweis):
@@ -198,3 +202,35 @@ def test_offene_punkte_genau_die_unentschiedenen(gelernt):
     e = uebernehme_freigaben(pfad, liste)
     erwartet = {_merkmale(pfad)[k]["beschreibung"] for k in ["sps_adressschreibweise", "haeufigste_ader_0_75", *VORGABEN]}
     assert set(e["offen"]) == erwartet
+
+
+def test_alle_fehler_auf_einmal_und_rohwert_lesbar(gelernt):
+    pfad, liste = gelernt
+    vorher = pfad.read_text(encoding="utf-8")
+    _setze(liste, {"ader_DI": ("JA", 1.5), "kennbuchstabe_netzteil": ("NEIN", "X1"), "feldklemmleiste": ("JA", "Q")})
+    with pytest.raises(RegelFehler) as e:
+        uebernehme_freigaben(pfad, liste)
+    text = str(e.value)
+    assert "nichts übernommen" in text and text.count("• Zeile") == 3
+    assert "„1,5“" in text and "nur zusammen mit JA" in text            # Wahl vor Wert geprüft
+    assert pfad.read_text(encoding="utf-8") == vorher
+
+
+def test_farben_und_schreibweise_vereinheitlicht(gelernt):
+    pfad, liste = gelernt
+    _setze(liste, {"ader_PE": ("JA", "gn/ye"), "sps_adressschreibweise": ("JA", "iec"), "ader_N": ("JA", " lbu ")})
+    uebernehme_freigaben(pfad, liste)
+    m = _merkmale(pfad)
+    assert (m["ader_PE"]["wert"], m["sps_adressschreibweise"]["wert"], m["ader_N"]["wert"]) == \
+        ("GNYE", "IEC (%I/%Q/%IW)", "LBU")
+    assert _zeilen(liste)["ader_PE"][-1].startswith("Farbkürzel")         # Spalte „Erlaubte Form / Beispiel“
+
+
+def test_altes_profil_mit_ungueltigem_wert_warnt(gelernt):
+    from slpgen.hausstil import lade_hausstil
+    pfad, _ = gelernt
+    profil = yaml.safe_load(pfad.read_text(encoding="utf-8"))
+    profil["merkmale"]["ader_DI"].update(wert="1,5", status="freigegeben")   # vor M1 ungeprüft gespeichert
+    pfad.write_text(yaml.safe_dump(profil, allow_unicode=True), encoding="utf-8")
+    stil = lade_hausstil(pfad)
+    assert stil["ader"]["DI"] == "DBU" and "ungültig" in stil["warnungen"][0]

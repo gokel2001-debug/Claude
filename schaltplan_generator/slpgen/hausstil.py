@@ -19,6 +19,7 @@ import yaml
 from reportlab.lib.pagesizes import A3, landscape
 from reportlab.pdfgen.canvas import Canvas
 
+from .freigabe import pruefe_eigenen_wert
 from .modell import Planmodell, RegelFehler, eltern_bmk
 from .regeln import SAMMELMELDUNG
 from .zeichnen import (X0, X1, Y0, Y1, YL, YS, Blatt, potential_pfeil, s_deckblatt, sym_klemme,
@@ -44,12 +45,19 @@ LEITER_Y = {"L1": 262, "L2": 256, "L3": 250, "N": 244, "PE": 238}   # Lage der N
 def lade_hausstil(profil_pfad: str | Path | None) -> dict:
     """Standard + freigegebene Werte aus dem Hausprofil (nur Status `freigegeben` zählt)."""
     stil = copy.deepcopy(HAUSSTIL_STANDARD)
-    stil["quelle"] = {}
+    stil["quelle"], stil["warnungen"] = {}, []
     if profil_pfad and Path(profil_pfad).exists():
         profil = yaml.safe_load(Path(profil_pfad).read_text(encoding="utf-8")) or {}
         merkmale = profil.get("merkmale", {})
-        frei = {k: str(v["wert"]).strip() for k, v in merkmale.items()
-                if isinstance(v, dict) and v.get("status") == "freigegeben" and str(v.get("wert", "")).strip()}
+        frei = {}
+        for k, v in merkmale.items():
+            if not (isinstance(v, dict) and v.get("status") == "freigegeben" and str(v.get("wert", "")).strip()):
+                continue
+            try:                                   # ältere Profile: Werte vor der Eingabeprüfung (M1) nachprüfen
+                frei[k] = pruefe_eigenen_wert(k, str(v["wert"]))
+            except RegelFehler as e:
+                stil["warnungen"].append(f"Hausprofil: {v.get('beschreibung', k)} = „{v['wert']}“ ungültig ({e}) "
+                                         f"– Standard verwendet, bitte in der Freigabeliste korrigieren")
 
         def herkunft(key: str) -> str:
             return f"{merkmale[key].get('beschreibung', key)} = {frei[key]} (Hausprofil, freigegeben)"
@@ -802,6 +810,8 @@ class Hausplan:
             texte.append(f"Motoren Σ I_N = {bil['i_motoren_A']} A; 400 V gesamt ≤ {bil['i_400V_max_A']} A")
         for w in self.stil["quelle"].values():
             texte.append(f"Hausstil: {w}")
+        for w in self.stil.get("warnungen", []):
+            texte.append(f"Achtung {w}")
         for t in texte + ["Hinweise:"] + [f"• {w}" for w in self.m.warnungen or ["keine"]]:
             b.text(X0 + 6, y, t, 2.6)
             y -= 6
