@@ -5,7 +5,7 @@ Branch: `claude/ai-schaltplan-generator-u6lzbz`
 
 ## 1. Meilenstein aktuell / Fortschritt
 - M1 – 100 %, erledigt.
-- M2 – Kern erledigt (M2a–M2c), M2d (CI) umgesetzt; Fertig-Kriterium belegt mit einer unabhängigen KI-Instanz und synthetischem Lastenheft. Erprobung mit der im Betrieb freigegebenen KI = PC6.
+- M2 – erledigt (M2a–M2d, CI grün auf Ubuntu+Windows); Fertig-Kriterium belegt mit einer unabhängigen KI-Instanz und synthetischem Lastenheft. Erprobung mit der im Betrieb freigegebenen KI = PC6.
 - Nächster Meilenstein: M3 (Planungskern trennen, `planmodell.json`).
 
 ## 2. Seit letztem Bericht erledigt
