@@ -1,0 +1,22 @@
+# Antwort einer KI auf den KI-Auftrag zu beispiele/lastenheft_beispiel.md (Erprobung M2, synthetisch)
+schema: projektmodell/1
+projekt: {nummer: P-2026-017, bezeichnung: "Schaltschrank Heizungsverteiler Halle 3", kunde: "Musterbau GmbH", ort: "+HV3", ersteller: N.N., datum: 2026-11-05, revision: "00"}
+einspeisung: {netz: "3/N/PE AC 400/230 V 50 Hz"}
+feldgeraete:
+  - {bmk: M1, artikel: PUMPE-EC-230, typical: pumpe_ec, funktion: "Umwälzpumpe Heizkreis Nord", laenge_m: 25}
+  - {bmk: M2, artikel: PUMPE-EC-230, typical: pumpe_ec, funktion: "Umwälzpumpe Heizkreis Süd", laenge_m: 25}
+  - {bmk: Y1, artikel: STELLANTRIEB-24, typical: stellantrieb_ao, funktion: "Mischventil Vorlauf"}
+  - {bmk: B1, artikel: ZAEHLER-PULS, typical: zaehler_di, funktion: "Wärmemengenzähler Hauptleitung"}
+  - {bmk: B2, artikel: ZAEHLER-AI, typical: zaehler_ai, funktion: "Durchfluss Rücklauf"}
+  - {bmk: B3, artikel: PT-420-2L, funktion: "Anlagendruck", gruppe: Sensorik}
+  - {bmk: Y2, artikel: MV-24-4W, funktion: "Nachspeisung", gruppe: DO-Last}
+  - {bmk: Y3, artikel: MV-24-4W, funktion: "Entleerung", gruppe: DO-Last}
+  - {bmk: P1, artikel: LMP-24-GN, funktion: "Anlage in Betrieb", gruppe: DO-Last}
+motoren:
+  - {bmk: M3, funktion: "Zuluftventilator Technikraum", p_kW: 1.1, i_N_A: 2.6, cos_phi: 0.81, laenge_m: 18}
+annahmen:
+  - "Leitungslänge Umwälzpumpe Heizkreis Süd 25 m angenommen (wie Heizkreis Nord)"
+  - "Wärmemengenzähler als Durchflusszähler ZAEHLER-PULS abgebildet (Impuls- und Störausgang)"
+offene_fragen:
+  - "Wärmemengenzähler: genauer Typ und Impulswertigkeit nicht angegeben"
+  - "Anlagenkennzeichen (=…) nicht angegeben"

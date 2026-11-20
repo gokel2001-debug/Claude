@@ -38,6 +38,8 @@ def cmd_generieren(a):
     stamm = lade_yaml(a.stamm)
     projekt, ergaenzt = bereit_machen(lade_projekt(a.projekt), stamm, _vorgaben(a.vorgaben))
     m = regeln.plane(projekt, stamm)
+    for titel, k in (("Annahme der Aufbereitung", "annahmen"), ("Offene Frage", "offene_fragen")):
+        m.warnungen.extend(f"{titel}: {x}" for x in projekt.get(k) or [])
     if ergaenzt:
         m.warnungen.append(f"Aus Hausvorgaben ergänzt: {', '.join(ergaenzt)}")
     ziel = Path(a.ausgabe)

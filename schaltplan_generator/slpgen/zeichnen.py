@@ -339,8 +339,7 @@ def s_motor_last(b: Blatt, m: Planmodell, seite: int, idx: int):
             potential_pfeil(b, X1 - 14, y, f"{verweis(weitere[0], 1)}")
     for mot in motoren:
         x = X0 + mot.spalte * COLW
-        nr = mot.bmk.lstrip("-M")
-        q, k = m.bm(f"-Q{int(nr) + 1}"), m.bm(f"-K{nr}")
+        q, k = m.bm(mot.daten["mss"]), m.bm(mot.daten["schuetz"])   # nicht aus der Motornummer ableiten
         w = next(c for c in m.kabel if c.nach == mot.bmk)
         kl = [c for c in m.klemmen if c.leiste == "-X2" and c.ziel_aussen.startswith(mot.bmk + ":")]
         for d, (_, y_bus) in zip((-6, 0, 6), busse):
