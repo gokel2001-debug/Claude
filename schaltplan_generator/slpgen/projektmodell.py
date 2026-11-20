@@ -64,7 +64,7 @@ ABSCHNITTE: dict[str, tuple[str, bool, list[Feld], str, str]] = {
         Feld("funktion", "text", True, "Funktionstext für Plan und SPS-Liste", "Endlage Band vorne"),
         Feld("gruppe", "text", False, "gemeinsamer 24-V-Abgang (DO-Aktoren: DO-Last)", "Sensorik"),
         Feld("typical", "typical", False, "Baustein aus der Bibliothek (mehrere Signale/Leistungsteil)", "pumpe_ec"),
-        Feld("laenge_m", "zahl", False, "Leitungslänge zum Gerät in m (Bausteine mit Leistungsteil)", "15",
+        Feld("laenge_m", "zahl", False, "Leitungslänge zum Gerät in m (Pflicht bei Leistungsteil, sonst für Kabelliste)", "15",
              (0.1, 1000)),
     ], "Sensoren, Aktoren und Bausteine im Feld", "Feldgerät"),
     "motoren": ("P", True, [

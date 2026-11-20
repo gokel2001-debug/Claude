@@ -107,6 +107,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         b = Betriebsmittel(bmk=bmk, artikel=fg["artikel"], bezeichnung=a["bezeichnung"],
                            funktion=fg.get("funktion", ""), kategorie=a["kategorie"],
                            daten={"gruppe": fg.get("gruppe", "Allgemein"), "i_A": i_24,
+                                  "laenge_m": float(fg["laenge_m"]) if fg.get("laenge_m") is not None else None,
                                   "signal": a.get("signal"), "anschluss": a.get("anschluss", [])})
         if tname:
             if tname not in typicals:

@@ -60,7 +60,7 @@ Pflichtabschnitte: projekt, einspeisung, feldgeraete.
 | `funktion` | Text | ja | Funktionstext für Plan und SPS-Liste | `Endlage Band vorne` |
 | `gruppe` | Text | – | gemeinsamer 24-V-Abgang (DO-Aktoren: DO-Last) | `Sensorik` |
 | `typical` | Bausteinname | – | Baustein aus der Bibliothek (mehrere Signale/Leistungsteil) | `pumpe_ec` |
-| `laenge_m` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1000) | – | Leitungslänge zum Gerät in m (Bausteine mit Leistungsteil) | `15` |
+| `laenge_m` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1000) | – | Leitungslänge zum Gerät in m (Pflicht bei Leistungsteil, sonst für Kabelliste) | `15` |
 
 ### `motoren` (P, Liste) – Drehstrommotoren mit Direktstart
 

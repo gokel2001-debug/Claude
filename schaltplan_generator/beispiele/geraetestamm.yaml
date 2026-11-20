@@ -94,6 +94,7 @@ artikel:
     bezeichnung: Digitalausgabe 16 x 24 V DC / 0,5 A
     i_mA: 40
     kanaele: 16
+    i_kanal_A: 0.5          # Ausgangsstrom je Kanal (Datenblatt) – für den Prüfbericht
   SPS-AO4:
     kategorie: sps_ao
     hersteller: Beispiel GmbH

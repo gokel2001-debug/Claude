@@ -31,7 +31,8 @@ Du bist Elektroplaner im Schaltschrankbau. Lies das Lastenheft am Ende und erste
    die Absicherung: dann **immer** in `annahmen` („Bemessungsdaten von PUMPE-EC-230 übernommen“) **und**
    in `offene_fragen` („Datenblatt Pumpe anfordern: U, I_N, Anschluss“).
 2. Geräte mit mehreren Signalen oder eigenem 230-V-Anschluss als **Baustein**: Feld `typical` mit dem
-   Bausteinnamen aus der Bausteinliste. Bausteine mit Leistungsteil brauchen `laenge_m`.
+   Bausteinnamen aus der Bausteinliste. Bausteine mit Leistungsteil brauchen `laenge_m`; nennt das Lastenheft
+   eine Leitungslänge zu einem anderen Feldgerät, ebenfalls als `laenge_m` eintragen (für die Kabelliste).
 3. Drehstrommotoren mit Direktstart gehören in `motoren` (nicht in `feldgeraete`); Werte vom Typenschild.
    **Motordaten (Leistung, Bemessungsstrom, cos φ) nie annehmen** – fehlen sie, den Motor trotzdem
    eintragen, das Feld leer lassen und in `offene_fragen` nachfragen. (Die Software meldet die Lücke.)

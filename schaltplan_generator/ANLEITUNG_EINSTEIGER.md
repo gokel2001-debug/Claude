@@ -50,6 +50,8 @@ Danach erscheint ein Menü:
 | **8** | KI-Auftrag aus Lastenheft erstellen | Lastenheft (.docx, .pdf, .txt) ins Fenster ziehen, Enter. Der Auftrag liegt danach in der **Zwischenablage**: im KI-Chat mit Strg+V einfügen und absenden (nur eine vom Betrieb freigegebene KI, sonst Kundennamen vorher entfernen). Der Editor öffnet `<Lastenheft>_projektmodell.yaml` neben dem Lastenheft: die **ganze Antwort der KI** hineinkopieren (vorhandenen Inhalt ersetzen) und speichern. Klappt die Zwischenablage nicht, öffnet sich der Auftrag im Editor: Strg+A, Strg+C. |
 | **9** | KI-Antwort prüfen und Plan erzeugen | `<Lastenheft>_projektmodell.yaml` ins Fenster ziehen, Enter. Ist alles vollständig, entstehen die PDFs im Unterordner `ausgabe` **neben dem Lastenheft** (öffnet sich); Annahmen und offene Fragen der KI stehen im Auslegungsnachweis. Fehlt etwas, liegt ein **Korrekturauftrag** in der Zwischenablage: im selben Chat einfügen, neue Antwort speichern, wieder Punkt 9. |
 
+**Projektordner:** Legen Sie je Projekt einen eigenen Ordner an (Lastenheft, KI-Antwort bzw. Excel-Datei). Die Ergebnisse (PDFs, Stückliste, Planmodell) entstehen im Unterordner `ausgabe` dieses Ordners. Steht auf den Seiten rot **„NICHT FÜR FERTIGUNG“**, enthält der Prüfbericht Fehler – Einzelheiten im Auslegungsnachweis (letzte Seiten).
+
 ## 4 Die Excel-Vorlage ausfüllen
 
 | Blatt | Was eintragen | Hinweise |

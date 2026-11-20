@@ -121,7 +121,7 @@ def cmd_generieren(a):
     for titel, k in (("Annahme der Aufbereitung", "annahmen"), ("Offene Frage", "offene_fragen")):
         m.warnungen.extend(f"{titel}: {x}" for x in projekt.get(k) or [])
     m.warnungen.extend(ergaenzt)
-    ziel = Path(a.ausgabe)
+    ziel = Path(a.ausgabe) if a.ausgabe else Path(a.projekt).resolve().parent / "ausgabe"   # Projektordner = alles
     ziel.mkdir(parents=True, exist_ok=True)
     json_pfad = ziel / f"{m.projekt['nummer']}_Planmodell.json"
     from .hausstil import kennzeichne, lade_hausstil
@@ -353,7 +353,7 @@ def main(argv=None):
     g = sub.add_parser("generieren", help="Projekt (Excel .xlsx oder YAML) -> PDF + Stückliste + Planmodell")
     g.add_argument("projekt")
     g.add_argument("--stamm", default=STAMM)
-    g.add_argument("--ausgabe", default="ausgabe")
+    g.add_argument("--ausgabe", help="Zielordner (Standard: Unterordner „ausgabe“ im Projektordner)")
     g.add_argument("--profil", default="hausprofil/profil.yaml",
                    help="Hausprofil; nur freigegebene Werte fließen in den Hausstil ein")
     g.add_argument("--vorgaben", default=VORGABEN,

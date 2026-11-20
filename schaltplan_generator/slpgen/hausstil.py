@@ -30,8 +30,10 @@ from .zeichnen import (
     YL,
     YS,
     Blatt,
+    hat_pruefbericht_fehler,
     potential_pfeil,
     s_deckblatt,
+    stempel_nicht_fertigung,
     sym_klemme,
     sym_schliesser,
     sym_sicherung,
@@ -794,6 +796,11 @@ class Hausplan:
     def _feldgeraete(self) -> list[str]:
         return [b.bmk for b in self.m.betriebsmittel if b.kategorie in ("sensor", "aktor")]
 
+    def _feldlaenge(self, alt: str) -> str:
+        """Länge der Feldleitung aus dem Projektmodell (laenge_m je Feldgerät), sonst „nach Feldmaß“ (A35)."""
+        laenge = self.m.bm(alt).daten.get("laenge_m")
+        return f"{_zahl(float(laenge))} m" if laenge else NACH_FELDMASS
+
     def _feldkabel_adern(self, alt: str) -> int:
         n = len([k for k in self.m.klemmen if k.ziel_aussen.startswith(alt + ":")])
         return next((x for x in self.stil["feldkabel_adern"] if x >= n), n)
@@ -803,7 +810,7 @@ class Hausplan:
         for alt in self._feldgeraete():
             kenn, lok = self.lokal[alt]
             z.append((f"={kenn}-W1", f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75",
-                      f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}", NACH_FELDMASS,
+                      f"={kenn}{self.stil['feldklemmleiste']}", f"={kenn}{lok}", self._feldlaenge(alt),
                       self.ref(Ort(kenn, 1, 4), "")))
         for w in self.m.kabel:
             kenn, lok = self.lokal[w.bmk]
@@ -910,7 +917,7 @@ class Hausplan:
         for alt in self._feldgeraete():
             kenn = self.lokal[alt][0]
             typ = f"{self.stil['feldkabel_typ']} {self._feldkabel_adern(alt)}x0,75"
-            zeilen.append((f"={kenn}", ort, "-W1", NACH_FELDMASS, "–", typ, "Feldleitung geschirmt"))
+            zeilen.append((f"={kenn}", ort, "-W1", self._feldlaenge(alt), "–", typ, "Feldleitung geschirmt"))
         return [(i + 1, *z) for i, z in enumerate(zeilen)]
 
     def _s_stueckliste(self, b: Blatt, a: Anlage, idx: int):
@@ -1021,11 +1028,14 @@ def erzeuge_hausstil_pdf(m: Planmodell, pfad: str, stil: dict | None = None) -> 
     c = Canvas(pfad, pagesize=landscape(A3), invariant=1)
     c.setTitle(f"Stromlaufplan {m.projekt.get('nummer', '')}")
     b = Blatt(c)
+    fehler = hat_pruefbericht_fehler(m)
     for i, (a, nr, titel, zeichner) in enumerate(folge):
         vorher = f"={folge[i - 1][0].kennung}/{folge[i - 1][1]}" if i else ""
         nachher = f"={folge[i + 1][0].kennung}/{folge[i + 1][1]}" if i + 1 < len(folge) else ""
         hp.rahmen(b, a, nr, titel, vorher, nachher)
         zeichner(b, a)
+        if fehler:
+            stempel_nicht_fertigung(b)
         c.showPage()
     c.save()
     return [(a.kennung, nr, t) for a, nr, t, _ in folge]

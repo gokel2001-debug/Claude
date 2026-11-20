@@ -75,7 +75,9 @@ def _stoere_kanal(m):
     (lambda m: m.absicherungen.__setitem__(slice(None), [a for a in m.absicherungen if "-B1" not in a.verbraucher]),
      "Potential"),
     (lambda m: setattr(m.klemmen[1], "ziel_aussen", m.klemmen[0].ziel_aussen), "Klemmen"),
-    (lambda m: setattr(m.klemmen[0], "nr", 0), "Klemmen")])
+    (lambda m: setattr(m.klemmen[0], "nr", 0), "Klemmen"),
+    (lambda m: m.bilanz.update(i_bedarf_A=99.0), "Netzteil"),
+    (lambda m: m.bm(next(k.geraet_bmk for k in m.sps_kanaele if k.art == "DO")).daten.update(i_A=2.0), "DO-Last")])
 def test_jede_fehlerart_wird_erkannt(stoerung, pruefung):
     m = _plan()
     stoerung(m)
@@ -132,3 +134,33 @@ def test_zeichnen_prueft_frisch(tmp_path):
         main(["zeichnen", str(pm), "--profil", str(tmp_path / "x.yaml")])
     text = "".join(p.extract_text() for p in PdfReader(str(tmp_path / "P-2026-001_Stromlaufplan_Hausstil.pdf")).pages)
     assert "FEHLER (SPS)" in text
+
+
+def test_stempel_und_projektordner(tmp_path):
+    """M4d: bei FEHLER roter Vermerk auf jeder Seite; ohne --ausgabe landen Ergebnisse im Projektordner."""
+    from pypdf import PdfReader
+
+    from slpgen.hausstil import erzeuge_hausstil_pdf
+    from slpgen.zeichnen import erzeuge_pdf
+    projekt = tmp_path / "Kunde_A" / "projekt.yaml"
+    projekt.parent.mkdir()
+    projekt.write_text((B / "projekt_beispiel.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    main(["generieren", str(projekt), "--profil", str(tmp_path / "x.yaml")])
+    pdf = tmp_path / "Kunde_A" / "ausgabe" / "P-2026-001_Stromlaufplan_Hausstil.pdf"
+    assert pdf.exists() and "NICHT FÜR FERTIGUNG" not in PdfReader(str(pdf)).pages[0].extract_text()
+    m = _plan()
+    _stoere_adresse(m)
+    erzeuge_pdf(m, str(tmp_path / "a.pdf"))
+    erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
+    for f in ("a.pdf", "h.pdf"):
+        assert all("NICHT FÜR FERTIGUNG" in p.extract_text() for p in PdfReader(str(tmp_path / f)).pages)
+
+
+def test_feldleitungslaenge_aus_projektmodell():
+    from slpgen.hausstil import Hausplan, lade_hausstil
+    p = copy.deepcopy(BEISPIEL)
+    p["feldgeraete"][0]["laenge_m"] = 17
+    hp = Hausplan(regeln.plane(p, STAMM), lade_hausstil(None))
+    kab = {z[0]: z[4] for z in hp._kabelzeilen()}
+    assert kab["=B01-W1"] == "17 m" and kab["=B02-W1"] == "nach Feldmaß"
+    assert any(z[4] == "17 m" and z[3] == "-W1" for z in hp._stl_zeilen())

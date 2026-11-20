@@ -30,7 +30,8 @@ class Befund:
 
 def pruefe_plan(m: Planmodell) -> list[Befund]:
     pruefungen: list[Callable[[Planmodell], list[Befund]]] = [
-        _bmk_eindeutig, _verweise, _klemmen, _potentiale, _sps, _absicherungen, _leitungen, _motorschutz, _texte]
+        _bmk_eindeutig, _verweise, _klemmen, _potentiale, _sps, _absicherungen, _netzteil, _do_last, _leitungen,
+        _motorschutz, _texte]
     befunde: list[Befund] = []
     for f in pruefungen:
         try:
@@ -162,6 +163,36 @@ def _absicherungen(m: Planmodell) -> list[Befund]:
         if ohne:
             befunde.append(Befund(HINWEIS, "Absicherung", f"Abgang {a.bmk}: {', '.join(ohne)} ohne 24-V-Strom in der "
                                                           f"Verbraucherliste (fremdversorgt oder 230 V?)"))
+    return befunde
+
+
+def _netzteil(m: Planmodell) -> list[Befund]:
+    """24-V-Bedarf (mit Gleichzeitigkeit und Reserve) ≤ Nennstrom des gewählten Netzteils."""
+    bil = m.bilanz
+    if not bil:
+        return []
+    if float(bil["i_bedarf_A"]) > float(bil["i_nenn_A"]):
+        return [Befund(FEHLER, "Netzteil", f"Bedarf {bil['i_bedarf_A']} A > Nennstrom {bil['i_nenn_A']} A ({bil['netzteil']})",
+                       "Datenblatt Netzteil; Gleichzeitigkeit/Reserve laut Hausvorgabe (A1)")]
+    return []
+
+
+def _do_last(m: Planmodell) -> list[Befund]:
+    """Strom am DO-Kanal (Gerät bzw. Relais-/Schützspule) ≤ Ausgangsstrom je Kanal der Karte."""
+    befunde = []
+    bm = {x.bmk: x for x in m.betriebsmittel}
+    for k in m.sps_kanaele:
+        if k.art != "DO":
+            continue
+        karte = bm.get(k.modul_bmk)
+        grenze = m.artikel.get(karte.artikel, {}).get("i_kanal_A") if karte else None
+        last = bm.get(k.anschluss.rsplit(":", 1)[0]) if k.anschluss else bm.get(eltern_bmk(k.geraet_bmk))
+        if grenze is None or last is None:
+            continue
+        strom = float(last.daten.get("i_A", 0) or 0)
+        if strom > float(grenze):
+            befunde.append(Befund(FEHLER, "DO-Last", f"Kanal {k.adresse}: {last.bmk} braucht {strom:.2f} A > {grenze} A je Kanal "
+                                                    f"– Koppelrelais vorsehen", "Datenblatt E/A-Karte (i_kanal_A)"))
     return befunde
 
 

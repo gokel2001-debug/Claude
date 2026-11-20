@@ -418,6 +418,21 @@ def s_motor_steuer(b: Blatt, m: Planmodell, seite: int, idx: int):
         sps_box(b, m, xb, 156, q.bmk)
 
 
+def hat_pruefbericht_fehler(m: Planmodell) -> bool:
+    from .konsistenz import FEHLER, pruefe_plan
+    return any(x.art == FEHLER for x in pruefe_plan(m))
+
+
+def stempel_nicht_fertigung(b: Blatt) -> None:
+    """Roter Vermerk auf jeder Seite, wenn der Prüfbericht FEHLER enthält."""
+    b.c.saveState()
+    b.c.setFillColorRGB(0.8, 0, 0)
+    b.c.setStrokeColorRGB(0.8, 0, 0)
+    b.rechteck(X1 - 152, YL - 16, 148, 12, 0.6)
+    b.text(X1 - 78, YL - 12, "NICHT FÜR FERTIGUNG – Prüfbericht enthält FEHLER (Auslegungsnachweis)", 3.2, True, "m")
+    b.c.restoreState()
+
+
 def tabelle(b: Blatt, kopf, zeilen, breiten, y_start=None, groesse=2.5, fett=frozenset(), linien=True):
     """Liste mit Kopfzeile; dünne graue Zeilenlinien (Lesehilfe), Zeilen in `fett` hervorgehoben (z. B. Gruppenkopf)."""
     y = y_start or YL - 12
@@ -536,9 +551,12 @@ def erzeuge_pdf(m: Planmodell, pfad: str) -> list[tuple[int, str]]:
     c = Canvas(pfad, pagesize=landscape(A3), invariant=1)      # ohne Zeitstempel: gleiche Eingabe = gleiche Datei
     c.setTitle(f"Stromlaufplan {m.projekt.get('nummer', '')}")
     b = Blatt(c)
+    fehler = hat_pruefbericht_fehler(m)
     for nr, titel, art, idx in seiten:
         rahmen(b, m, nr, len(seiten), titel, spalten=nr > 2)
         zeichner[art](b, nr, idx)
+        if fehler:
+            stempel_nicht_fertigung(b)
         c.showPage()
     c.save()
     return [(nr, t) for nr, t, _, _ in seiten]
