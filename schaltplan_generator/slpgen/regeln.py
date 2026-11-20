@@ -11,18 +11,25 @@ import re
 from collections import OrderedDict
 from typing import Any
 
-from .modell import Absicherung, Betriebsmittel, Kabel, Klemme, Planmodell, RegelFehler, SpsKanal
+from .modell import (
+    ERSTE_DYN_SEITE,
+    SAMMELMELDUNG,
+    SEITE_EINSPEISUNG,
+    SEITE_SPS,
+    SEITE_VERTEILUNG,
+    SPALTEN_JE_SEITE,
+    ZEILEN_JE_SEITE,
+    Absicherung,
+    Betriebsmittel,
+    Kabel,
+    Klemme,
+    Planmodell,
+    RegelFehler,
+    SpsKanal,
+)
 from .motor import MOTOREN_JE_SEITE, plane_motoren, waehle_querschnitt
 
-# Feste Seiten; ab Seite 6 folgen Motor-Last-, Motor-Steuer- und Feldgeräteseiten (dynamisch)
-SEITE_EINSPEISUNG = 3
-SEITE_VERTEILUNG = 4
-SEITE_SPS = 5
-ERSTE_DYN_SEITE = 6
-SPALTEN_JE_SEITE = 8
-ZEILEN_JE_SEITE = 36          # Listen (Klemmen, Kabel, Stückliste)
 MAX_FELDKLEMMEN = 9           # je Feldgerät/Baustein (eine Seite, Spalten 1..9)
-SAMMELMELDUNG = "-F2.S"       # Sammelmeldung der Selektivmodule (gehört zum ersten Modul -F2)
 VERTEILUNGEN = ("einzelsicherungen", "selektivmodul")
 RE_GERAETE_BMK = re.compile(r"[A-Z]{1,3}\d{1,4}")
 
@@ -43,7 +50,7 @@ def waehle_kleinste(stamm: dict, kandidaten: list[str], i_min: float) -> str | N
 
 def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     pk = projekt["projekt"]
-    m = Planmodell(projekt=dict(pk))
+    m = Planmodell(projekt={k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in pk.items()})
     m.projekt["_netz"] = projekt["einspeisung"].get("netz", "")
     art = stamm["artikel"]
     v24 = projekt["versorgung_24V"]

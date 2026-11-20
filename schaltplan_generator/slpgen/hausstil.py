@@ -21,8 +21,7 @@ from reportlab.lib.pagesizes import A3, landscape
 from reportlab.pdfgen.canvas import Canvas
 
 from .freigabe import pruefe_eigenen_wert
-from .modell import Planmodell, RegelFehler, eltern_bmk
-from .regeln import SAMMELMELDUNG
+from .modell import SAMMELMELDUNG, Planmodell, RegelFehler, eltern_bmk
 from .zeichnen import (
     X0,
     X1,
@@ -117,6 +116,9 @@ class Hausplan:
         self.pos: dict[str, Ort] = {}            # Schlüssel: altes BMK oder "kanal:<geraet>" / "karte:<geraet>"
         self.lokal: dict[str, tuple[str, str]] = {}   # altes BMK -> (Anlage, lokales BMK)
         self._aufbauen()
+        if m.kennzeichen and {k: list(v) for k, v in self.lokal.items()} != m.kennzeichen:
+            raise RegelFehler("Kennzeichen im Planmodell passen nicht zum aktuellen Hausprofil (Profil seit dem "
+                              "Planen geändert?) – Plan neu erzeugen")
 
     # ---- Verweise --------------------------------------------------------------
     def ref(self, ziel: Ort | None, von: str) -> str:
@@ -830,6 +832,16 @@ class Hausplan:
         for t in texte + ["Hinweise:"] + [f"• {w}" for w in self.m.warnungen or ["keine"]]:
             b.text(X0 + 6, y, t, 2.6)
             y -= 6
+
+
+def kennzeichne(m: Planmodell, stil: dict | None = None) -> dict[str, list[str]]:
+    """Kennzeichen im Hausstil (Anlage je Funktion + lokales BMK) für das Planmodell festlegen.
+
+    Läuft im Planungsablauf VOR dem Speichern von planmodell.json (siehe cli.generieren); die Ausgabe und der
+    EPLAN-Adapter lesen danach nur noch `m.kennzeichen`.  # ANNAHME A27
+    """
+    m.kennzeichen = {}
+    return {k: list(v) for k, v in Hausplan(m, stil or lade_hausstil(None)).lokal.items()}
 
 
 def erzeuge_hausstil_pdf(m: Planmodell, pfad: str, stil: dict | None = None) -> list[tuple[str, int, str]]:

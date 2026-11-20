@@ -31,3 +31,5 @@ Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Fre
 | A24 | `KI_AUFBEREITUNG.md` liegt in `docs/` außerhalb des Programmordners | ZIEL.md nennt `docs/KI_AUFBEREITUNG.md` | mit ins Programmpaket (M9) | `cli.py` | – (M9) |
 | A25 | Meldungen als fertiger Text mit Menüverweisen („Punkt 9“) | Konsolenmenü ist heute die Oberfläche | strukturierte Meldungen (Art, Gerät, Feld, Lösung) + Glossar für die Browser-Oberfläche (M9) | `projektmodell.py`, `cli.py` | – (M9) |
 | A26 | EPLAN-Import später über Makros/XML oder Import-/Beschriftungsliste möglich | ZIEL.md 2: ungeprüft, keine API-Lizenz | Importweg am PC erproben (PC1/Test_Beschriftung.cs) | `eplan_adapter.py` | – (M9) |
+| A27 | Hausstil-Kennzeichen werden im Planungsablauf mit der Strukturlogik des Hausstil-Moduls vergeben und ins Planmodell geschrieben | Strukturlogik ist mit der Seitenaufteilung verflochten | Strukturteil als eigenes Modul in Schicht B (M4) | `hausstil.kennzeichne`, `cli.py` | – (M4) |
+| A28 | Verbindungen/Potentiale kein eigener Teil des Planmodells | ergeben sich aus Klemmen und Absicherungen | eigener Teil, wenn EPLAN-Import es braucht (M9) | `modell.py` | – |

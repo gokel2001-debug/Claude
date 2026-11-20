@@ -21,8 +21,17 @@ OHNE_ARTIKEL = ("teilsignal", "selektivkanal", "meldung")      # Teile eines and
 def aufbereiten(m: Planmodell) -> dict[str, Any]:
     """Planmodell -> neutrale Importdaten (Listen von Zeilen). Wirft RegelFehler bei Widersprüchen."""
     zeilen, gesehen = [], set()
+    ort = m.projekt.get("ort", "")
+
+    def rk_von(bmk: str) -> str:
+        """Kennzeichen wie im PDF (Hausstil), sonst flach =Anlage+Ort-BMK."""
+        if bmk in m.kennzeichen:
+            anlage, lokal = m.kennzeichen[bmk]
+            return f"={anlage}{ort}{lokal}"
+        return m.voll_bmk(bmk)
+
     for b in m.betriebsmittel:
-        rk = m.voll_bmk(b.bmk)
+        rk = rk_von(b.bmk)
         if rk in gesehen:
             raise RegelFehler(f"EPLAN-Export: Referenzkennzeichen {rk} doppelt")
         gesehen.add(rk)
@@ -31,16 +40,16 @@ def aufbereiten(m: Planmodell) -> dict[str, Any]:
         zeilen.append({"referenzkennzeichen": rk, "artikelnummer": art.get("artikelnummer", b.artikel),
                        "hersteller": art.get("hersteller", ""), "bezeichnung": b.bezeichnung,
                        "funktionstext": b.funktion, "kategorie": b.kategorie,
-                       "seite": b.seite, "spalte": b.spalte, "teil_von": m.voll_bmk(eltern) if eltern else ""})
+                       "seite": b.seite, "spalte": b.spalte, "teil_von": rk_von(eltern) if eltern else ""})
     return {
         "projekt": {k: v for k, v in m.projekt.items() if not k.startswith("_")},
         "betriebsmittel": zeilen,
-        "klemmen": [{"leiste": m.voll_bmk(k.leiste), "nr": k.nr, "potential": k.potential,
+        "klemmen": [{"leiste": k.leiste, "nr": k.nr, "potential": k.potential,
                      "innen": k.ziel_innen, "aussen": k.ziel_aussen} for k in m.klemmen],
-        "kabel": [{"referenzkennzeichen": m.voll_bmk(c.bmk), "von": c.von, "nach": c.nach, "adern": c.adern,
+        "kabel": [{"referenzkennzeichen": rk_von(c.bmk), "von": c.von, "nach": c.nach, "adern": c.adern,
                    "querschnitt_mm2": c.querschnitt_mm2, "laenge_m": c.laenge_m} for c in m.kabel],
-        "sps": [{"modul": m.voll_bmk(s.modul_bmk), "kanal": s.kanal, "art": s.art, "adresse": s.adresse,
-                 "geraet": m.voll_bmk(s.geraet_bmk), "funktion": s.funktion} for s in m.sps_kanaele],
+        "sps": [{"modul": rk_von(s.modul_bmk), "kanal": s.kanal, "art": s.art, "adresse": s.adresse,
+                 "geraet": rk_von(eltern_bmk(s.geraet_bmk)), "funktion": s.funktion} for s in m.sps_kanaele],
     }
 
 

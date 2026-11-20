@@ -13,13 +13,14 @@ from reportlab.lib.pagesizes import A3, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfgen.canvas import Canvas
 
-from .modell import Planmodell, eltern_bmk
-from .regeln import (
+from .modell import (
     SEITE_EINSPEISUNG,
     SEITE_SPS,
     SEITE_VERTEILUNG,
     SPALTEN_JE_SEITE,
     ZEILEN_JE_SEITE,
+    Planmodell,
+    eltern_bmk,
 )
 
 LAYOUT = {
@@ -525,7 +526,7 @@ def erzeuge_pdf(m: Planmodell, pfad: str) -> list[tuple[int, str]]:
         "stueckliste": lambda b, nr, i: s_stueckliste(b, m, i),
         "auslegung": lambda b, nr, i: s_auslegung(b, m),
     }
-    c = Canvas(pfad, pagesize=landscape(A3))
+    c = Canvas(pfad, pagesize=landscape(A3), invariant=1)      # ohne Zeitstempel: gleiche Eingabe = gleiche Datei
     c.setTitle(f"Stromlaufplan {m.projekt.get('nummer', '')}")
     b = Blatt(c)
     for nr, titel, art, idx in seiten:

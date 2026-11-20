@@ -9,7 +9,7 @@ from pypdf import PdfReader
 
 from slpgen import regeln
 from slpgen.cli import main
-from slpgen.hausstil import erzeuge_hausstil_pdf
+from slpgen.hausstil import erzeuge_hausstil_pdf, kennzeichne
 from slpgen.modell import SCHEMA_PLANMODELL, Planmodell, RegelFehler
 from slpgen.projektmodell import bereit_machen
 from slpgen.zeichnen import erzeuge_pdf, stueckliste_csv
@@ -35,23 +35,51 @@ def _texte(pfad):
 @pytest.mark.parametrize("name", ["beispiel", "ki_bausteine", "selektiv"])
 def test_pdf_aus_geladenem_planmodell_identisch(tmp_path, name):
     m = regeln.plane(_projekte()[name], STAMM)
+    m.kennzeichen = kennzeichne(m)
     m.speichere(tmp_path / "pm.json")
     geladen = Planmodell.lade(tmp_path / "pm.json")
-    def norm(x):
-        return json.loads(json.dumps(x.als_dict(), default=str))
-    assert norm(geladen) == norm(m) and geladen.seiten == m.seiten          # verlustfreie Rundreise
+    assert geladen == m                                          # verlustfreie Rundreise, gleiche Typen
     for erzeuge, datei in ((erzeuge_pdf, "a.pdf"), (erzeuge_hausstil_pdf, "h.pdf")):
         erzeuge(m, str(tmp_path / ("mem_" + datei)))
         erzeuge(geladen, str(tmp_path / ("json_" + datei)))
-        assert _texte(tmp_path / ("mem_" + datei)) == _texte(tmp_path / ("json_" + datei))
+        assert (tmp_path / ("mem_" + datei)).read_bytes() == (tmp_path / ("json_" + datei)).read_bytes()
     assert stueckliste_csv(m) == stueckliste_csv(geladen)
+
+
+def test_pdf_und_eplan_zeigen_gleiche_kennzeichen(tmp_path):
+    from slpgen.eplan_adapter import aufbereiten
+    m = regeln.plane(_projekte()["beispiel"], STAMM)
+    m.kennzeichen = kennzeichne(m)
+    rk = {z["referenzkennzeichen"] for z in aufbereiten(m)["betriebsmittel"]}
+    assert "=NT24+SS1-T1" in rk and "=FB1+SS1-G1" not in rk          # Netzteil wie im Hausstil-PDF
+    erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
+    assert "-T1" in "".join(_texte(tmp_path / "h.pdf"))
+
+
+def test_ausgabe_importiert_den_planungskern_nicht():
+    import ast
+    for modul in ("zeichnen", "hausstil", "eplan_adapter"):
+        baum = ast.parse((Path(__file__).resolve().parent.parent / "slpgen" / f"{modul}.py").read_text(encoding="utf-8"))
+        importe = {n.module for n in ast.walk(baum) if isinstance(n, ast.ImportFrom)} | \
+            {a.name for n in ast.walk(baum) if isinstance(n, ast.Import) for a in n.names}
+        assert not importe & {"regeln", "motor", "projektmodell"}, (modul, importe)
+
+
+def test_geaendertes_hausprofil_nach_dem_planen_wird_erkannt(tmp_path):
+    m = regeln.plane(_projekte()["beispiel"], STAMM)
+    m.kennzeichen = kennzeichne(m)
+    from slpgen.hausstil import lade_hausstil
+    stil = lade_hausstil(None)
+    stil["kennbuchstaben"]["netzteil"] = "G"
+    with pytest.raises(RegelFehler, match="Hausprofil"):
+        erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"), stil)
 
 
 def test_ausgabe_braucht_keinen_geraetestamm(tmp_path):
     """Planmodell trägt den Artikelauszug selbst; Zeichnen ohne Projekt und Gerätestamm."""
     m = regeln.plane(_projekte()["beispiel"], STAMM)
-    assert set(m.artikel) == {b.artikel for b in m.betriebsmittel} & set(STAMM["artikel"]) | \
-        {a.artikel for a in m.absicherungen} | {k.artikel for k in m.kabel}
+    assert {"IND-M12-PNP", "NT-24-05", "SPS-DI16", "MSS-6.3", "KAB-4G1.5", "HS-3P-40"} <= set(m.artikel)
+    assert "KUNDE" not in m.artikel and "NT-24-20" not in m.artikel        # Beistellung / nicht gewählt
     (tmp_path / "pm").mkdir()
     m.speichere(tmp_path / "pm" / "P_Planmodell.json")
     main(["zeichnen", str(tmp_path / "pm" / "P_Planmodell.json"), "--profil", str(tmp_path / "x.yaml")])
@@ -63,7 +91,14 @@ def test_ausgabe_braucht_keinen_geraetestamm(tmp_path):
     ("{kaputt", "JSON beschädigt"),
     (json.dumps({"schema": "planmodell/0"}), "erwartet „planmodell/1“"),
     (json.dumps({"schema": SCHEMA_PLANMODELL, "fremd": 1, "projekt": {}}), "unbekannte Felder: fremd"),
-    (json.dumps({"schema": SCHEMA_PLANMODELL, "projekt": {}, "kabel": [{"bmk": "-W1"}]}), "unvollständig"),
+    (json.dumps({"schema": SCHEMA_PLANMODELL, "projekt": {}, "kabel": [{"bmk": "-W1"}]}), "Pflichtfeld „von“ fehlt"),
+    ("[1, 2]", "JSON-Objekt"),
+    (json.dumps({"schema": SCHEMA_PLANMODELL, "projekt": None}), "keine „nummer“"),
+    (json.dumps({"schema": SCHEMA_PLANMODELL, "projekt": {"nummer": "A"}, "seiten": [[1, "x", "feld"]]}),
+     "Nr, Titel, Art, Index"),
+    (json.dumps({"schema": SCHEMA_PLANMODELL, "projekt": {"nummer": "A"}, "artikel": []}), "„artikel“ muss ein Objekt"),
+    (json.dumps({"schema": SCHEMA_PLANMODELL, "projekt": {"nummer": "A"}, "betriebsmittel": [
+        {"bmk": "-B1", "artikel": "X", "bezeichnung": "b", "seite": "drei"}]}), "„seite“ = 'drei' hat falschen Typ"),
 ])
 def test_fehlerhaftes_planmodell_klartext(tmp_path, inhalt, meldung):
     (tmp_path / "pm.json").write_text(inhalt, encoding="utf-8")

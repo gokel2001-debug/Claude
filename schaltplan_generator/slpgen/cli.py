@@ -124,6 +124,11 @@ def cmd_generieren(a):
     ziel = Path(a.ausgabe)
     ziel.mkdir(parents=True, exist_ok=True)
     json_pfad = ziel / f"{m.projekt['nummer']}_Planmodell.json"
+    from .hausstil import kennzeichne, lade_hausstil
+    try:                                         # Kennzeichen gehören ins Planmodell (gleich in PDF und EPLAN)
+        m.kennzeichen = kennzeichne(m, lade_hausstil(a.profil))
+    except regeln.RegelFehler as e:
+        m.warnungen.append(f"Kennzeichen im Hausstil nicht vergeben: {e}")
     # Schicht B -> C nur über planmodell.json: Ausgabe zeichnet aus dem gespeicherten und wieder geladenen Modell
     m.speichere(json_pfad)
     _ausgabe(Planmodell.lade(json_pfad), ziel, a.profil)
@@ -136,8 +141,10 @@ def cmd_zeichnen(a):
 
 
 def _ausgabe(m: Planmodell, ziel: Path, profil: str | None) -> None:
+    name = str(m.projekt["nummer"])
+    if not re.fullmatch(r"[\w.\- ]+", name) or ".." in name:
+        raise regeln.RegelFehler(f"Projektnummer „{name}“ ist als Dateiname ungeeignet – nur Buchstaben, Ziffern, . - _")
     ziel.mkdir(parents=True, exist_ok=True)
-    name = m.projekt["nummer"]
     seiten = zeichnen.erzeuge_pdf(m, str(ziel / f"{name}_Stromlaufplan.pdf"))
     (ziel / f"{name}_Stueckliste.csv").write_text(zeichnen.stueckliste_csv(m), encoding="utf-8")
     print(f"{len(seiten)} Seiten -> {ziel}/{name}_Stromlaufplan.pdf")
@@ -266,7 +273,7 @@ def cmd_datenblatt(a):
 
 
 def cmd_vergleichen(a):
-    modell = json.loads(Path(a.modell).read_text(encoding="utf-8"))
+    modell = Planmodell.lade(a.modell).als_dict()            # mit Schemaprüfung
     print(json.dumps(analyse.vergleiche(Path(a.pdf), modell), indent=2, ensure_ascii=False))
 
 
