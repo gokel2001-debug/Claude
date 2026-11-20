@@ -117,7 +117,12 @@ def cmd_generieren(a):
     from .projektmodell import bereit_machen
     stamm = lade_yaml(a.stamm)
     projekt, ergaenzt = bereit_machen(lade_projekt(a.projekt), stamm, _vorgaben(a.vorgaben))
+    from .lernschleife import lade_regeln, pruefe_regressionen, wende_an
+    hausregeln = lade_regeln(_hausregeln_pfad(a.profil))
+    projekt, angewendet = wende_an(projekt, hausregeln)          # Lernschleife: Korrekturen wirken vor der Planung
     m = regeln.plane(projekt, stamm)
+    m.warnungen.extend(angewendet)
+    m.warnungen.extend(pruefe_regressionen(hausregeln))
     for titel, k in (("Annahme der Aufbereitung", "annahmen"), ("Offene Frage", "offene_fragen")):
         m.warnungen.extend(f"{titel}: {x}" for x in projekt.get(k) or [])
     m.warnungen.extend(ergaenzt)
@@ -148,6 +153,31 @@ def cmd_pruefbericht(a):
     print("Kennzahlen: " + ", ".join(f"{k} {_zahl(v)}" for k, v in kennzahlen(m, _seiten_hausstil(m, a.profil)).items()))
     if any(b.art == FEHLER for b in befunde):
         raise regeln.RegelFehler("Prüfbericht enthält FEHLER")
+
+
+def _hausregeln_pfad(profil: str | None) -> Path:
+    return Path(profil or "hausprofil/profil.yaml").with_name("hausregeln.yaml")
+
+
+def cmd_korrektur(a):
+    from .lernschleife import ARTEN, erfasse_korrektur
+    r = erfasse_korrektur(_hausregeln_pfad(a.profil), a.art, a.wenn, a.dann, a.herkunft or Path(a.projekt).name,
+                          a.grund, lade_projekt(a.projekt), lade_yaml(a.stamm), a.gilt_ab)
+    print(f"Hausregel {r['id']} gespeichert ({ARTEN[r['art']]}: {r['wenn']} → {r['dann']}). Sie wirkt ab dem nächsten "
+          f"Plan und steht im Auslegungsnachweis.")
+
+
+def cmd_hausregeln(a):
+    from .lernschleife import ARTEN, lade_regeln, pruefe_regressionen
+    rs = lade_regeln(_hausregeln_pfad(a.profil))
+    for r in rs:
+        status = "aktiv" if r.get("aktiv", True) else "inaktiv"
+        print(f"{r['id']} [{status}] {ARTEN.get(r['art'], r['art'])}: {r['wenn']} → {r['dann']} "
+              f"(Herkunft {r.get('herkunft')}, {r.get('datum')}; Grund: {r.get('grund') or '–'})")
+    befunde = pruefe_regressionen(rs)
+    print("\n".join(befunde) if befunde else f"Regressionstest: {len(rs)} Fälle unverändert.")
+    if befunde:
+        raise regeln.RegelFehler("Regressionstest der Hausregeln fehlgeschlagen")
 
 
 def cmd_zeichnen(a):
@@ -361,6 +391,20 @@ def main(argv=None):
     g.add_argument("--vorgaben", default=VORGABEN,
                    help="Hausvorgaben für fehlende Abschnitte (versorgung_24V, sps, leitungen)")
     g.set_defaults(f=cmd_generieren)
+    kr = sub.add_parser("korrektur", help="Korrektur als Hausregel speichern (Lernschleife)")
+    kr.add_argument("projekt")
+    kr.add_argument("--art", required=True, choices=["artikel_ersetzen", "gruppe_setzen"])
+    kr.add_argument("--wenn", required=True, help="Artikel, für den die Regel gilt")
+    kr.add_argument("--dann", required=True, help="Ersatzartikel bzw. 24-V-Gruppe")
+    kr.add_argument("--grund", default="", help="Begründung in Klartext")
+    kr.add_argument("--herkunft", help="Projekt/Person (Standard: Dateiname)")
+    kr.add_argument("--gilt-ab", dest="gilt_ab", help="Projektdatum JJJJ-MM-TT, ab dem die Regel gilt")
+    kr.add_argument("--stamm", default=STAMM)
+    kr.add_argument("--profil", default="hausprofil/profil.yaml")
+    kr.set_defaults(f=cmd_korrektur)
+    hr = sub.add_parser("hausregeln", help="Hausregeln auflisten und Regressionstest ausführen")
+    hr.add_argument("--profil", default="hausprofil/profil.yaml")
+    hr.set_defaults(f=cmd_hausregeln)
     pb = sub.add_parser("pruefbericht", help="Konsistenzprüfung eines Planmodells (JSON) mit Kennzahlen")
     pb.add_argument("planmodell")
     pb.add_argument("--profil", default="hausprofil/profil.yaml")
