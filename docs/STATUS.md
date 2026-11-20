@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2–M4, M2e, M5a–M5c erledigt → nächstes: M7a/M6a laut Arbeitsvorrat; M4e zurückgestellt |
+| Aktuelles Paket | M2–M4, M2e, M5a–M5d erledigt → nächstes: M5e (Lernschleife ausbauen) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 248/248 grün (ruff, mypy ohne Befund) |
+| Tests | 249/249 grün (ruff, mypy ohne Befund) |
 
 ## Paketübersicht
 | Paket | Status |
@@ -52,3 +52,4 @@
 | 20.11.2026 | Autostart Fr 22:07 | M5a Spaltenraster, Schriftfeld, Datumsformat lernen, Planjahr aus Schriftfeld (A16); Prüfer Software+Einsteiger: 3 hoch (Änderungsdatum als Planjahr, eigene Werte ungeprüft, Wirkung unklar) → behoben; M4e hinter M5 gestellt (interner Umbau, Produkt-Empfehlung); 228/228 Tests |
 | 21.11.2026 | Autostart Fr 22:07 | M5b Kennbuchstaben Netzteil/SPS-Karte und Anlagenaufbau aus Plänen lernen; Prüfer Software: 2 hoch (gelernter Wert still verworfen, A1 als SPS-Adresse) → behoben; 240/240 Tests |
 | 21.11.2026 | Autostart Fr 22:07 | M5c Lernschleife (Hausregeln mit Herkunft/Bearbeiter/Datum/Geltung, wirkt vor Prüfung+Planung, Regressionstest, ein/aus/löschen); Prüfer Software+Produkt: 7 hoch → behoben; 248/248 Tests |
+| 21.11.2026 | Autostart Fr 22:07 | M5d Datumsformat aus Hausprofil im Rahmen und Deckblatt; Spaltenraster nur 10 Spalten (Prüfer: 2 hoch – Verweise/Überlappung bei mehr Spalten → begrenzt, A45); 249/249 Tests |

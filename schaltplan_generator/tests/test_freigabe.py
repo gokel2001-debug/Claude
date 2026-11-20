@@ -292,17 +292,18 @@ def test_gelernte_geometrie_wirkt_im_plan(gelernt, tmp_path):
     from slpgen import regeln
     from slpgen.hausstil import erzeuge_hausstil_pdf, lade_hausstil
     pfad, liste = gelernt
-    _setze(liste, {"spaltenraster": ("JA", "12 Spalten à 31,5 mm"), "datumsformat": ("JA", "TT.MM.JJJJ")})
+    _setze(liste, {"spaltenraster": ("JA", "10 Spalten à 38 mm"), "datumsformat": ("JA", "TT.MM.JJJJ")})
     uebernehme_freigaben(pfad, liste)
     stil = lade_hausstil(pfad)
-    assert stil["spalten"] == 12 and not stil["warnungen"]
+    assert stil["spalten"] == 10 and not stil["warnungen"] and stil["datumsformat"] == "TT.MM.JJJJ"
     b = Path(__file__).resolve().parent.parent / "beispiele"
     stamm = yaml.safe_load((b / "geraetestamm.yaml").read_text(encoding="utf-8"))
     projekt = yaml.safe_load((b / "projekt_beispiel.yaml").read_text(encoding="utf-8"))
     erzeuge_hausstil_pdf(regeln.plane(projekt, stamm), str(tmp_path / "h.pdf"), stil)
-    seite = PdfReader(str(tmp_path / "h.pdf")).pages[3].extract_text()
-    assert "Datum 24.10.2026" in seite and "\n11\n" in seite
-    _setze(liste, {"spaltenraster": ("JA", "8 Spalten à 49 mm")})
-    uebernehme_freigaben(pfad, liste)
-    stil = lade_hausstil(pfad)
-    assert stil["spalten"] == 10 and "weniger als 10 Spalten" in stil["warnungen"][0]
+    seiten = [x.extract_text() for x in PdfReader(str(tmp_path / "h.pdf")).pages]
+    assert "2026-10-24" not in seiten[0] and seiten[0].count("24.10.2026") >= 2          # Deckblatt + Schriftfeld
+    for raster in ("12 Spalten à 31,5 mm", "8 Spalten à 49 mm", "20 Spalten à 19,5 mm"):
+        _setze(liste, {"spaltenraster": ("JA", raster)})
+        uebernehme_freigaben(pfad, liste)
+        stil = lade_hausstil(pfad)
+        assert stil["spalten"] == 10 and "nur 10 Spalten" in stil["warnungen"][0]

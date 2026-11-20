@@ -167,14 +167,14 @@ def rahmen(b: Blatt, m: Planmodell, seite: int, gesamt: int, titel: str, spalten
 # --------------------------------------------------------------------------- #
 # Seiteninhalte
 # --------------------------------------------------------------------------- #
-def s_deckblatt(b: Blatt, m: Planmodell):
+def s_deckblatt(b: Blatt, m: Planmodell, datum: str | None = None):
     p = m.projekt
     xm = (X0 + X1) / 2
     b.text(xm, 220, "Stromlaufplan", 12, True, "m")
     b.text(xm, 200, p.get("bezeichnung", ""), 7, ausr="m")
     zeilen = [("Projektnummer", p.get("nummer")), ("Kunde", p.get("kunde")),
               ("Anlage (=)", p.get("anlage")), ("Ort (+)", p.get("ort")),
-              ("Ersteller", p.get("ersteller")), ("Datum", p.get("datum")),
+              ("Ersteller", p.get("ersteller")), ("Datum", datum if datum is not None else p.get("datum")),
               ("Revision", p.get("revision"))]
     for i, (k, v) in enumerate(zeilen):
         b.text(xm - 60, 170 - i * 9, k, 4)

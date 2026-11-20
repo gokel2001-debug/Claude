@@ -9,6 +9,7 @@ dem lokalen Hausprofil überschrieben (`lade_hausstil`).
 from __future__ import annotations
 
 import copy
+import datetime as dt
 import re
 from collections import OrderedDict
 from collections.abc import Callable
@@ -79,15 +80,15 @@ def lade_hausstil(profil_pfad: str | Path | None) -> dict:
         if "spaltenraster" in frei:                     # M5d: gelernte Geometrie wirkt im Plan
             n, breite = re.match(r"(\d+) Spalten à ([\d,]+) mm", frei["spaltenraster"]).groups()  # type: ignore[union-attr]
             soll = (X1 - X0) / int(n)
-            if int(n) < 10:                              # ANNAHME A45: Zeichnungen nutzen die Spalten 0…9
-                stil["warnungen"].append(f"Hausprofil: Spaltenraster {frei['spaltenraster']} – weniger als 10 Spalten wird "
-                                         f"noch nicht unterstützt, Standard 10 Spalten verwendet")
+            if int(n) != 10:                             # ANNAHME A45: Zeichner sind fest auf die Spalten 0…9 ausgelegt
+                stil["warnungen"].append(f"Hausprofil: Spaltenraster {frei['spaltenraster']} wird noch nicht unterstützt "
+                                         f"(nur 10 Spalten) – Plan mit 10 Spalten gezeichnet")
             else:
                 stil["spalten"] = int(n)
                 stil["quelle"]["spaltenraster"] = herkunft("spaltenraster")
                 if abs(float(breite.replace(",", ".")) - soll) > 0.1 * soll:
-                    stil["warnungen"].append(f"Hausprofil: Spaltenbreite {breite} mm passt nicht zum A3-Rahmen "
-                                             f"({soll:.1f} mm bei {n} Spalten) – Breite ergibt sich aus dem Blattformat")
+                    stil["warnungen"].append(f"Hausprofil: Die Spaltenbreite {breite} mm wird nicht übernommen – der Plan "
+                                             f"nutzt die Breite des A3-Rahmens ({soll:.1f} mm)".replace(".", ","))
         if "datumsformat" in frei:
             stil["datumsformat"] = frei["datumsformat"]
             stil["quelle"]["datumsformat"] = herkunft("datumsformat")
@@ -129,7 +130,8 @@ NACH_FELDMASS = "nach Feldmaß"
 
 def datum_im_format(iso: object, fmt: str | None) -> str:
     """ISO-Datum (Planmodell) im Hausformat: TT.MM.JJJJ, TT.MM.JJ oder JJJJ-MM-TT (Standard: unverändert)."""
-    import datetime as dt
+    if iso in (None, ""):
+        return ""
     try:
         d = dt.date.fromisoformat(str(iso))
     except ValueError:
@@ -174,7 +176,8 @@ class Hausplan:
     def _aufbauen(self):
         m, karten, infra = self.m, self.stil["kartenanlagen"], self.stil["infrastruktur"]
         self.EIN, self.NT, self.VT = infra["einspeisung"], infra["erzeugung"], infra["verteilung"]
-        self._neu("DBL", "Deckblatt", "DBL").seiten.append(("Deckblatt", lambda b, a: s_deckblatt(b, m)))
+        self._neu("DBL", "Deckblatt", "DBL").seiten.append(
+            ("Deckblatt", lambda b, a: s_deckblatt(b, m, datum_im_format(m.projekt.get("datum"), self.stil.get("datumsformat")))))
         self._neu("INH", "Inhaltsverzeichnis", "INH")             # Seiten erst am Ende (hängt von allem ab)
 
         self._neu(self.EIN, "Einspeisung").seiten.append(("Einspeisung", self._s_einspeisung))
