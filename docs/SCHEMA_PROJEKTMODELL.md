@@ -2,85 +2,103 @@
 
 Erzeugt aus `slpgen/projektmodell.py` (`python -m slpgen schema`) – nicht von Hand ändern.
 
-Datei: `projektmodell.yaml` (UTF-8). Abschnittsart **P** = Projektangaben aus dem Lastenheft, **H** = Hausvorgabe (fehlt sie, wird sie aus `hausvorgaben.yaml` ergänzt).
+## Kurz für Anwender
+
+Das Projektmodell beschreibt, **was** gebaut wird: Projektdaten, Einspeisung, Feldgeräte und Motoren. Es entsteht aus der Excel-Vorlage oder aus der Antwort einer KI (Anleitung `docs/KI_AUFBEREITUNG.md`). Die Software prüft die Datei und meldet jede Lücke im Klartext.
+
+- **P** = Angaben aus dem Lastenheft (muss die KI liefern).
+- **H** = Hausvorgabe: fehlt der Abschnitt, ergänzt die Software ihn aus `beispiele/hausvorgaben.yaml` und nennt das im Auslegungsnachweis.
+- Zahlen mit Punkt oder Komma, ohne Einheit (`0.75` oder `0,75`). Texte mit `=`, `+`, `:` oder führender Null in Anführungszeichen (`"=FB1"`, `"00"`).
+- Artikel und Bausteine nur aus dem Gerätestamm (`beispiele/geraetestamm.yaml`); der KI-Auftrag enthält die Liste.
+
+Kleinstes gültiges Beispiel (Rest aus Hausvorgaben):
+
+```yaml
+schema: projektmodell/1
+projekt: {nummer: P-2026-001, bezeichnung: Förderband}
+einspeisung: {netz: "3/N/PE AC 400/230 V 50 Hz"}
+feldgeraete:
+  - {bmk: B1, artikel: IND-M12-PNP, funktion: "Endlage vorne", gruppe: Sensorik}
+```
 
 Pflichtabschnitte: projekt, einspeisung, feldgeraete.
 
 | Zusatzfeld | Bedeutung |
 |---|---|
 | `schema` | Schemaversion, immer „projektmodell/1“ |
-| `annahmen` | Liste: was die KI angenommen hat (wird im Prüfbericht gezeigt) |
-| `offene_fragen` | Liste: was im Lastenheft fehlt oder unklar ist |
+| `annahmen` | Liste: was die KI angenommen hat (erscheint im Auslegungsnachweis) |
+| `offene_fragen` | Liste: was im Lastenheft fehlt oder unklar ist (erscheint im Auslegungsnachweis) |
 
-## `projekt` (P) – Kopfdaten für Deckblatt und Schriftfeld
+## Felder
 
-| Feld | Typ | Pflicht | Bedeutung | Beispiel |
+### `projekt` (P) – Kopfdaten für Deckblatt und Schriftfeld
+
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
 |---|---|---|---|---|
-| `nummer` | text | ja | Projekt-/Auftragsnummer | `P-2026-001` |
-| `bezeichnung` | text | ja | Kurzbezeichnung der Anlage | `Steuerschrank Förderband` |
-| `kunde` | text | – | Kunde (bleibt lokal, nie ins Repository) | `Musterkunde AG` |
-| `anlage` | text | – | Anlagenkennzeichen (Funktionsaspekt IEC 81346), beginnt mit = | `=FB1` |
-| `ort` | text | – | Ortskennzeichen (Schrank), beginnt mit + | `+SS1` |
-| `ersteller` | text | – | Bearbeiter | `N.N.` |
-| `datum` | datum | – | Erstelldatum JJJJ-MM-TT | `2026-10-24` |
-| `revision` | text | – | Revisionsstand | `00` |
+| `nummer` | Text | ja | Projekt-/Auftragsnummer (wird Dateiname) | `P-2026-001` |
+| `bezeichnung` | Text | ja | Kurzbezeichnung der Anlage | `Steuerschrank Förderband` |
+| `kunde` | Text | – | Kunde (bleibt lokal, nie ins Repository) | `Musterkunde AG` |
+| `anlage` | Text | – | Anlagenkennzeichen (Funktionsaspekt IEC 81346), beginnt mit = | `=FB1` |
+| `ort` | Text | – | Ortskennzeichen (Schrank), beginnt mit + | `+SS1` |
+| `ersteller` | Text | – | Bearbeiter | `N.N.` |
+| `datum` | Datum JJJJ-MM-TT | – | Erstelldatum JJJJ-MM-TT | `2026-10-24` |
+| `revision` | Text | – | Revisionsstand | `"00"` |
 
-## `einspeisung` (P) – Netzanschluss des Schranks
+### `einspeisung` (P) – Netzanschluss des Schranks
 
-| Feld | Typ | Pflicht | Bedeutung | Beispiel |
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
 |---|---|---|---|---|
-| `netz` | text | ja | Netzform und Spannung | `3/N/PE AC 400/230 V 50 Hz` |
-| `hauptschalter` | artikel:hauptschalter | – | Hauptschalter (Artikel aus Gerätestamm) | `HS-3P-40` |
+| `netz` | Text | ja | Netzform und Spannung | `3/N/PE AC 400/230 V 50 Hz` |
+| `hauptschalter` | Artikel aus Gerätestamm | – | Hauptschalter (Artikel); fehlt er, gilt die Hausvorgabe | `HS-3P-40` |
 
-## `feldgeraete` (P, Liste) – Sensoren, Aktoren und Bausteine im Feld
+### `feldgeraete` (P, Liste) – Sensoren, Aktoren und Bausteine im Feld
 
-| Feld | Typ | Pflicht | Bedeutung | Beispiel |
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
 |---|---|---|---|---|
-| `bmk` | bmk | ja | Betriebsmittelkennzeichen: Kennbuchstabe(n) + Nummer | `B1` |
-| `artikel` | artikel:* | ja | Artikel aus dem Gerätestamm | `IND-M12-PNP` |
-| `funktion` | text | ja | Funktionstext für Plan und SPS-Liste | `Endlage Band vorne` |
-| `gruppe` | text | – | gemeinsamer 24-V-Abgang (DO-Aktoren: DO-Last) | `Sensorik` |
-| `typical` | typical | – | Baustein aus der Bibliothek (mehrere Signale/Leistungsteil) | `pumpe_ec` |
-| `laenge_m` | zahl (0.1…1000) | – | Leitungslänge zum Gerät in m (Bausteine mit Leistungsteil) | `15` |
+| `bmk` | Kennzeichen wie B1 | ja | Betriebsmittelkennzeichen: Kennbuchstabe(n) + Nummer | `B1` |
+| `artikel` | Artikel aus Gerätestamm | ja | Artikel aus dem Gerätestamm (Sensor/Aktor) | `IND-M12-PNP` |
+| `funktion` | Text | ja | Funktionstext für Plan und SPS-Liste | `Endlage Band vorne` |
+| `gruppe` | Text | – | gemeinsamer 24-V-Abgang (DO-Aktoren: DO-Last) | `Sensorik` |
+| `typical` | Bausteinname | – | Baustein aus der Bibliothek (mehrere Signale/Leistungsteil) | `pumpe_ec` |
+| `laenge_m` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1000) | – | Leitungslänge zum Gerät in m (Bausteine mit Leistungsteil) | `15` |
 
-## `motoren` (P, Liste) – Drehstrommotoren mit Direktstart
+### `motoren` (P, Liste) – Drehstrommotoren mit Direktstart
 
-| Feld | Typ | Pflicht | Bedeutung | Beispiel |
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
 |---|---|---|---|---|
-| `bmk` | bmk | ja | Betriebsmittelkennzeichen | `M1` |
-| `funktion` | text | – | Funktionstext | `Bandantrieb` |
-| `p_kW` | zahl (0.01…500) | ja | Bemessungsleistung in kW (Typenschild) | `0.75` |
-| `i_N_A` | zahl (0.01…1000) | ja | Bemessungsstrom in A (Typenschild) | `1.9` |
-| `cos_phi` | zahl (0.1…1) | – | Leistungsfaktor (Typenschild), Standard 0,8 | `0.78` |
-| `laenge_m` | zahl (0.1…1000) | ja | Leitungslänge Schrank–Motor in m | `12` |
+| `bmk` | Kennzeichen wie B1 | ja | Betriebsmittelkennzeichen | `M1` |
+| `funktion` | Text | – | Funktionstext | `Bandantrieb` |
+| `p_kW` | Zahl (Punkt oder Komma, ohne Einheit) (0.01…500) | ja | Bemessungsleistung in kW (Typenschild) | `0.75` |
+| `i_N_A` | Zahl (Punkt oder Komma, ohne Einheit) (0.01…1000) | ja | Bemessungsstrom in A (Typenschild) | `1.9` |
+| `cos_phi` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1) | – | Leistungsfaktor (Typenschild), Standard 0,8 | `0.78` |
+| `laenge_m` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1000) | ja | Leitungslänge Schrank–Motor in m | `12` |
 
-## `versorgung_24V` (H) – 24-V-Versorgung (Hausregeln)
+### `versorgung_24V` (H) – 24-V-Versorgung (Hausregeln)
 
-| Feld | Typ | Pflicht | Bedeutung | Beispiel |
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
 |---|---|---|---|---|
-| `netzteile` | liste_artikel:netzteil | ja | Netzteil-Kandidaten, das kleinste passende wird gewählt | `[NT-24-05, NT-24-10]` |
-| `gleichzeitigkeit` | zahl (0.1…1) | – | Gleichzeitigkeitsfaktor g | `1.0` |
-| `reserve` | zahl (0…2) | – | Reserve auf den Bedarf | `0.25` |
-| `absicherungsfaktor` | zahl (1…3) | – | I_Sicherung ≥ Faktor · I_Gruppe | `1.25` |
-| `verteilung` | text | – | einzelsicherungen oder selektivmodul | `einzelsicherungen` |
-| `selektivmodul` | artikel:selektivmodul | – | Selektivmodul bei verteilung = selektivmodul | `SEL-24-4K` |
+| `netzteile` | Liste von Artikeln | ja | Netzteil-Kandidaten, das kleinste passende wird gewählt | `[NT-24-05, NT-24-10]` |
+| `gleichzeitigkeit` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1) | – | Gleichzeitigkeitsfaktor g | `1.0` |
+| `reserve` | Zahl (Punkt oder Komma, ohne Einheit) (0…2) | – | Reserve auf den Bedarf | `0.25` |
+| `absicherungsfaktor` | Zahl (Punkt oder Komma, ohne Einheit) (1…3) | – | I_Sicherung ≥ Faktor · I_Gruppe | `1.25` |
+| `verteilung` | Text | – | einzelsicherungen oder selektivmodul | `einzelsicherungen` |
+| `selektivmodul` | Artikel aus Gerätestamm | – | Selektivmodul bei verteilung = selektivmodul | `SEL-24-4K` |
 
-## `sps` (H) – Steuerung (Hausvorgabe)
+### `sps` (H) – Steuerung (Hausvorgabe)
 
-| Feld | Typ | Pflicht | Bedeutung | Beispiel |
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
 |---|---|---|---|---|
-| `cpu` | artikel:sps_cpu | ja | SPS-CPU | `SPS-CPU` |
-| `module_kandidaten` | tabelle | ja | E/A-Karte je Signalart DI/DO/AI/AO | `{DI: SPS-DI16, ...}` |
-| `adressschema` | tabelle | ja | Adressformat je Signalart | `{DI: "%I{byte}.{bit}", ...}` |
+| `cpu` | Artikel aus Gerätestamm | ja | SPS-CPU | `SPS-CPU` |
+| `module_kandidaten` | Tabelle | ja | E/A-Karte je Signalart DI/DO/AI/AO | `{DI: SPS-DI16, ...}` |
+| `adressschema` | Tabelle | ja | Adressformat je Signalart, Platzhalter {byte} {bit} {wort} | `{DI: "%I{byte}.{bit}", ...}` |
 
-## `leitungen` (H) – Leitungsauslegung (Hausregeln, Freigabe durch Elektrofachkraft)
+### `leitungen` (H) – Leitungsauslegung (Hausregeln, Freigabe durch Elektrofachkraft)
 
-| Feld | Typ | Pflicht | Bedeutung | Beispiel |
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
 |---|---|---|---|---|
-| `freigegeben` | ja_nein | – | Tabelle von Elektrofachkraft freigegeben | `false` |
-| `verlegeart` | text | – | Verlegeart (Dokumentation) | `B2` |
-| `i_z_A` | tabelle | – | Strombelastbarkeit I_z in A je Querschnitt mm² | `{1.5: 13.1}` |
-| `reduktionsfaktor` | zahl (0.1…1) | – | Reduktionsfaktor Häufung/Umgebung | `0.8` |
-| `kappa` | zahl (30…60) | – | Leitfähigkeit in m/(Ω·mm²) | `56` |
-| `du_max_prozent` | zahl (0.5…10) | – | zulässiger Spannungsfall in % | `3.0` |
-
+| `freigegeben` | ja / nein | – | Tabelle von Elektrofachkraft freigegeben | `false` |
+| `verlegeart` | Text | – | Verlegeart (Dokumentation) | `B2` |
+| `i_z_A` | Tabelle | – | Strombelastbarkeit I_z in A je Querschnitt mm² | `{1.5: 13.1}` |
+| `reduktionsfaktor` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1) | – | Reduktionsfaktor Häufung/Umgebung | `0.8` |
+| `kappa` | Zahl (Punkt oder Komma, ohne Einheit) (30…60) | – | Leitfähigkeit in m/(Ω·mm²) | `56` |
+| `du_max_prozent` | Zahl (Punkt oder Komma, ohne Einheit) (0.5…10) | – | zulässiger Spannungsfall in % | `3.0` |

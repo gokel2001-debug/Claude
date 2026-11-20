@@ -3,23 +3,71 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+import traceback
 from pathlib import Path
 
 import yaml
 
 from . import analyse, regeln, zeichnen
 
+PROG = Path(__file__).resolve().parent.parent          # Programmordner (start.bat liegt dort)
+STAMM = str(PROG / "beispiele" / "geraetestamm.yaml")
+VORGABEN = str(PROG / "beispiele" / "hausvorgaben.yaml")
+
+
+class _Lader(yaml.SafeLoader):
+    """SafeLoader, der doppelte Schlüssel meldet statt still zu überschreiben."""
+
+
+def _mapping(loader, node, deep=False):
+    schluessel = set()
+    for k, _ in node.value:
+        name = loader.construct_object(k, deep=deep)
+        if name in schluessel:
+            raise regeln.RegelFehler(f"„{name}“ steht doppelt (Zeile {k.start_mark.line + 1}) – "
+                                     f"Einträge zusammenführen, sonst geht einer verloren")
+        schluessel.add(name)
+    return loader.construct_mapping(node, deep=deep)
+
+
+_Lader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _mapping)
+
+
+def _bereinige(text: str) -> str:
+    """KI-Antworten: Codeblock ```yaml … ``` und Einleitungssätze entfernen."""
+    if "```" in text:
+        teile = text.split("```")
+        if len(teile) >= 3:
+            text = teile[1].split("\n", 1)[1] if teile[1].split("\n", 1)[0].strip().isalpha() else teile[1]
+    zeilen = text.splitlines()
+    while zeilen and zeilen[0].strip() and not re.match(r"\s*(#|[\w-]+\s*:|- |---)", zeilen[0]):
+        zeilen.pop(0)
+    return "\n".join(zeilen)
+
 
 def lade_yaml(p: str) -> dict:
-    with open(p, encoding="utf-8") as f:
-        try:
-            return yaml.safe_load(f)
-        except yaml.YAMLError as e:
-            stelle = getattr(e, "problem_mark", None)
-            zeile = f" in Zeile {stelle.line + 1}" if stelle else ""
-            raise regeln.RegelFehler(f"{Path(p).name}: Formatfehler{zeile} – Einrückung und Doppelpunkte prüfen "
-                                     f"(z. B. „feld: wert“, Listen mit „- “)") from None
+    roh = Path(p).read_bytes()
+    try:
+        text = roh.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = roh.decode("cp1252")        # im Windows-Editor als „ANSI“ gespeichert
+    text = _bereinige(text)
+    for nr, zeile in enumerate(text.splitlines(), 1):
+        if "\t" in zeile[:len(zeile) - len(zeile.lstrip())]:
+            raise regeln.RegelFehler(f"{Path(p).name}: Zeile {nr} ist mit Tabulator eingerückt – "
+                                     f"bitte Leerzeichen verwenden")
+    try:
+        return yaml.load(text, Loader=_Lader)
+    except yaml.YAMLError as e:
+        stelle = getattr(e, "problem_mark", None)
+        zeile = f" in Zeile {stelle.line + 1}" if stelle else ""
+        raise regeln.RegelFehler(f"{Path(p).name}: Formatfehler{zeile} – Einrückung und Doppelpunkte prüfen "
+                                 f"(z. B. „feld: wert“, Listen mit „- “)") from None
+    except ValueError:
+        raise regeln.RegelFehler(f"{Path(p).name}: ungültiger Wert, meist ein Datum wie 2026-13-01 – "
+                                 f"Datum als JJJJ-MM-TT eintragen") from None
 
 
 def lade_projekt(p: str) -> dict:
@@ -30,7 +78,12 @@ def lade_projekt(p: str) -> dict:
 
 
 def _vorgaben(pfad: str | None) -> dict | None:
-    return lade_yaml(pfad) if pfad and Path(pfad).exists() else None
+    if not pfad:
+        return None
+    if not Path(pfad).is_file():
+        raise regeln.RegelFehler(f"Hausvorgaben nicht gefunden: {pfad} – Datei aus dem Programmpaket "
+                                 f"wiederherstellen oder mit --vorgaben angeben")
+    return lade_yaml(pfad)
 
 
 def cmd_generieren(a):
@@ -40,8 +93,7 @@ def cmd_generieren(a):
     m = regeln.plane(projekt, stamm)
     for titel, k in (("Annahme der Aufbereitung", "annahmen"), ("Offene Frage", "offene_fragen")):
         m.warnungen.extend(f"{titel}: {x}" for x in projekt.get(k) or [])
-    if ergaenzt:
-        m.warnungen.append(f"Aus Hausvorgaben ergänzt: {', '.join(ergaenzt)}")
+    m.warnungen.extend(ergaenzt)
     ziel = Path(a.ausgabe)
     ziel.mkdir(parents=True, exist_ok=True)
     name = m.projekt["nummer"]
@@ -66,20 +118,28 @@ def cmd_generieren(a):
 def cmd_pruefen(a):
     from .projektmodell import bereit_machen
     daten = lade_projekt(a.projekt)
-    _, ergaenzt = bereit_machen(daten, lade_yaml(a.stamm), _vorgaben(a.vorgaben))
-    print(f"Projektmodell {Path(a.projekt).name}: vollständig, Plan kann erzeugt werden.")
-    if ergaenzt:
-        print(f"Aus Hausvorgaben ergänzt: {', '.join(ergaenzt)}")
+    hinweise = []
     for titel, k in (("Annahmen der Aufbereitung", "annahmen"), ("Offene Fragen", "offene_fragen")):
-        if isinstance(daten, dict) and daten.get(k):
-            print(f"{titel} (bitte prüfen):")
-            for x in daten[k]:
-                print(f"  • {x}")
+        if isinstance(daten, dict) and isinstance(daten.get(k), list) and daten[k]:
+            hinweise += [f"{titel} (bitte prüfen):", *[f"  • {x}" for x in daten[k]]]
+    try:
+        _, ergaenzt = bereit_machen(daten, lade_yaml(a.stamm), _vorgaben(a.vorgaben))
+    except regeln.RegelFehler:
+        print("\n".join(hinweise))
+        raise
+    n = len(daten.get("offene_fragen") or []) if isinstance(daten.get("offene_fragen"), list) else 0
+    print(f"Projektmodell {Path(a.projekt).name}: vollständig, Plan kann erzeugt werden"
+          + (f" – aber {n} offene Frage{'' if n == 1 else 'n'} bitte klären." if n else "."))
+    if ergaenzt:
+        print("Aus Hausvorgaben ergänzt (bitte prüfen):")
+        print("\n".join(f"  • {x}" for x in ergaenzt))
+    if hinweise:
+        print("\n".join(hinweise))
 
 
 def cmd_schema(a):
     from .projektmodell import schema_markdown
-    Path(a.ziel).write_text(schema_markdown() + "\n", encoding="utf-8")
+    Path(a.ziel).write_text(schema_markdown(), encoding="utf-8")
     print(f"Schema -> {a.ziel}")
 
 
@@ -149,17 +209,17 @@ def main(argv=None):
     sub = p.add_subparsers(dest="befehl", required=True)
     g = sub.add_parser("generieren", help="Projekt (Excel .xlsx oder YAML) -> PDF + Stückliste + Planmodell")
     g.add_argument("projekt")
-    g.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
+    g.add_argument("--stamm", default=STAMM)
     g.add_argument("--ausgabe", default="ausgabe")
     g.add_argument("--profil", default="hausprofil/profil.yaml",
                    help="Hausprofil; nur freigegebene Werte fließen in den Hausstil ein")
-    g.add_argument("--vorgaben", default="beispiele/hausvorgaben.yaml",
+    g.add_argument("--vorgaben", default=VORGABEN,
                    help="Hausvorgaben für fehlende Abschnitte (versorgung_24V, sps, leitungen)")
     g.set_defaults(f=cmd_generieren)
     pr = sub.add_parser("pruefen", help="Projektmodell (YAML/Excel) prüfen, alle Lücken im Klartext")
     pr.add_argument("projekt")
-    pr.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
-    pr.add_argument("--vorgaben", default="beispiele/hausvorgaben.yaml")
+    pr.add_argument("--stamm", default=STAMM)
+    pr.add_argument("--vorgaben", default=VORGABEN)
     pr.set_defaults(f=cmd_pruefen)
     sc = sub.add_parser("schema", help="Schema des Projektmodells als Markdown schreiben")
     sc.add_argument("ziel", nargs="?", default="../docs/SCHEMA_PROJEKTMODELL.md")
@@ -185,7 +245,7 @@ def main(argv=None):
     vo = sub.add_parser("vorlage", help="Excel-Vorlage für die Projekteingabe erzeugen")
     vo.add_argument("ziel", nargs="?", default="beispiele/Projekt_Vorlage.xlsx")
     vo.add_argument("--beispiel", default="beispiele/projekt_beispiel.yaml")
-    vo.add_argument("--stamm", default="beispiele/geraetestamm.yaml")
+    vo.add_argument("--stamm", default=STAMM)
     vo.set_defaults(f=cmd_vorlage)
     ko = sub.add_parser("korpus", help="Synthetische Testpläne im Hausstil erzeugen (ohne Kundendaten)")
     ko.add_argument("ordner")
@@ -209,4 +269,10 @@ def main(argv=None):
         sys.exit(f"Datei gesperrt: {e.filename}\n-> Ist die Datei noch in einem PDF-Programm oder Excel geöffnet? "
                  f"Bitte schließen und erneut starten.")
     except FileNotFoundError as e:
-        sys.exit(f"Nicht gefunden: {e.filename or e}" + (f" ({e.strerror})" if e.strerror else ""))
+        sys.exit(f"Datei nicht gefunden: {e.filename or e} – Pfad und Namen prüfen")
+    except IsADirectoryError as e:
+        sys.exit(f"Das ist ein Ordner, keine Datei: {e.filename}")
+    except Exception:  # noqa: BLE001 – Sicherheitsnetz: nie Traceback für den Anwender
+        log = Path("slpgen_fehler.log")
+        log.write_text(traceback.format_exc(), encoding="utf-8")
+        sys.exit(f"Unerwarteter Programmfehler – bitte die Datei {log.resolve()} an den Betreuer schicken.")

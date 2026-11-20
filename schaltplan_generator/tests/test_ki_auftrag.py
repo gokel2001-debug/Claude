@@ -25,7 +25,7 @@ def test_ki_antwort_zum_beispiel_lastenheft_ergibt_plan(tmp_path):
     """Fertig-Kriterium M2: Beispiel-Lastenheft → gültige YAML (über externe KI) → PDF."""
     roh = yaml.safe_load((B / "projektmodell_ki_beispiel.yaml").read_text(encoding="utf-8"))
     modell, ergaenzt = bereit_machen(roh, STAMM, yaml.safe_load((B / "hausvorgaben.yaml").read_text(encoding="utf-8")))
-    assert "sps.cpu" in ergaenzt and roh["annahmen"]
+    assert any("SPS-CPU" in x for x in ergaenzt) and roh["annahmen"]
     m = regeln.plane(modell, STAMM)
     assert {"-M1", "-M2", "-M3", "-Y1", "-B1", "-B2", "-P1"} <= {b.bmk for b in m.betriebsmittel}
     main(["generieren", str(B / "projektmodell_ki_beispiel.yaml"), "--stamm", str(B / "geraetestamm.yaml"),

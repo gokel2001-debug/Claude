@@ -7,9 +7,9 @@ Reihenfolge der Meilensteine ist verbindlich (ZIEL.md). Ein Paket = in einem 5-h
 
 | Nr. | Paket | Fertig, wenn | Prüfer | Stand |
 |---|---|---|---|---|
-| M2a | Schema Projektmodell v1 (`docs/SCHEMA_PROJEKTMODELL.md`), Prüfung `slpgen/projektmodell.py` mit allen Lücken im Klartext, Befehl `pruefen`, `generieren` prüft vorher | Tests: gültiges Beispiel ohne Lücke, jede Lückenart erkannt | Software, Einsteiger | in Arbeit |
-| M2b | `docs/KI_AUFBEREITUNG.md` + Befehl `ki-auftrag` (Anleitung + Artikelliste aus Gerätestamm + Lastenheft in eine Textdatei), synthetisches Beispiel-Lastenheft, daraus „wie externe KI“ erzeugte YAML gültig | E2E-Test Lastenheft-Beispiel → YAML → PDF | Software, Einsteiger, Elektro | offen |
-| M2c | start.bat: Menüpunkte „KI-Auftrag erstellen“, „KI-Antwort prüfen“; ANLEITUNG_EINSTEIGER; Excel-Eingabe läuft durch dieselbe Prüfung | Einsteiger-Prüfer ohne hoch-Befund | Einsteiger, UX | offen |
+| M2a | Schema Projektmodell v1 (`docs/SCHEMA_PROJEKTMODELL.md`), Prüfung `slpgen/projektmodell.py` mit allen Lücken im Klartext, Befehl `pruefen`, `generieren` prüft vorher | Tests: gültiges Beispiel ohne Lücke, jede Lückenart erkannt | Software, Einsteiger | erledigt 20.11. (Prüfung: 7 hoch → behoben) |
+| M2b | `docs/KI_AUFBEREITUNG.md` + Befehl `ki-auftrag` (Anleitung + Artikelliste aus Gerätestamm + Lastenheft in eine Textdatei), synthetisches Beispiel-Lastenheft, daraus „wie externe KI“ erzeugte YAML gültig | E2E-Test Lastenheft-Beispiel → YAML → PDF | Software, Einsteiger, Elektro | in Arbeit (Anleitung, Lastenheft, KI-Antwort, E2E-Test fertig; Befehl `ki-auftrag` fehlt) |
+| M2c | start.bat: Menüpunkte „KI-Auftrag erstellen“, „KI-Antwort prüfen“; ANLEITUNG_EINSTEIGER; Excel-Eingabe läuft durch dieselbe Prüfung | Einsteiger-Prüfer ohne hoch-Befund | Einsteiger, UX | offen (inkl. A22 Zeilennummern) |
 | M2d | CI: GitHub Actions (pytest, ruff, Abdeckung) + `pyproject.toml`; Linter-Befunde beheben | Workflow grün | Software | offen |
 | M3a | Planungskern trennen: `plane()` → `planmodell.json` (versioniertes Schema), Ausgabe-Schicht liest nur noch das Planmodell (Laden aus JSON) | PDF aus geladenem `planmodell.json` identisch | Software | offen |
 | M3b | Schema `docs/SCHEMA_PLANMODELL.md`, Rundreise-Test JSON ↔ Objekt, EPLAN-Stub-Test gegen Schema | Tests grün | Software | offen |
