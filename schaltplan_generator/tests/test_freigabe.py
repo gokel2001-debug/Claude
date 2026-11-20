@@ -163,6 +163,9 @@ def test_vorgaben_freigeben_wirken_im_hausstil(gelernt, tmp_path):
     ("ader_L", "RT", "deutsches Kürzel"),
     ("haeufigste_ader_0_75", "DBU", "Querschnitt"),
     ("sps_adressschreibweise", "Siemens", "IEC oder deutsch"),
+    ("spaltenraster", "zehn Spalten ungefähr", "Anzahl und Breite"),
+    ("datumsformat", "MM/DD/YY", "TT.MM.JJJJ"),
+    ("schriftfeld_felder", "!!!", "Feldnamen"),
     ("feldklemmleiste", "X", "Klemmleiste"),
 ])
 def test_ungueltige_eigene_werte_klar_abgelehnt(gelernt, key, wert, hinweis):
@@ -238,3 +241,14 @@ def test_altes_profil_mit_ungueltigem_wert_warnt(gelernt):
     pfad.write_text(yaml.safe_dump(profil, allow_unicode=True), encoding="utf-8")
     stil = lade_hausstil(pfad)
     assert stil["ader"]["DI"] == "DBU" and "ungültig" in stil["warnungen"][0]
+
+
+def test_geometrie_werte_vereinheitlicht(gelernt):
+    pfad, liste = gelernt
+    _setze(liste, {"spaltenraster": ("JA", "10 x 40,5"), "datumsformat": ("JA", "jjjj-mm-tt"),
+                   "schriftfeld_felder": ("JA", "Datum,  Erstellt , Blatt")})
+    uebernehme_freigaben(pfad, liste)
+    m = _merkmale(pfad)
+    assert m["spaltenraster"]["wert"] == "10 Spalten à 40,5 mm" and m["datumsformat"]["wert"] == "JJJJ-MM-TT"
+    assert m["schriftfeld_felder"]["wert"] == "Datum, Erstellt, Blatt"
+    assert "wirkt im Plan noch nicht" in m["spaltenraster"]["beschreibung"]

@@ -88,8 +88,8 @@ FORM = {
     "haeufigste_ader_0_75": "Farbkürzel und Querschnitt, z. B. DBU 0,75",
     "sps_adressschreibweise": "IEC oder deutsch",
     "spaltenraster": "Anzahl und Breite, z. B. 10 Spalten à 39 mm",
-    "schriftfeld_felder": "Feldnamen mit Komma, z. B. Datum, Bearb., Rev.",
-    "datumsformat": "TT.MM.JJJJ oder JJJJ-MM-TT",
+    "schriftfeld_felder": "Feldnamen mit Komma, z. B. Datum, Bearb., Rev. (auch Felder, die das Programm nicht kennt)",
+    "datumsformat": "TT.MM.JJJJ, TT.MM.JJ oder JJJJ-MM-TT",
 }
 
 
@@ -129,6 +129,21 @@ def pruefe_eigenen_wert(key: str, wert: str) -> str:
         if not mt:
             raise RegelFehler(FORM["haeufigste_ader_0_75"])
         wert = f"{_farbe(mt.group(1))} 0,75"
+    elif key == "spaltenraster":
+        mt = re.fullmatch(r"(\d{1,2})\s*(?:spalten)?\s*(?:à|a|x|zu|je)?\s*(\d{2,3}(?:[.,]\d)?)\s*(?:mm)?", wert.lower())
+        if not mt or not 4 <= int(mt.group(1)) <= 20:
+            raise RegelFehler(FORM["spaltenraster"])
+        wert = f"{int(mt.group(1))} Spalten à {mt.group(2).replace('.', ',')} mm"
+    elif key == "datumsformat":
+        erlaubt = {"TT.MM.JJJJ", "JJJJ-MM-TT", "TT.MM.JJ"}
+        if wert.upper() not in erlaubt:
+            raise RegelFehler(FORM["datumsformat"])
+        wert = wert.upper()
+    elif key == "schriftfeld_felder":
+        teile = [t.strip() for t in wert.split(",") if t.strip()]
+        if not teile or not all(re.fullmatch(r"[A-Za-zÄÖÜäöüß][\w.\- ]{0,24}", t) for t in teile):
+            raise RegelFehler(FORM["schriftfeld_felder"])
+        wert = ", ".join(teile)
     elif key == "sps_adressschreibweise":
         treffer = [v for k, v in ADRESS_SCHREIBWEISEN.items() if wert.lower().startswith(k)]
         if not treffer:

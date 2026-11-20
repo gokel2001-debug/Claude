@@ -73,6 +73,8 @@ def _haeufigste_ader_075(st: dict) -> str | None:
                                            if k.endswith(" 0,75")}))
 
 
+NOCH_NICHT_IM_PLAN = " – wird gespeichert, wirkt im Plan noch nicht (folgt mit M5)"
+
 # Einzelwert-Merkmale: je Plan ein Wert -> Mehrheit, Anteil, Jahrestrend
 EINZELWERTE: dict[str, tuple[str, Callable[[dict], str | None]]] = {
     "feldklemmleiste": ("Klemmleiste für Feldgeräte (Funktionsanlagen)", _feldklemmleiste),
@@ -80,10 +82,12 @@ EINZELWERTE: dict[str, tuple[str, Callable[[dict], str | None]]] = {
     "haeufigste_ader_0_75": ("häufigste Aderkennzeichnung 0,75 mm² (noch ohne Potentialzuordnung)",
                              _haeufigste_ader_075),
     # Geometrie/Schriftfeld (M5a) – aus Textpositionen der Vektor-PDFs
-    "spaltenraster": ("Spaltenraster der Planseiten (Spaltenleiste)", lambda st: st.get("geometrie", {}).get("spaltenraster")),
-    "schriftfeld_felder": ("Felder im Schriftfeld (von links nach rechts)",
+    "spaltenraster": ("Spaltenraster der Planseiten (Spaltenleiste)" + NOCH_NICHT_IM_PLAN,
+                      lambda st: st.get("geometrie", {}).get("spaltenraster")),
+    "schriftfeld_felder": ("Felder im Schriftfeld, nur bekannte Feldnamen (von links nach rechts)"
+                           + NOCH_NICHT_IM_PLAN,
                            lambda st: st.get("geometrie", {}).get("schriftfeld_felder")),
-    "datumsformat": ("Datumsformat im Schriftfeld", lambda st: st.get("geometrie", {}).get("datumsformat")),
+    "datumsformat": ("Datumsformat im Schriftfeld" + NOCH_NICHT_IM_PLAN, lambda st: st.get("geometrie", {}).get("datumsformat")),
 }
 
 
