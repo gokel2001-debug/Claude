@@ -115,3 +115,19 @@ def test_klemmenplan_potentiale_wie_im_stromlaufplan(plan):
     seiten, texte = plan
     kpl = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "KPL")
     assert "24L+" in kpl and "24M =VT24/1.0" in kpl and "-K1:2" in kpl and "+24V" not in kpl
+
+
+def test_sps_uebersicht_karten_mit_reserve_und_klemme(tmp_path):
+    """M4a: je Karte alle Kanäle (belegt + Reserve) mit Adresse, Feldklemme, Gerät, Verweis; CPU mit Steckplätzen."""
+    from slpgen.hausstil import Hausplan, lade_hausstil
+    m = regeln.plane(PROJEKT, STAMM)
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
+    texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
+    anlagen = [a for a, _, _ in seiten]
+    di = texte[anlagen.index("SA1")]
+    assert "Belegt 8 von 16 Kanälen, Reserve 8" in di and di.count("Reserve") == 9      # Kopfzeile + 8 Kanäle
+    assert "%I0.0" in di and "=B01-X10:2" in di and "=B01+SS1-B1" in di
+    hp = Hausplan(m, lade_hausstil(None))
+    assert ("=B01-X10:2", "Signal") == next(z[:2] for z in hp._klemmenzeilen() if z[0] == "=B01-X10:2")
+    cpu = texte[anlagen.index("SA0")]
+    assert "Steckplatz" in cpu and "8 / 16" in cpu and "1 / 8" in cpu and "=SA1/1.1" in cpu

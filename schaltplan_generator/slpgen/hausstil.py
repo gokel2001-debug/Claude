@@ -21,7 +21,7 @@ from reportlab.lib.pagesizes import A3, landscape
 from reportlab.pdfgen.canvas import Canvas
 
 from .freigabe import pruefe_eigenen_wert
-from .modell import SAMMELMELDUNG, Planmodell, RegelFehler, eltern_bmk
+from .modell import SAMMELMELDUNG, Betriebsmittel, Planmodell, RegelFehler, eltern_bmk
 from .zeichnen import (
     X0,
     X1,
@@ -225,6 +225,7 @@ class Hausplan:
             for i, mod in enumerate(mods):
                 an.seiten.append((f"{titel} Karte {i + 1}", self._s_karte(mod)))
                 self._lokal(mod, kenn, f"-{kb['sps_karte']}{i + 1}", i + 1, 1)
+                self.pos[f"modul:{mod}"] = Ort(kenn, i + 1, 1)
                 for k in [k for k in m.sps_kanaele if k.modul_bmk == mod]:
                     self.pos[f"karte:{k.geraet_bmk}"] = Ort(kenn, i + 1, 2)      # Kanalliste in Spalte 2
 
@@ -684,31 +685,63 @@ class Hausplan:
         b.linie(xb, 172, xb, 140 + 32)
 
     # ---- SPS -------------------------------------------------------------------
+    def _karten(self) -> list[Betriebsmittel]:
+        """E/A-Karten in Steckplatzreihenfolge (Reihenfolge im Planmodell).  # ANNAHME A29"""
+        return [b for b in self.m.betriebsmittel if b.kategorie in ("sps_di", "sps_do", "sps_ai", "sps_ao")]
+
+    def _signalklemme(self, signal: str) -> str:
+        """Feldklemme (Hausstil-Nummerierung je Anlage) des Signalleiters eines SPS-Kanals."""
+        nr_je: dict[tuple[str, str], int] = {}
+        for k in self.m.klemmen:
+            geraet = k.ziel_aussen.split(":")[0]
+            if geraet not in self.lokal or k.leiste != "-X1":
+                continue
+            kenn = self.lokal[geraet][0]
+            leiste = self.stil["feldklemmleiste"]
+            nr_je[(kenn, leiste)] = nr_je.get((kenn, leiste), 0) + 1
+            if k.signal == signal:
+                return f"={kenn}{leiste}:{nr_je[(kenn, leiste)]}"
+        return ""
+
     def _s_cpu(self, b: Blatt, a: Anlage):
         cpu = self.m.bm("-A1")
         x = self.x(1)
-        b.rechteck(x - 15, 120, 60, 140, 0.4)
+        b.rechteck(x - 15, 200, 60, 60, 0.4)
         b.text(x, 252, self.lokal["-A1"][1], 3.5, True)
         b.text(x, 246, cpu.bezeichnung, 2.4)
         b.text(x, 241, cpu.artikel, 2)
         fa = self.pos.get(next((ab.bmk for ab in self.m.absicherungen if "-A1" in ab.verbraucher), ""))
-        b.text(x, 200, f"Versorgung 24L+ {self.ref(fa, a.kennung)}", 2.2)
+        b.text(x, 205, f"Versorgung 24L+ {self.ref(fa, a.kennung)}", 2.2)
+        # Steckplatzübersicht: welche Karte, wie voll, wo im Plan
+        zeilen = [("0", f"={a.kennung}{self.lokal['-A1'][1]}", "CPU", cpu.artikel, "–", "–", "")]
+        for slot, mod in enumerate(self._karten(), 1):
+            belegt = len([k for k in self.m.sps_kanaele if k.modul_bmk == mod.bmk])
+            gesamt = int(self.m.artikel.get(mod.artikel, {}).get("kanaele", belegt))
+            kenn, lok = self.lokal[mod.bmk]
+            seite = self.pos.get(f"modul:{mod.bmk}")
+            zeilen.append((str(slot), f"={kenn}{lok}", mod.kategorie[4:].upper(), mod.artikel, f"{belegt} / {gesamt}",
+                           str(gesamt - belegt), self.ref(seite, a.kennung)))
+        tabelle(b, ["Steckplatz", "Karte", "Art", "Artikel", "Kanäle belegt / gesamt", "Reserve", "Seite"],
+                zeilen, [25, 40, 18, 45, 50, 25, 30], y_start=185)
 
     def _s_karte(self, modul_bmk: str):
         def zeichne(b: Blatt, a: Anlage):
             mod = self.m.bm(modul_bmk)
-            x = self.x(1)
-            b.text(x - 10, 262, self.lokal[modul_bmk][1], 3.5, True)
-            b.text(x - 10, 257, mod.bezeichnung, 2.3)
-            b.text(x - 10, 253, mod.artikel, 1.9)
-            b.rechteck(x - 12, 100, 45, 150, 0.4)
-            for k in [k for k in self.m.sps_kanaele if k.modul_bmk == modul_bmk]:
-                y = 240 - k.kanal * 8
-                b.text(x + 18, y, k.adresse, 2.4, True, "r")
-                b.text(x + 20, y, f"{k.art}{k.kanal}", 2)
-                ziel = self.pos.get(f"kanal:{k.geraet_bmk}")
-                b.text(x + 40, y, self.ref(ziel, a.kennung), 2.2)
-                b.text(x + 75, y, f"{k.funktion}  {self.voll(k.geraet_bmk)}"[:80], 2.2)
+            kanaele = {k.kanal: k for k in self.m.sps_kanaele if k.modul_bmk == modul_bmk}
+            gesamt = int(self.m.artikel.get(mod.artikel, {}).get("kanaele", len(kanaele)))
+            art = mod.kategorie[4:].upper()
+            b.text(X0 + 6, 266, f"={a.kennung}{self.lokal[modul_bmk][1]}  {mod.bezeichnung}  ({mod.artikel})", 3, True)
+            b.text(X0 + 6, 261, f"Belegt {len(kanaele)} von {gesamt} Kanälen, Reserve {gesamt - len(kanaele)}", 2.3)
+            zeilen = []
+            for nr in range(max(gesamt, max(kanaele, default=-1) + 1)):
+                k = kanaele.get(nr)
+                if k is None:
+                    zeilen.append((f"{art}{nr}", "", "", "Reserve", "", ""))
+                    continue
+                zeilen.append((f"{k.art}{k.kanal}", k.adresse, self._signalklemme(k.geraet_bmk), self.voll(k.geraet_bmk),
+                               k.funktion[:60], self.ref(self.pos.get(f"kanal:{k.geraet_bmk}"), a.kennung)))
+            tabelle(b, ["Kanal", "Adresse", "Klemme", "Gerät", "Funktionstext", "Verweis"], zeilen,
+                    [22, 30, 45, 45, 120, 35], y_start=252)
         return zeichne
 
     # ---- Listen ------------------------------------------------------------------
