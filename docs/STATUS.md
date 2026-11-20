@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M1 **erledigt** → als Nächstes M2 (Projektmodell-Schema, KI_AUFBEREITUNG.md) |
-| Nächster Schritt | M2 (siehe docs/ROADMAP.md, schaltplan_generator/docs/ZIEL.md) |
+| Aktuelles Paket | M2b (KI-Auftrag, Beispiel-Lastenheft → YAML → PDF) in Prüfung; M2a erledigt |
+| Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 90/90 grün |
+| Tests | 146/146 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -39,3 +39,5 @@
 | 20.11.2026 | manuell | ZIEL.md übernommen: CLAUDE.md, Roadmap M1–M9, 6 Prüfer-Agenten (.claude/agents), OFFENE_PUNKTE (A1–A16), PC_AUFGABEN, STATUSBERICHT; Autostarts lesen jetzt zuerst ZIEL.md |
 | 20.11.2026 | manuell | M1 umgesetzt: eigene Werte in der Freigabeliste geprüft (Klartext), Vorgaben ohne erneutes Angebot, Auslegungsnachweis mit Beschreibung + Wert, Annahmen im Code markiert; 83/83 Tests grün |
 | 20.11.2026 | manuell | M1 geprüft (Software, Einsteiger): 0 kritisch/hoch, 3 mittel, 6 gering → alle behoben (Farbliste IEC 60757 + A17, alle Fehler auf einmal, Spalte „Erlaubte Form“, Nachprüfung alter Profile); M1 erledigt; 90/90 Tests grün |
+| 20.11.2026 | manuell | M2a Schema Projektmodell v1 + Prüfung (Klartext), Hausvorgaben; Prüfer: 7 hoch (Abstürze bei leeren/verschachtelten Werten, Annahmen unsichtbar) → behoben; Arbeitsvorrat für Autostarts angelegt; 144/144 Tests |
+| 20.11.2026 | manuell | M2b KI_AUFBEREITUNG.md, Befehl ki-auftrag, synthetisches Lastenheft → KI-Antwort → PDF (E2E-Test); Fehler Motor-Lastseite (KeyError bei Motor ≠ M1) behoben; 146/146 Tests |
