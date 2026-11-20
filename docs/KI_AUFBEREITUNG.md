@@ -27,18 +27,27 @@ Du bist Elektroplaner im Schaltschrankbau. Lies das Lastenheft am Ende und erste
 ### Regeln
 1. **Nur Artikel aus der Artikelliste** verwenden (Spalte „Artikel“). Passt keiner genau, den
    ähnlichsten nehmen und in `offene_fragen` begründen. Keine Artikel erfinden.
+   Bei einem **Ersatzartikel mit 230-V-/400-V-Anschluss** (z. B. Pumpe) bestimmen dessen Bemessungsdaten
+   die Absicherung: dann **immer** in `annahmen` („Bemessungsdaten von PUMPE-EC-230 übernommen“) **und**
+   in `offene_fragen` („Datenblatt Pumpe anfordern: U, I_N, Anschluss“).
 2. Geräte mit mehreren Signalen oder eigenem 230-V-Anschluss als **Baustein**: Feld `typical` mit dem
    Bausteinnamen aus der Bausteinliste. Bausteine mit Leistungsteil brauchen `laenge_m`.
 3. Drehstrommotoren mit Direktstart gehören in `motoren` (nicht in `feldgeraete`); Werte vom Typenschild.
+   **Motordaten (Leistung, Bemessungsstrom, cos φ) nie annehmen** – fehlen sie, den Motor trotzdem
+   eintragen, das Feld leer lassen und in `offene_fragen` nachfragen. (Die Software meldet die Lücke.)
 4. **Betriebsmittelkennzeichen** (`bmk`): Kennbuchstabe(n) + laufende Nummer, eindeutig, ohne Bindestrich.
-   Hausgebrauch wie im Beispielprojekt: B = Sensor/Zähler, Y = Ventil/Stellantrieb, P = Meldeleuchte,
-   M = Motor/Pumpe. <!-- ANNAHME A21 -->
+   **Hausregel** wie im Beispielprojekt (nicht aus IEC 81346-2 abgeleitet): B = Sensor/Zähler,
+   Y = Ventil/Stellantrieb, P = Meldeleuchte, M = Motor/Pumpe. <!-- ANNAHME A21 -->
 5. `gruppe`: Sensoren `Sensorik`, Aktoren mit DO-Signal `DO-Last`, Bausteine weglassen.
 6. `funktion`: kurzer Funktionstext aus dem Lastenheft (wird im Plan und in der SPS-Liste gezeigt).
-7. **Fehlt eine Angabe**, die Pflicht ist (z. B. Leitungslänge), einen üblichen Wert annehmen und
-   in `annahmen` als Satz festhalten („Leitungslänge Heizkreis Süd 25 m angenommen (wie Nord)“).
-   Unklare Punkte ohne sinnvolle Annahme in `offene_fragen`.
-8. Sicherheitsfunktionen (Not-Halt, PL/SIL) nicht auslegen, nur in `offene_fragen` nennen.
+7. **Annahmen nur vorsichtig und immer sichtbar:** Jede Festlegung, die nicht wörtlich im Lastenheft steht
+   (Ersatzartikel, Signalart aktiv/passiv, Kontaktart, Versorgung des Feldgeräts), als Satz in `annahmen`.
+   Eine fehlende **Leitungslänge** mit dem ungünstigsten Wert annehmen (größte Länge der Anlage + 20 %)
+   und zusätzlich in `offene_fragen` nachfragen. Unklare Punkte ohne sinnvolle Annahme nur in `offene_fragen`.
+8. **Sicherheit nicht auslegen, immer nachfragen** – auch wenn das Lastenheft dazu schweigt, stets in
+   `offene_fragen`: Not-Halt/Risikobeurteilung (PL/SIL), Reparatur-/Trennschalter vor Ort je Motor und Pumpe,
+   Ruhestellung der Ventile bei Energieausfall, anlagenspezifische Sicherheitseinrichtungen
+   (z. B. Wassermangel, Druck, Temperatur). Diese Punkte gibt nur eine Elektrofachkraft frei.
 
 ### Beispiel (Ausschnitt)
 ```yaml
@@ -50,6 +59,6 @@ feldgeraete:
   - {bmk: Y1, artikel: MV-24-4W, funktion: "Stopper Einlauf", gruppe: DO-Last}
 motoren:
   - {bmk: M1, funktion: "Bandantrieb", p_kW: 0.75, i_N_A: 1.9, cos_phi: 0.78, laenge_m: 12}
-annahmen: ["cos φ Bandantrieb vom Typenschild eines Vergleichsmotors"]
-offene_fragen: []
+annahmen: ["Endlagensensor als induktiver Näherungsschalter PNP angenommen (Bauart nicht angegeben)"]
+offene_fragen: ["Not-Halt/Risikobeurteilung: welcher PL ist gefordert?", "Reparaturschalter vor Ort an M1?"]
 ```

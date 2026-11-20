@@ -6,7 +6,7 @@ ZIEL.md hat Vorrang. Reihenfolge der Meilensteine ist verbindlich.
 | M | Inhalt | fertig, wenn | Status |
 |---|---|---|---|
 | M1 | Offene Fehler aus P5a beheben | Tests für ungültige Werte und Überschreiben grün | **erledigt** 20.11.2026 (2 Prüfer, Befunde behoben) |
-| M2 | Projektmodell-Schema und `KI_AUFBEREITUNG.md` | Beispiel-Lastenheft → gültige YAML (manuell über externe KI) | offen |
+| M2 | Projektmodell-Schema und `KI_AUFBEREITUNG.md` | Beispiel-Lastenheft → gültige YAML (manuell über externe KI) | **Kern erledigt** 20.11.2026 (unabhängige KI-Instanz, synthetisches Lastenheft; Menü/CI in M2c/M2d; Erprobung mit Betriebs-KI = PC6) |
 | M3 | Planungskern trennen (`planmodell.json`) | PDF entsteht nur noch aus dem Planmodell | offen (Vorarbeit: neutrales Planmodell, `*_Planmodell.json`) |
 | M4 | SPS-Übersicht, Listen im Hausformat, Konsistenzprüfungen | Prüfbericht ohne Fehler am Testkorpus | offen (Vorarbeit: Hausstil-Listen P3b) |
 | M5 | Geometrie und Schriftfeld lernen | Hausprofil aus 10 echten Plänen mit Sicherheitsangabe | offen (Vorarbeit: P2 Lernen aus Text) |

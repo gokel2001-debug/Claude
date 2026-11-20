@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2b (KI-Auftrag, Beispiel-Lastenheft → YAML → PDF) in Prüfung; M2a erledigt |
+| Aktuelles Paket | M2a + M2b erledigt → nächstes: M2c (Menü KI-Auftrag/KI-Antwort prüfen) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 146/146 grün |
+| Tests | 158/158 grün |
 
 ## Paketübersicht
 | Paket | Status |
@@ -41,3 +41,4 @@
 | 20.11.2026 | manuell | M1 geprüft (Software, Einsteiger): 0 kritisch/hoch, 3 mittel, 6 gering → alle behoben (Farbliste IEC 60757 + A17, alle Fehler auf einmal, Spalte „Erlaubte Form“, Nachprüfung alter Profile); M1 erledigt; 90/90 Tests grün |
 | 20.11.2026 | manuell | M2a Schema Projektmodell v1 + Prüfung (Klartext), Hausvorgaben; Prüfer: 7 hoch (Abstürze bei leeren/verschachtelten Werten, Annahmen unsichtbar) → behoben; Arbeitsvorrat für Autostarts angelegt; 144/144 Tests |
 | 20.11.2026 | manuell | M2b KI_AUFBEREITUNG.md, Befehl ki-auftrag, synthetisches Lastenheft → KI-Antwort → PDF (E2E-Test); Fehler Motor-Lastseite (KeyError bei Motor ≠ M1) behoben; 146/146 Tests |
+| 20.11.2026 | manuell | M2b geprüft (Elektro, Software, Einsteiger): 6 hoch (Regeln erlaubten angenommene Motordaten/stille Ersatzartikel, fehlende Sicherheitsfragen, Abstürze bei kaputten Lastenheften, Komma-Zahlen, kein Rückweg zur KI) → behoben; Korrekturauftrag für die KI; echte Rohantwort einer unabhängigen KI-Instanz → PDF als Test; 158/158 Tests |

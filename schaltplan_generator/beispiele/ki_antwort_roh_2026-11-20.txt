@@ -1,0 +1,40 @@
+Rohantwort einer unabhängigen KI-Instanz (ohne Projektkontext) auf den KI-Auftrag zu lastenheft_beispiel.md, 20.11.2026, unverändert:
+```yaml
+schema: projektmodell/1
+projekt: {nummer: P-2026-017, bezeichnung: "Schaltschrank Heizungsverteiler Halle 3", kunde: "Musterbau GmbH, Musterstadt", ort: "+HV3", revision: "00"}
+einspeisung: {netz: "3/N/PE AC 400/230 V 50 Hz"}
+feldgeraete:
+  - {bmk: M1, artikel: PUMPE-EC-230, typical: pumpe_ec, funktion: "Umwälzpumpe Heizkreis Nord", laenge_m: 25}
+  - {bmk: M2, artikel: PUMPE-EC-230, typical: pumpe_ec, funktion: "Umwälzpumpe Heizkreis Süd", laenge_m: 30}
+  - {bmk: Y1, artikel: STELLANTRIEB-24, typical: stellantrieb_ao, funktion: "Mischventil Vorlauf"}
+  - {bmk: B1, artikel: ZAEHLER-PULS, typical: zaehler_di, funktion: "Wärmemengenzähler Hauptleitung"}
+  - {bmk: B2, artikel: ZAEHLER-AI, typical: zaehler_ai, funktion: "Durchfluss Rücklauf"}
+  - {bmk: B3, artikel: PT-420-2L, funktion: "Anlagendruck 0-10 bar", gruppe: Sensorik}
+  - {bmk: Y2, artikel: MV-24-4W, funktion: "Magnetventil Nachspeisung", gruppe: DO-Last}
+  - {bmk: Y3, artikel: MV-24-4W, funktion: "Magnetventil Entleerung", gruppe: DO-Last}
+  - {bmk: P1, artikel: LMP-24-GN, funktion: "Meldeleuchte Anlage in Betrieb (Schranktür)", gruppe: DO-Last}
+motoren:
+  - {bmk: M3, funktion: "Zuluftventilator Technikraum", p_kW: 1.1, i_N_A: 2.6, cos_phi: 0.81, laenge_m: 18}
+annahmen:
+  - "Umwälzpumpen M1 und M2 als PUMPE-EC-230 (Ersatzartikel) mit Baustein pumpe_ec angenommen, da keine Pumpentype genannt ist"
+  - "Bemessungsdaten von PUMPE-EC-230 übernommen (Absicherung der Pumpen M1 und M2 danach ausgelegt)"
+  - "Leitungslänge Heizkreis Süd (M2) fehlt: ungünstigster Wert angenommen = größte Länge der Anlage (25 m) + 20 % = 30 m"
+  - "Mischventil Vorlauf als STELLANTRIEB-24 mit Baustein stellantrieb_ao angenommen (Typ nicht angegeben)"
+  - "Wärmemengenzähler Hauptleitung als ZAEHLER-PULS mit Baustein zaehler_di angenommen (Impuls- und Störausgang, 24 V DC)"
+  - "Durchflusszähler Rücklauf als ZAEHLER-AI mit Baustein zaehler_ai angenommen (aktiver Ausgang 4-20 mA, 4-Leiter)"
+  - "Drucktransmitter PT-420-2L passt zur Vorgabe 0-10 bar, 4-20 mA; 2-Leiter-Versorgung aus dem Schrank angenommen"
+  - "Magnetventile Nachspeisung und Entleerung als MV-24-4W angenommen (Typ nicht angegeben), Ansteuerung über DO-Last"
+  - "Meldeleuchte als Leuchtmelder grün LMP-24-GN, 24 V DC angenommen (Farbe und Spannung nicht angegeben)"
+  - "Ventilator M3 mit Direktstart ohne Frequenzumrichter, Motordaten laut Lastenheft (1,1 kW, 2,6 A, cos φ 0,81)"
+offene_fragen:
+  - "Datenblatt Pumpe anfordern: U, I_N, Anschluss (Heizkreis Nord M1 und Heizkreis Süd M2; Bemessungsdaten von PUMPE-EC-230 übernommen)"
+  - "Leitungslänge Schrank-Pumpe Heizkreis Süd (M2) nachfragen; angenommen 30 m"
+  - "Leitungslängen zu Mischventil Y1, Zählern B1/B2, Drucktransmitter B3, Magnetventilen Y2/Y3 und Meldeleuchte P1 nicht angegeben: bitte bei Bedarf ergänzen"
+  - "Genaue Typen von Pumpen, Mischventil, Wärmemengenzähler, Durchflusszähler, Drucktransmitter und Magnetventilen? Artikel wurden aus der Artikelliste als nächstliegende gewählt"
+  - "Anlagenkennzeichen (Funktionsaspekt, =...) für die Anlage nicht angegeben: bitte nennen"
+  - "Not-Halt/Risikobeurteilung: welcher PL/SIL ist gefordert (Pumpen, Ventilator, Mischventil, Nachspeisung/Entleerung)?"
+  - "Reparatur-/Trennschalter vor Ort je Motor und Pumpe (M1, M2, M3) gefordert?"
+  - "Ruhestellung der Ventile bei Energieausfall: Mischventil Y1, Nachspeisung Y2 und Entleerung Y3 (stromlos offen/geschlossen)? Ist ein ungewolltes Öffnen der Entleerung ausgeschlossen?"
+  - "Anlagenspezifische Sicherheitseinrichtungen: Wassermangel, Druck (Min/Max am Anlagendruck B3), Temperatur (Übertemperatur Vorlauf), Sicherheitsventil? Freigabe durch Elektrofachkraft erforderlich"
+  - "Ventilator M3: Motorschutz (Motorschutzschalter/Thermistor) und Kaltleiter am Motor vorhanden?"
+```

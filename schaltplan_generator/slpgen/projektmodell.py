@@ -149,7 +149,9 @@ def pruefe(daten: Any, stamm: dict) -> list[str]:
     if "schema" in daten and daten["schema"] != SCHEMA:
         l.append(f"schema: „{daten['schema']}“ wird nicht unterstützt – erwartet „{SCHEMA}“")
     for k in daten:
-        if k not in ABSCHNITTE and k not in ZUSATZ:
+        if k not in ABSCHNITTE and k not in ZUSATZ and isinstance(daten[k], str) and " " in daten[k]:
+            l.append(f"„{k}: {daten[k][:40]}…“ ist vermutlich ein Kommentar der KI – diese Zeile löschen")
+        elif k not in ABSCHNITTE and k not in ZUSATZ:
             l.append(f"Unbekannter Abschnitt „{k}“ – erlaubt: {', '.join([*ABSCHNITTE, *ZUSATZ])} "
                      f"(Tippfehler oder falsch eingerückt?)")
     for k in ("annahmen", "offene_fragen"):
@@ -334,9 +336,15 @@ def mit_hausvorgaben(daten: dict, vorgaben: dict) -> tuple[dict, list[str]]:
         for f in felder:
             if f.name in quelle and _leer(ziel.get(f.name)):
                 ziel[f.name] = copy.deepcopy(quelle[f.name])
-                teile.append(f"{f.text.split(';')[0].split(' (')[0]} = {_kurz(quelle[f.name])}")
-        if teile:
-            ergaenzt.append(f"{klar} (Hausvorgabe): " + "; ".join(teile))
+                if f.typ.startswith(("artikel", "liste_artikel")):      # nur das Wesentliche nennen
+                    teile.append(_kurz(quelle[f.name]))
+                elif f.name == "i_z_A":
+                    frei = "freigegeben" if _ja_nein(ziel.get("freigegeben", quelle.get("freigegeben"))) \
+                        else "noch nicht von Elektrofachkraft freigegeben"
+                    teile.append(f"Strombelastbarkeitstabelle ({frei})")
+        if any(_leer((daten.get(name) or {}).get(f.name)) and f.name in quelle for f in felder) and isinstance(
+                daten.get(name) or {}, dict):
+            ergaenzt.append(f"{klar} nach Hausvorgabe" + (f": {', '.join(teile)}" if teile else ""))
     return neu, ergaenzt
 
 

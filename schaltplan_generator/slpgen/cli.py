@@ -35,6 +35,9 @@ def _mapping(loader, node, deep=False):
 _Lader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _mapping)
 
 
+RE_KOMMAZAHL = re.compile(r"(:\s*-?\d+),(\d+)(?=\s*[a-zA-Z%²]*\s*[,}])")
+
+
 def _bereinige(text: str) -> str:
     """KI-Antworten: Codeblock ```yaml … ``` und Einleitungssätze entfernen."""
     if "```" in text:
@@ -44,6 +47,8 @@ def _bereinige(text: str) -> str:
     zeilen = text.splitlines()
     while zeilen and zeilen[0].strip() and not re.match(r"\s*(#|[\w-]+\s*:|- |---)", zeilen[0]):
         zeilen.pop(0)
+    # Dezimalkomma in einzeiligen Einträgen {cos_phi: 0,81} würde YAML als zwei Felder lesen -> 0.81
+    zeilen = [RE_KOMMAZAHL.sub(r"\1.\2", z) if "{" in z else z for z in zeilen]
     return "\n".join(zeilen)
 
 
@@ -124,12 +129,19 @@ def cmd_pruefen(a):
             hinweise += [f"{titel} (bitte prüfen):", *[f"  • {x}" for x in daten[k]]]
     try:
         _, ergaenzt = bereit_machen(daten, lade_yaml(a.stamm), _vorgaben(a.vorgaben))
-    except regeln.RegelFehler:
+    except regeln.RegelFehler as e:
         print("\n".join(hinweise))
-        raise
+        korr = Path(a.projekt).with_name(Path(a.projekt).stem + "_Korrektur_fuer_KI.txt")
+        korr.write_text("Die Software hat dein Projektmodell geprüft und diese Punkte gefunden. Bitte korrigiere sie "
+                        "und gib das vollständige Projektmodell erneut als einen YAML-Block aus (gleiche Regeln wie "
+                        "vorher, nichts erfinden – Unklares in offene_fragen):\n\n" + str(e) + "\n", encoding="utf-8")
+        raise regeln.RegelFehler(f"{e}\n\nSo geht es weiter: Inhalt von {korr} in denselben KI-Chat kopieren, "
+                                 f"die neue Antwort über {Path(a.projekt).name} speichern und erneut prüfen. "
+                                 f"Kleine Fehler können Sie auch direkt in der Datei (Editor) korrigieren.") from None
     n = len(daten.get("offene_fragen") or []) if isinstance(daten.get("offene_fragen"), list) else 0
     print(f"Projektmodell {Path(a.projekt).name}: vollständig, Plan kann erzeugt werden"
-          + (f" – aber {n} offene Frage{'' if n == 1 else 'n'} bitte klären." if n else "."))
+          + (f" – {n} offene Frage{'' if n == 1 else 'n'} (stehen im Auslegungsnachweis; Plan kann trotzdem "
+             f"erzeugt werden, vor Fertigstellung klären)." if n else "."))
     if ergaenzt:
         print("Aus Hausvorgaben ergänzt (bitte prüfen):")
         print("\n".join(f"  • {x}" for x in ergaenzt))
@@ -140,14 +152,23 @@ def cmd_pruefen(a):
 def cmd_ki_auftrag(a):
     from .ki_auftrag import erzeuge_auftrag
     quelle = Path(a.lastenheft)
-    if not quelle.is_file():
+    if not quelle.exists():
         raise FileNotFoundError(2, "fehlt", str(quelle))
     ziel = Path(a.ziel) if a.ziel else quelle.with_name(quelle.stem + "_KI_Auftrag.txt")
-    ziel.write_text(erzeuge_auftrag(quelle, lade_yaml(a.stamm), a.anleitung), encoding="utf-8")
-    print(f"KI-Auftrag -> {ziel}")
-    print("1. Inhalt der Datei vollständig in einen KI-Chat einfügen (nur eine vom Betrieb freigegebene KI).")
-    print("2. Antwort der KI als projektmodell.yaml speichern.")
-    print("3. Prüfen: python -m slpgen pruefen projektmodell.yaml")
+    from .ki_auftrag import MAX_ZEICHEN
+    text = erzeuge_auftrag(quelle, lade_yaml(a.stamm), a.anleitung)
+    ziel.write_text(text, encoding="utf-8")
+    print(f"KI-Auftrag -> {ziel} ({len(text):,} Zeichen)".replace(",", "."))
+    if len(text) > MAX_ZEICHEN:
+        print(f"ACHTUNG: sehr lang – viele KI-Chats nehmen so viel Text nicht auf. Lastenheft auf die Teile mit "
+              f"Feldgeräten, Motoren und Einspeisung kürzen (Ziel unter {MAX_ZEICHEN:,} Zeichen).".replace(",", "."))
+    antwort = quelle.with_name("projektmodell.yaml")
+    print("So geht es weiter:")
+    print("1. Inhalt der Datei vollständig in einen KI-Chat einfügen (nur eine vom Betrieb freigegebene KI;")
+    print("   Kundennamen vorher entfernen, wenn die KI nicht freigegeben ist).")
+    print(f"2. Antwort der KI mit dem Editor speichern als: {antwort}")
+    print(f"3. Prüfen:        python -m slpgen pruefen \"{antwort}\"")
+    print(f"4. Plan erzeugen: python -m slpgen generieren \"{antwort}\"")
 
 
 def cmd_schema(a):

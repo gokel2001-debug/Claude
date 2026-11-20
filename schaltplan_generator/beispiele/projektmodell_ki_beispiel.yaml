@@ -4,7 +4,7 @@ projekt: {nummer: P-2026-017, bezeichnung: "Schaltschrank Heizungsverteiler Hall
 einspeisung: {netz: "3/N/PE AC 400/230 V 50 Hz"}
 feldgeraete:
   - {bmk: M1, artikel: PUMPE-EC-230, typical: pumpe_ec, funktion: "Umwälzpumpe Heizkreis Nord", laenge_m: 25}
-  - {bmk: M2, artikel: PUMPE-EC-230, typical: pumpe_ec, funktion: "Umwälzpumpe Heizkreis Süd", laenge_m: 25}
+  - {bmk: M2, artikel: PUMPE-EC-230, typical: pumpe_ec, funktion: "Umwälzpumpe Heizkreis Süd", laenge_m: 30}
   - {bmk: Y1, artikel: STELLANTRIEB-24, typical: stellantrieb_ao, funktion: "Mischventil Vorlauf"}
   - {bmk: B1, artikel: ZAEHLER-PULS, typical: zaehler_di, funktion: "Wärmemengenzähler Hauptleitung"}
   - {bmk: B2, artikel: ZAEHLER-AI, typical: zaehler_ai, funktion: "Durchfluss Rücklauf"}
@@ -15,8 +15,17 @@ feldgeraete:
 motoren:
   - {bmk: M3, funktion: "Zuluftventilator Technikraum", p_kW: 1.1, i_N_A: 2.6, cos_phi: 0.81, laenge_m: 18}
 annahmen:
-  - "Leitungslänge Umwälzpumpe Heizkreis Süd 25 m angenommen (wie Heizkreis Nord)"
-  - "Wärmemengenzähler als Durchflusszähler ZAEHLER-PULS abgebildet (Impuls- und Störausgang)"
+  - "Umwälzpumpen als PUMPE-EC-230 abgebildet; dessen Bemessungsdaten (230 V, Strom laut Gerätestamm) bestimmen den Motorschutzschalter"
+  - "Leitungslänge Umwälzpumpe Heizkreis Süd 30 m angenommen (ungünstigster Wert: 25 m + 20 %)"
+  - "Wärmemengenzähler als ZAEHLER-PULS abgebildet: 24-V-Versorgung aus dem Schrank, Störausgang als Ruhestromkontakt mit Abschlusswiderstand"
+  - "Durchfluss Rücklauf: Messwert 4–20 mA als aktiver 4-Leiter-Ausgang angenommen"
 offene_fragen:
-  - "Wärmemengenzähler: genauer Typ und Impulswertigkeit nicht angegeben"
+  - "Datenblatt Umwälzpumpen anfordern: Spannung, Bemessungsstrom, Anschluss Start/Stopp und Stellsignal"
+  - "Leitungslänge Heizkreis Süd fehlt"
+  - "Wärmemengenzähler: Typ, Versorgung (Batterie/230 V/24 V), Ausgangsart (potentialfrei/Open Collector), Impulswertigkeit und Impulsfrequenz"
+  - "Durchfluss Rücklauf: Analogausgang aktiv oder passiv?"
+  - "Not-Halt/Risikobeurteilung: welcher Performance Level ist gefordert?"
+  - "Reparatur-/Trennschalter vor Ort für Ventilator M3 und die Umwälzpumpen?"
+  - "Magnetventile Nachspeisung/Entleerung: Ruhestellung bei Energieausfall (stromlos geschlossen?)"
+  - "Sicherheitseinrichtungen Heizungsanlage (Wassermangel, Maximaldruck, Temperatur) – wer überwacht?"
   - "Anlagenkennzeichen (=…) nicht angegeben"

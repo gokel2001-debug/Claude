@@ -14,8 +14,13 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen.canvas import Canvas
 
 from .modell import Planmodell, eltern_bmk
-from .regeln import (SEITE_EINSPEISUNG, SEITE_SPS, SEITE_VERTEILUNG,
-                     SPALTEN_JE_SEITE, ZEILEN_JE_SEITE)
+from .regeln import (
+    SEITE_EINSPEISUNG,
+    SEITE_SPS,
+    SEITE_VERTEILUNG,
+    SPALTEN_JE_SEITE,
+    ZEILEN_JE_SEITE,
+)
 
 LAYOUT = {
     "rand_links": 20, "rand": 10, "spaltenleiste": 7, "schriftfeld": 30,
@@ -383,8 +388,8 @@ def s_motor_steuer(b: Blatt, m: Planmodell, seite: int, idx: int):
     b.linie(X0 + 6, y0v, X1 - 6, y0v)
     potential_pfeil(b, X0 + 6, y0v, f"0V {verweis(SEITE_VERTEILUNG, 1)}", False)
     for k in spulen:
-        nr = int(k.bmk.lstrip("-K"))
-        q = m.bm(f"-Q{nr + 1}")
+        mot = next(x for x in m.betriebsmittel if x.kategorie == "motor" and x.daten.get("schuetz") == k.bmk)
+        q = m.bm(mot.daten["mss"])                      # nicht aus der Schütznummer ableiten
         # Spalte a: Spule
         x = sx(k.daten["steuer_spalte"])
         sps_box(b, m, x, 238, k.bmk)
@@ -448,7 +453,7 @@ def s_kabel(b: Blatt, m: Planmodell, _seite: int, idx: int):
 
 
 def stueckliste_zeilen(m: Planmodell, stamm: dict) -> list[tuple]:
-    gruppen: "OrderedDict[str, list[str]]" = OrderedDict()
+    gruppen: OrderedDict[str, list[str]] = OrderedDict()
     for x in m.betriebsmittel:
         if x.kategorie in ("selektivkanal", "meldung"):   # Kanal/Meldung eines Moduls, kein eigener Artikel
             continue
@@ -483,8 +488,8 @@ def s_auslegung(b: Blatt, m: Planmodell, _seite: int = 0, _idx: int = 0):
     y = YL - 12 - 7 - len(zeilen) * 5.5 - 10
     texte = [
         f"Summenstrom 24 V: Σ I = {bil['i_summe_A']} A",
-        f"Bedarf = Σ I · g · (1 + Reserve) = {bil['i_summe_A']} · {bil['gleichzeitigkeit']} · "
-        f"(1 + {bil['reserve']}) = {bil['i_bedarf_A']} A",
+        (f"Bedarf = Σ I · g · (1 + Reserve) = {bil['i_summe_A']} · {bil['gleichzeitigkeit']} · "
+        f"(1 + {bil['reserve']}) = {bil['i_bedarf_A']} A"),
         f"Gewählt: {bil['netzteil']} mit I_N = {bil['i_nenn_A']} A (Auslastung {bil['auslastung']:.0%})",
         f"Primärstrom Netzteil max. ≈ U·I_N / (η·U_ein) = {bil['i_primaer_max_A']} A",
     ]

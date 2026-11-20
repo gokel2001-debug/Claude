@@ -1,5 +1,7 @@
 # Hausvorgaben (Abschnittsart H im Projektmodell, docs/SCHEMA_PROJEKTMODELL.md)
 # Fehlt ein Abschnitt/Feld im Projektmodell (z. B. aus der KI-Aufbereitung), wird er von hier ergänzt.
+# Leitungstabelle i_z_A: Werte ohne belegte Quelle (Norm, Tabelle, Spalte, Umgebungstemperatur fehlen) und offen, ob
+# der Reduktionsfaktor zusätzlich zur Temperaturabminderung gilt – nicht freigegeben, siehe A3.
 # Werte wie im Beispielprojekt – Hausregeln, von der Elektrofachkraft freizugeben (siehe OFFENE_PUNKTE A1, A2, A3).
 einspeisung:
   hauptschalter: HS-3P-40

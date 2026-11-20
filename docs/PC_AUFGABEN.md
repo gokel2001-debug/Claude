@@ -9,3 +9,4 @@ Schritt-für-Schritt für Einsteiger. Echte Kundenpläne bleiben auf dem PC.
 | PC3 | Hausprofil aus 10 echten Plänen lernen | Menü 6, Ordner mit Bestands-PDFs ins Fenster ziehen | Inhalt von `hausprofil\profil_uebersicht.txt` (enthält keine Kundendaten, nur Regeln) |
 | PC4 | Freigabeliste ausfüllen | `hausprofil\profil_freigabe.xlsx` JA/NEIN, Menü 7 | Meldung von Menü 7 |
 | PC5 | Lokale KI (Ollama) prüfen | folgt mit M6 | – |
+| PC6 | KI-Aufbereitung mit der im Betrieb freigegebenen KI erproben | `python -m slpgen ki-auftrag beispiele\lastenheft_beispiel.md`, Text in den Chat, Antwort speichern, `pruefen` | Meldung von `pruefen` und welche KI (Name) |

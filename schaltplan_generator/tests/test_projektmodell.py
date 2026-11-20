@@ -85,7 +85,8 @@ def test_hausvorgaben_ergaenzen_und_plan_entsteht():
     d["motoren"][0]["bmk"] = "m1"
     modell, ergaenzt = bereit_machen(d, STAMM, VORGABEN)
     text = "\n".join(ergaenzt)
-    assert "Hauptschalter" in text and "HS-3P-40" in text and "SPS-CPU" in text and "1.5 13.1" in text
+    assert "Einspeisung nach Hausvorgabe: HS-3P-40" in text and "SPS-CPU" in text
+    assert "Strombelastbarkeitstabelle (noch nicht von Elektrofachkraft freigegeben)" in text
     assert modell["motoren"][0]["p_kW"] == 0.75 and modell["motoren"][0]["bmk"] == "M1"
     assert "versorgung_24V" not in d                         # Eingabe bleibt unverändert
     m = regeln.plane(modell, STAMM)
@@ -168,6 +169,7 @@ def test_listen_und_zahlen_vereinheitlicht():
     ("Hier ist das Projektmodell:\n```yaml\nprojekt: {nummer: A}\n```\nViel Erfolg!", None),
     ("projekt:\n\tnummer: A\n", "Tabulator"),
     ("feldgeraete:\n  - {bmk: B1}\nfeldgeraete:\n  - {bmk: B2}\n", "doppelt"),
+    ("motoren:\n  - {bmk: M1, p_kW: 1,1, cos_phi: 0,81 , i_N_A: 2,6 A}\n", "komma"),
     ("projekt: {datum: 2026-13-01}\n", "Datum"),
 ])
 def test_ki_antwort_einlesen(tmp_path, inhalt, erwartet):
@@ -176,6 +178,8 @@ def test_ki_antwort_einlesen(tmp_path, inhalt, erwartet):
     f.write_text(inhalt, encoding="utf-8")
     if erwartet is None:
         assert lade_yaml(str(f)) == {"projekt": {"nummer": "A"}}
+    elif erwartet == "komma":
+        assert lade_yaml(str(f))["motoren"][0] == {"bmk": "M1", "p_kW": 1.1, "cos_phi": 0.81, "i_N_A": "2.6 A"}
     else:
         with pytest.raises(RegelFehler, match=erwartet):
             lade_yaml(str(f))
