@@ -87,6 +87,9 @@ FORM = {
     "feldklemmleiste": "Klemmleiste wie -X10 oder -XD1",
     "haeufigste_ader_0_75": "Farbkürzel und Querschnitt, z. B. DBU 0,75",
     "sps_adressschreibweise": "IEC oder deutsch",
+    "spaltenraster": "Anzahl und Breite, z. B. 10 Spalten à 39 mm",
+    "schriftfeld_felder": "Feldnamen mit Komma, z. B. Datum, Bearb., Rev.",
+    "datumsformat": "TT.MM.JJJJ oder JJJJ-MM-TT",
 }
 
 

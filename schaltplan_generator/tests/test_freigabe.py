@@ -38,7 +38,8 @@ def test_liste_enthaelt_nur_einzelwerte_beschreibung_zuerst(gelernt):
     ws = load_workbook(liste)["Freigabe"]
     assert ws["A1"].value == "Beschreibung"
     from slpgen.profil import VORGABEN
-    assert list(_zeilen(liste)) == ["feldklemmleiste", "sps_adressschreibweise", "haeufigste_ader_0_75", *VORGABEN]
+    assert list(_zeilen(liste)) == ["feldklemmleiste", "sps_adressschreibweise", "haeufigste_ader_0_75", "spaltenraster",
+                                    "schriftfeld_felder", "datumsformat", *VORGABEN]
 
 
 def test_ja_nein_eigener_wert(gelernt):
@@ -202,7 +203,8 @@ def test_offene_punkte_genau_die_unentschiedenen(gelernt):
     pfad, liste = gelernt
     _setze(liste, {"feldklemmleiste": ("JA", None)})
     e = uebernehme_freigaben(pfad, liste)
-    erwartet = {_merkmale(pfad)[k]["beschreibung"] for k in ["sps_adressschreibweise", "haeufigste_ader_0_75", *VORGABEN]}
+    erwartet = {_merkmale(pfad)[k]["beschreibung"] for k in ["sps_adressschreibweise", "haeufigste_ader_0_75", "spaltenraster",
+                                                             "schriftfeld_felder", "datumsformat", *VORGABEN]}
     assert set(e["offen"]) == erwartet
 
 

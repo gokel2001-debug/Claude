@@ -20,7 +20,7 @@ Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Fre
 | A13 | 1~-Geräte reihum L2/L3/L1 (E16) | Netzteil liegt auf L1 | feste Zuordnung | `regeln.py` | Gilt das? |
 | A14 | Selektivmodul wählbar, Sammelmeldung Ruhestrom (E17) | im Bestand beobachtet | Einzelsicherungen | `regeln.py` | Standard für neue Projekte? |
 | A15 | Kanalwert/Sicherung wird nicht gegen I_z des 24-V-Abgangs geprüft | Prüfer-Befund P4c (mittel) | Prüfung ergänzen (M4) | `regeln.py` | – (M4) |
-| A16 | Plan-Jahr = häufigstes Datum im Text | Schriftfeldfelder noch nicht getrennt lesbar | Erstelldatum aus Feld (M5) | `analyse.py` | – (M5) |
+| A16 | Plan-Jahr = häufigstes Datum im Text | Schriftfeldfelder noch nicht getrennt lesbar | **teilweise erledigt M5a:** Jahr aus Schriftfeld-Datum, sonst häufigstes Datum | `analyse.py`, `geometrie.py` | – |
 | A17 | Aderfarben DBU (dunkelblau) und LBU (hellblau) zusätzlich zu IEC 60757 zulässig | im Bestand üblich, IEC 60757 kennt nur BU | nur IEC-Kürzel | `freigabe.py` | **EF:** Hausregel so beibehalten? |
 | A18 | Freigegebene/abgelehnte Vorgaben werden beim Lernen nicht neu angeboten | Vorgaben werden noch nicht aus Plänen gelernt | Lernen der Vorgaben (M5) | `profil.py` | – (M5) |
 | A19 | Hauptschalter gilt als Hausvorgabe (wird ergänzt, wenn das Projektmodell keinen nennt) | Lastenhefte nennen selten einen Hauptschalter-Artikel | Auswahl nach Bemessungsstrom (M7) | `projektmodell.py` | Gilt das? |
@@ -43,3 +43,4 @@ Im Code markiert mit `# ANNAHME A-Nr.` (wird schrittweise nachgezogen). EF = Fre
 | A36 | Zeitansatz der Kennzahl „Zeichenaufwand“: Seite 20 min, Betriebsmittel 3 min, Klemme 1 min, SPS-Kanal 2 min, Kabel 2 min | keine Erfahrungswerte vorhanden (Platzhalter) | Stundensätze aus Hausprofil bzw. Abnahme M8 | `konsistenz.py` | Welche Zeiten gelten im Haus? |
 | A37 | Netzteil-Auslastung, DO-Kanalstrom gegen Kartenwert, Stempel „nicht für Fertigung“ bei FEHLER noch nicht umgesetzt | Prüfer M4c (mittel/gering) | Prüfungen ergänzen (M4d) | `konsistenz.py` | – (M4d) |
 | A38 | DO-Summenstrom je Lastgruppe (2L+), induktive Lasten/Freilauf, Temperaturminderung Netzteil, Dezimalkomma in allen Meldungen noch offen | Prüfer M4d (mittel/gering); Datenblattwerte fehlen im Stamm | Stammfelder i_gruppe_A, induktiv, beschaltung; zentrale Zahlformatierung | `konsistenz.py`, Stamm | – (M7) |
+| A39 | Spaltenleiste = oberste 25 mm, Schriftfeld = unterste 40 mm des Blatts | Lage im Korpus und im Hausstil; echte Pläne können abweichen | Bänder aus Hausprofil/Erprobung PC3 | `geometrie.py` | – (PC3) |

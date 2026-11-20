@@ -171,7 +171,7 @@ def test_netzteil_zu_klein_klartext():
     p["versorgung_24V"]["netzteile"] = ["NT-24-05"]
     p["feldgeraete"] += [{"bmk": f"Y{20 + i}", "artikel": "MV-24-4W", "funktion": f"Ventil {i}", "gruppe": "DO-Last"}
                          for i in range(25)]
-    with pytest.raises(Exception, match="größte.*NT-24-05.*größeres Netzteil ergänzen") as e:
+    with pytest.raises(Exception, match=r"größte.*NT-24-05.*größeres Netzteil ergänzen") as e:
         regeln.plane(p, STAMM)
     assert "[" not in str(e.value)                                   # keine Python-Listenschreibweise
 

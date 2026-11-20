@@ -23,6 +23,7 @@ from typing import Any
 import yaml
 
 from .analyse import analysiere_pdf
+from .geometrie import lese_geometrie
 from .modell import RegelFehler
 from .struktur import lese_struktur
 
@@ -78,6 +79,11 @@ EINZELWERTE: dict[str, tuple[str, Callable[[dict], str | None]]] = {
     "sps_adressschreibweise": ("Schreibweise der SPS-Adressen", _sps_schreibweise),
     "haeufigste_ader_0_75": ("häufigste Aderkennzeichnung 0,75 mm² (noch ohne Potentialzuordnung)",
                              _haeufigste_ader_075),
+    # Geometrie/Schriftfeld (M5a) – aus Textpositionen der Vektor-PDFs
+    "spaltenraster": ("Spaltenraster der Planseiten (Spaltenleiste)", lambda st: st.get("geometrie", {}).get("spaltenraster")),
+    "schriftfeld_felder": ("Felder im Schriftfeld (von links nach rechts)",
+                           lambda st: st.get("geometrie", {}).get("schriftfeld_felder")),
+    "datumsformat": ("Datumsformat im Schriftfeld", lambda st: st.get("geometrie", {}).get("datumsformat")),
 }
 
 
@@ -132,7 +138,12 @@ def lerne(pdfs: list[Path]) -> dict[str, Any]:
     for p in pdfs:
         try:
             a = analysiere_pdf(p)
-            plaene.append((p.name, a["jahr"], a.get("jahr_eindeutig", True), lese_struktur(p)))
+            st = lese_struktur(p)
+            st["geometrie"] = geo = lese_geometrie(p)
+            if geo.get("schriftfeld_jahr"):            # Datum im Schriftfeld genauer als häufigstes Datum im Text (A16)
+                plaene.append((p.name, geo["schriftfeld_jahr"], True, st))
+            else:
+                plaene.append((p.name, a["jahr"], a.get("jahr_eindeutig", True), st))
         except Exception as e:                      # defekte PDFs nicht abbrechen lassen
             fehler.append({"datei": p.name, "fehler": type(e).__name__})
 
