@@ -80,7 +80,7 @@ def test_jede_fehlerart_wird_erkannt(stoerung, pruefung):
     m = _plan()
     stoerung(m)
     fehler = {b.pruefung for b in pruefe_plan(m) if b.art == FEHLER}
-    assert pruefung in fehler and fehler <= {pruefung, "Klemmen", "Verweis", "Potential", "Leitungsschutz"}   # keine fremden Fehlalarme
+    assert pruefung in fehler and fehler <= {pruefung, "Klemmen", "Verweis", "Potential", "Leitungsschutz"}  # nichts Fremdes
 
 
 def test_hinweise_luecke_und_textdopplung():
