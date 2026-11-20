@@ -3,7 +3,7 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2a–M2c erledigt → nächstes: M2d (CI, Linter, Abdeckung) |
+| Aktuelles Paket | M2a–M2d umgesetzt → nächstes: M3a (Planungskern trennen) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
@@ -43,3 +43,4 @@
 | 20.11.2026 | manuell | M2b KI_AUFBEREITUNG.md, Befehl ki-auftrag, synthetisches Lastenheft → KI-Antwort → PDF (E2E-Test); Fehler Motor-Lastseite (KeyError bei Motor ≠ M1) behoben; 146/146 Tests |
 | 20.11.2026 | manuell | M2b geprüft (Elektro, Software, Einsteiger): 6 hoch (Regeln erlaubten angenommene Motordaten/stille Ersatzartikel, fehlende Sicherheitsfragen, Abstürze bei kaputten Lastenheften, Komma-Zahlen, kein Rückweg zur KI) → behoben; Korrekturauftrag für die KI; echte Rohantwort einer unabhängigen KI-Instanz → PDF als Test; 158/158 Tests |
 | 20.11.2026 | manuell | M2c Menüpunkte 8/9 (KI-Auftrag in Zwischenablage, KI-Antwort prüfen → Plan oder Korrekturauftrag), Zeilennummern; Prüfer UX+Einsteiger: 1 kritisch (eigener Einfügefehler zerriss das Menü) + 5 hoch → behoben, start.bat jetzt per Test abgesichert; 164/164 Tests |
+| 20.11.2026 | manuell | M2d CI (GitHub Actions Ubuntu+Windows, Python 3.12/3.13): ruff ohne Befund (pyproject.toml), Abdeckung 95 % (Kern 95 %, Grenze 90 %); Sammelbericht fortgeschrieben |
