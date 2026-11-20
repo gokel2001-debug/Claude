@@ -93,7 +93,7 @@ def test_fehlendes_ao_modul():
 
 def test_hausstil_zeigt_bausteine(tmp_path):
     m = regeln.plane(_projekt(ZAEHLER, ZAEHLER_AI, STELL), STAMM)
-    seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     t = {a: texte[i] for i, (a, n, _) in enumerate(seiten) if n == 1}
     assert "=Y09/1.3" in t["SA4"]                                     # 7 Klemmen -> Spalten 1..7, AO auf Spalte 3
@@ -103,7 +103,7 @@ def test_hausstil_zeigt_bausteine(tmp_path):
     assert "-R1" in t["P07"] and "(M)" in t["P08"]
     stl = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "STL")
     assert "WID-2K2" in stl and "KR-24DC" in stl
-    erzeuge_pdf(m, STAMM, str(tmp_path / "alt.pdf"))                 # bisheriger Plan bricht nicht ab
+    erzeuge_pdf(m, str(tmp_path / "alt.pdf"))                 # bisheriger Plan bricht nicht ab
 
 
 def test_excel_baustein_spalte(tmp_path):
@@ -130,14 +130,14 @@ def test_pumpe_leistungsteil_und_meldungen(tmp_path):
     msmeldung = next(k for k in m.sps_kanaele if k.funktion.startswith("Motorschutz eingeschaltet"))
     assert not any(k.signal == msmeldung.geraet_bmk for k in m.klemmen)      # Hilfskontakt: keine Feldklemme
     assert m.bilanz["i_netzgeraete_A"] == pytest.approx(1.19)
-    seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
     assert [(a, n) for a, n, _ in seiten if a == "M09"] == [("M09", 1), ("M09", 2)]
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     seite2 = texte[seiten.index(("M09", 2, "Leistungsteil"))]
     assert m.bm("-M9").daten["leistung"]["aussenleiter"] == "L2"           # L1 trägt schon das Netzteil
     assert "-Q1" in seite2 and msmeldung.adresse in seite2 and "L2 =M04/1.9" in seite2   # Netzkette nach Motor 4
     assert m.bilanz["i_je_aussenleiter_A"]["L2"] == pytest.approx(m.bilanz["i_motoren_A"] + 1.19, abs=0.01)
-    erzeuge_pdf(m, STAMM, str(tmp_path / "alt.pdf"))
+    erzeuge_pdf(m, str(tmp_path / "alt.pdf"))
 
 
 def test_pumpe_ohne_laenge_warnt():
@@ -154,7 +154,7 @@ def test_netzkette_konsistent(tmp_path):
     """Jeder weiterführende Leiter kommt beim Nachfolger an, und nichts zeigt ins Leere."""
     for geraete in ((), (PUMPE, dict(PUMPE, bmk="M8"))):
         m = regeln.plane(_projekt(*geraete), STAMM)
-        seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+        seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
         texte = {(a, n): t for (a, n, _), t in zip(seiten, [p.extract_text() for p in PdfReader(str(tmp_path / "h.pdf")).pages])}
         for (a, n), t in texte.items():
             for leiter, ziel in _pfeile(t):

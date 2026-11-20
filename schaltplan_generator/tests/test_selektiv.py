@@ -52,14 +52,14 @@ def test_zu_grosser_gruppenstrom_und_fehlender_artikel():
 
 def test_ausgaben_und_stueckliste(tmp_path):
     m = regeln.plane(_selektiv(), STAMM)
-    assert next(z for z in stueckliste_zeilen(m, STAMM) if z[2] == "SEL-24-4K")[1] == "1 Stk"   # Modul einmal
-    seiten = erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+    assert next(z for z in stueckliste_zeilen(m) if z[2] == "SEL-24-4K")[1] == "1 Stk"   # Modul einmal
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     vt = texte[[a for a, _, _ in seiten].index("VT24")]
     assert "-F1:K2" in vt and "0 = Störung" in vt and "geschlossen = in Ordnung" in vt   # Ruhestromprinzip
     feld = texte[[a for a, _, _ in seiten].index("B01")]
     assert "=VT24/1.3" in feld                                       # Kanal K2 in Spalte 3
-    erzeuge_pdf(m, STAMM, str(tmp_path / "alt.pdf"))
+    erzeuge_pdf(m, str(tmp_path / "alt.pdf"))
 
 
 def test_excel_felder(tmp_path):
@@ -80,12 +80,12 @@ def _gruppen(n):
 def test_viele_gruppen_bleiben_im_blatt_oder_klare_meldung(tmp_path):
     from slpgen.hausstil import Hausplan, lade_hausstil
     m = regeln.plane(_gruppen(4), STAMM)                    # 3 + 4 = 7 Gruppen, 2 Module, Meldung
-    hp = Hausplan(m, STAMM, lade_hausstil(None))
+    hp = Hausplan(m, lade_hausstil(None))
     spalten = [hp.pos[a.bmk].spalte for a in m.absicherungen] + [hp.pos["-F2.S"].spalte]
     assert max(spalten) <= 9 and len(set(spalten)) == len(spalten)
-    erzeuge_hausstil_pdf(m, STAMM, str(tmp_path / "h.pdf"))
+    erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
     with pytest.raises(regeln.RegelFehler, match="Verteilseite"):
-        erzeuge_hausstil_pdf(regeln.plane(_gruppen(7), STAMM), STAMM, str(tmp_path / "h2.pdf"))
+        erzeuge_hausstil_pdf(regeln.plane(_gruppen(7), STAMM), str(tmp_path / "h2.pdf"))
 
 
 def test_verteilung_eingabe_und_doppelte_kennzeichen():

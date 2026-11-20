@@ -111,8 +111,8 @@ class Ort:
 class Hausplan:
     """Planmodell -> Anlagen; hält Positionen für Querverweise."""
 
-    def __init__(self, m: Planmodell, stamm: dict, stil: dict):
-        self.m, self.stamm, self.stil = m, stamm, stil
+    def __init__(self, m: Planmodell, stil: dict):
+        self.m, self.stil = m, stil
         self.anlagen: OrderedDict[str, Anlage] = OrderedDict()
         self.pos: dict[str, Ort] = {}            # Schlüssel: altes BMK oder "kanal:<geraet>" / "karte:<geraet>"
         self.lokal: dict[str, tuple[str, str]] = {}   # altes BMK -> (Anlage, lokales BMK)
@@ -783,7 +783,7 @@ class Hausplan:
 
     def _stl_zeilen(self):
         ort = self.m.projekt.get("ort", "")
-        artikel = self.stamm["artikel"]
+        artikel = self.m.artikel
         zeilen = []
         for bm in self.m.betriebsmittel:
             if bm.bmk not in self.lokal or bm.kategorie in ("selektivkanal", "meldung"):
@@ -832,9 +832,9 @@ class Hausplan:
             y -= 6
 
 
-def erzeuge_hausstil_pdf(m: Planmodell, stamm: dict, pfad: str, stil: dict | None = None) -> list[tuple[str, int, str]]:
+def erzeuge_hausstil_pdf(m: Planmodell, pfad: str, stil: dict | None = None) -> list[tuple[str, int, str]]:
     stil = stil or lade_hausstil(None)
-    hp = Hausplan(m, stamm, stil)
+    hp = Hausplan(m, stil)
     folge = hp.seitenfolge()
     c = Canvas(pfad, pagesize=landscape(A3), invariant=1)
     c.setTitle(f"Stromlaufplan {m.projekt.get('nummer', '')}")

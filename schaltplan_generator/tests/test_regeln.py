@@ -92,7 +92,7 @@ def test_seitenplan():
 # ---- PDF + Rundlauf-Vergleich -----------------------------------------------------
 def test_pdf_und_vergleich(tmp_path):
     m = regeln.plane(PROJEKT, STAMM)
-    erzeuge_pdf(m, STAMM, str(tmp_path / "t.pdf"))
+    erzeuge_pdf(m, str(tmp_path / "t.pdf"))
     modell = json.loads(json.dumps(m.als_dict(), default=str))
     v = analyse.vergleiche(tmp_path / "t.pdf", modell)
     assert v["bmk_nur_modell"] == [] and v["bmk_abdeckung"] == 1.0

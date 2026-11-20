@@ -12,6 +12,7 @@ from pathlib import Path
 import yaml
 
 from . import analyse, regeln, zeichnen
+from .modell import Planmodell
 
 PROG = Path(__file__).resolve().parent.parent          # Programmordner (start.bat liegt dort)
 STAMM = str(PROG / "beispiele" / "geraetestamm.yaml")
@@ -122,16 +123,27 @@ def cmd_generieren(a):
     m.warnungen.extend(ergaenzt)
     ziel = Path(a.ausgabe)
     ziel.mkdir(parents=True, exist_ok=True)
+    json_pfad = ziel / f"{m.projekt['nummer']}_Planmodell.json"
+    # Schicht B -> C nur über planmodell.json: Ausgabe zeichnet aus dem gespeicherten und wieder geladenen Modell
+    m.speichere(json_pfad)
+    _ausgabe(Planmodell.lade(json_pfad), ziel, a.profil)
+
+
+def cmd_zeichnen(a):
+    """Schicht C allein: PDFs und Listen aus einem vorhandenen planmodell.json (ohne Projekt/Gerätestamm)."""
+    pfad = Path(a.planmodell)
+    _ausgabe(Planmodell.lade(pfad), Path(a.ausgabe) if a.ausgabe else pfad.parent, a.profil)
+
+
+def _ausgabe(m: Planmodell, ziel: Path, profil: str | None) -> None:
+    ziel.mkdir(parents=True, exist_ok=True)
     name = m.projekt["nummer"]
-    seiten = zeichnen.erzeuge_pdf(m, stamm, str(ziel / f"{name}_Stromlaufplan.pdf"))
-    (ziel / f"{name}_Stueckliste.csv").write_text(zeichnen.stueckliste_csv(m, stamm), encoding="utf-8")
-    # Neutrales Modell = Übergabe an Variante A (EPLAN-API)
-    (ziel / f"{name}_Planmodell.json").write_text(
-        json.dumps(m.als_dict(), indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+    seiten = zeichnen.erzeuge_pdf(m, str(ziel / f"{name}_Stromlaufplan.pdf"))
+    (ziel / f"{name}_Stueckliste.csv").write_text(zeichnen.stueckliste_csv(m), encoding="utf-8")
     print(f"{len(seiten)} Seiten -> {ziel}/{name}_Stromlaufplan.pdf")
     from .hausstil import erzeuge_hausstil_pdf, lade_hausstil
     try:
-        hs = erzeuge_hausstil_pdf(m, stamm, str(ziel / f"{name}_Stromlaufplan_Hausstil.pdf"), lade_hausstil(a.profil))
+        hs = erzeuge_hausstil_pdf(m, str(ziel / f"{name}_Stromlaufplan_Hausstil.pdf"), lade_hausstil(profil))
         print(f"Hausstil: {len(hs)} Seiten in {len({k for k, _, _ in hs})} Anlagen -> "
               f"{ziel}/{name}_Stromlaufplan_Hausstil.pdf")
     except regeln.RegelFehler as e:            # bisheriger Plan, Stückliste und Modell bleiben erhalten
@@ -311,6 +323,11 @@ def main(argv=None):
     g.add_argument("--vorgaben", default=VORGABEN,
                    help="Hausvorgaben für fehlende Abschnitte (versorgung_24V, sps, leitungen)")
     g.set_defaults(f=cmd_generieren)
+    ze = sub.add_parser("zeichnen", help="PDFs und Listen aus einem vorhandenen Planmodell (JSON)")
+    ze.add_argument("planmodell")
+    ze.add_argument("--ausgabe", help="Zielordner (Standard: Ordner des Planmodells)")
+    ze.add_argument("--profil", default="hausprofil/profil.yaml")
+    ze.set_defaults(f=cmd_zeichnen)
     pr = sub.add_parser("pruefen", help="Projektmodell (YAML/Excel) prüfen, alle Lücken im Klartext")
     pr.add_argument("projekt")
     pr.add_argument("--stamm", default=STAMM)

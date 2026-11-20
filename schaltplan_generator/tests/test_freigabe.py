@@ -147,7 +147,7 @@ def test_vorgaben_freigeben_wirken_im_hausstil(gelernt, tmp_path):
     stil = lade_hausstil(pfad)
     assert stil["ader"]["0V"] == "BU/WH" and stil["kennbuchstaben"]["netzteil"] == "G" and stil["ader"]["AI"] == "WH"
     m = regeln.plane(copy.deepcopy(projekt), stamm)
-    seiten = erzeuge_hausstil_pdf(m, stamm, str(tmp_path / "h.pdf"), stil)
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"), stil)
     texte = [x.extract_text() for x in PdfReader(str(tmp_path / "h.pdf")).pages]
     nt = texte[[a for a, _, _ in seiten].index("NT24")]
     assert "-G1" in nt and "BU/WH" in nt

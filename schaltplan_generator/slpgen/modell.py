@@ -6,8 +6,12 @@ EPLAN-Projekt.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+import json
+from dataclasses import asdict, dataclass, field, fields
+from pathlib import Path
 from typing import Any
+
+SCHEMA_PLANMODELL = "planmodell/1"
 
 
 class RegelFehler(Exception):
@@ -90,6 +94,7 @@ class Planmodell:
     seiten: list[tuple[int, str, str, int]] = field(default_factory=list)  # Nr, Titel, Art, Index
     bilanz: dict[str, Any] = field(default_factory=dict)
     warnungen: list[str] = field(default_factory=list)
+    artikel: dict[str, dict[str, Any]] = field(default_factory=dict)   # Auszug Gerätestamm: nur verwendete Artikel
 
     def bm(self, bmk: str) -> Betriebsmittel:
         for b in self.betriebsmittel:
@@ -103,4 +108,35 @@ class Planmodell:
         return f"{p.get('anlage', '')}{p.get('ort', '')}{bmk}"
 
     def als_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {"schema": SCHEMA_PLANMODELL, **asdict(self)}
+
+    @classmethod
+    def aus_dict(cls, d: dict[str, Any]) -> Planmodell:
+        """Gegenstück zu `als_dict` (z. B. aus planmodell.json); prüft die Schemaversion."""
+        if d.get("schema") != SCHEMA_PLANMODELL:
+            raise RegelFehler(f"Planmodell hat Schema „{d.get('schema')}“, erwartet „{SCHEMA_PLANMODELL}“ – "
+                              f"Plan mit dieser Programmversion neu erzeugen")
+        unbekannt = set(d) - {f.name for f in fields(cls)} - {"schema"}
+        if unbekannt:
+            raise RegelFehler(f"Planmodell enthält unbekannte Felder: {', '.join(sorted(unbekannt))}")
+        typen = {"betriebsmittel": Betriebsmittel, "klemmen": Klemme, "sps_kanaele": SpsKanal,
+                 "absicherungen": Absicherung, "kabel": Kabel}
+        werte: dict[str, Any] = {k: v for k, v in d.items() if k != "schema"}
+        for k, typ in typen.items():
+            werte[k] = [typ(**x) for x in d.get(k, [])]
+        werte["seiten"] = [tuple(x) for x in d.get("seiten", [])]
+        return cls(**werte)
+
+    def speichere(self, pfad: str | Path) -> None:
+        Path(pfad).write_text(json.dumps(self.als_dict(), indent=1, ensure_ascii=False, default=str), encoding="utf-8")
+
+    @classmethod
+    def lade(cls, pfad: str | Path) -> Planmodell:
+        try:
+            d = json.loads(Path(pfad).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise RegelFehler(f"{Path(pfad).name} ist kein gültiges Planmodell (JSON beschädigt)") from None
+        try:
+            return cls.aus_dict(d)
+        except TypeError as e:
+            raise RegelFehler(f"{Path(pfad).name}: Planmodell unvollständig oder beschädigt ({e})") from None

@@ -16,7 +16,7 @@ STAMM = yaml.safe_load((B / "geraetestamm.yaml").read_text(encoding="utf-8"))
 @pytest.fixture(scope="module")
 def plan(tmp_path_factory):
     pfad = tmp_path_factory.mktemp("hs") / "h.pdf"
-    seiten = erzeuge_hausstil_pdf(regeln.plane(PROJEKT, STAMM), STAMM, str(pfad))
+    seiten = erzeuge_hausstil_pdf(regeln.plane(PROJEKT, STAMM), str(pfad))
     texte = [s.extract_text() for s in PdfReader(str(pfad)).pages]
     return seiten, texte
 
@@ -59,7 +59,7 @@ def test_freigegebenes_profil_wirkt_vorgeschlagenes_nicht(tmp_path):
         stil = lade_hausstil(pfad)
         assert stil["feldklemmleiste"] == erwartet
         if status == "freigegeben":
-            erzeuge_hausstil_pdf(regeln.plane(PROJEKT, STAMM), STAMM, str(tmp_path / "h.pdf"), stil)
+            erzeuge_hausstil_pdf(regeln.plane(PROJEKT, STAMM), str(tmp_path / "h.pdf"), stil)
             text = "\n".join(s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages)
             assert "-X20:2" in text and "feldklemmleiste = -X20 (Hausprofil, freigegeben)" in text
 
@@ -73,7 +73,7 @@ def _plan_mit(**aenderungen):
 
 def test_motornummern_beliebig_und_potentialkette(tmp_path):
     p = _plan_mit(motoren=[dict(PROJEKT["motoren"][0], bmk="M10"), dict(PROJEKT["motoren"][1], bmk="M2")])
-    seiten = erzeuge_hausstil_pdf(regeln.plane(p, STAMM), STAMM, str(tmp_path / "h.pdf"))
+    seiten = erzeuge_hausstil_pdf(regeln.plane(p, STAMM), str(tmp_path / "h.pdf"))
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     t = {(a, n): texte[i] for i, (a, n, _) in enumerate(seiten)}
     assert ("M10", 1) in t and ("M02", 2) in t
@@ -89,14 +89,14 @@ def test_motornummern_beliebig_und_potentialkette(tmp_path):
 def test_doppelte_kennung_klare_meldung(tmp_path):
     p = _plan_mit(feldgeraete=PROJEKT["feldgeraete"] + [dict(PROJEKT["feldgeraete"][0], bmk="B01")])
     with pytest.raises(regeln.RegelFehler, match="doppelt"):
-        erzeuge_hausstil_pdf(regeln.plane(p, STAMM), STAMM, str(tmp_path / "h.pdf"))
+        erzeuge_hausstil_pdf(regeln.plane(p, STAMM), str(tmp_path / "h.pdf"))
 
 
 def test_viele_seiten_inhalt_mehrseitig_und_jedes_feldgeraet_in_kabelliste(tmp_path):
     extra = [{"bmk": f"S{i}", "artikel": "IND-M12-PNP", "funktion": f"Taster {i}", "gruppe": "Sensorik"}
              for i in range(1, 31)]
     p = _plan_mit(feldgeraete=PROJEKT["feldgeraete"] + extra)
-    seiten = erzeuge_hausstil_pdf(regeln.plane(p, STAMM), STAMM, str(tmp_path / "h.pdf"))
+    seiten = erzeuge_hausstil_pdf(regeln.plane(p, STAMM), str(tmp_path / "h.pdf"))
     texte = [s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages]
     inh = "\n".join(texte[i] for i, (a, _, _) in enumerate(seiten) if a == "INH")
     assert len([s for s in seiten if s[0] == "INH"]) >= 2 and "=AUS" in inh

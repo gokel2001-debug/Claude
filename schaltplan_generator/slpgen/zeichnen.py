@@ -452,7 +452,7 @@ def s_kabel(b: Blatt, m: Planmodell, _seite: int, idx: int):
                 "dU [%]", "Seite"], teil(zeilen, idx), [25, 25, 25, 35, 45, 25, 25, 25, 25, 25])
 
 
-def stueckliste_zeilen(m: Planmodell, stamm: dict) -> list[tuple]:
+def stueckliste_zeilen(m: Planmodell) -> list[tuple]:
     gruppen: OrderedDict[str, list[str]] = OrderedDict()
     for x in m.betriebsmittel:
         if x.kategorie in ("selektivkanal", "meldung"):   # Kanal/Meldung eines Moduls, kein eigener Artikel
@@ -460,7 +460,7 @@ def stueckliste_zeilen(m: Planmodell, stamm: dict) -> list[tuple]:
         gruppen.setdefault(x.artikel, []).append(x.bmk)
     zeilen = []
     for pos, (art, bmks) in enumerate(gruppen.items(), 1):
-        a = stamm["artikel"].get(art, {"kategorie": "beistellung", "bezeichnung": "Beistellung Kunde"})
+        a = m.artikel.get(art, {"kategorie": "beistellung", "bezeichnung": "Beistellung Kunde"})
         menge: float = len(bmks)
         if a["kategorie"] == "klemme":
             menge = sum(m.bm(x).daten.get("anzahl", 1) for x in bmks)
@@ -474,9 +474,9 @@ def stueckliste_zeilen(m: Planmodell, stamm: dict) -> list[tuple]:
     return zeilen
 
 
-def s_stueckliste(b: Blatt, m: Planmodell, stamm: dict, idx: int):
+def s_stueckliste(b: Blatt, m: Planmodell, idx: int):
     tabelle(b, ["Pos.", "Menge", "Artikel", "Hersteller", "Bezeichnung", "BMK"],
-            teil(stueckliste_zeilen(m, stamm), idx), [15, 20, 35, 40, 145, 100])
+            teil(stueckliste_zeilen(m), idx), [15, 20, 35, 40, 145, 100])
 
 
 def s_auslegung(b: Blatt, m: Planmodell, _seite: int = 0, _idx: int = 0):
@@ -509,7 +509,7 @@ def s_auslegung(b: Blatt, m: Planmodell, _seite: int = 0, _idx: int = 0):
 
 
 # --------------------------------------------------------------------------- #
-def erzeuge_pdf(m: Planmodell, stamm: dict, pfad: str) -> list[tuple[int, str]]:
+def erzeuge_pdf(m: Planmodell, pfad: str) -> list[tuple[int, str]]:
     seiten = m.seiten
     zeichner = {
         "deckblatt": lambda b, nr, i: s_deckblatt(b, m),
@@ -522,7 +522,7 @@ def erzeuge_pdf(m: Planmodell, stamm: dict, pfad: str) -> list[tuple[int, str]]:
         "feld": lambda b, nr, i: s_feld(b, m, nr, i),
         "klemmen": lambda b, nr, i: s_klemmen(b, m, nr, i),
         "kabel": lambda b, nr, i: s_kabel(b, m, nr, i),
-        "stueckliste": lambda b, nr, i: s_stueckliste(b, m, stamm, i),
+        "stueckliste": lambda b, nr, i: s_stueckliste(b, m, i),
         "auslegung": lambda b, nr, i: s_auslegung(b, m),
     }
     c = Canvas(pfad, pagesize=landscape(A3))
@@ -536,7 +536,7 @@ def erzeuge_pdf(m: Planmodell, stamm: dict, pfad: str) -> list[tuple[int, str]]:
     return [(nr, t) for nr, t, _, _ in seiten]
 
 
-def stueckliste_csv(m: Planmodell, stamm: dict) -> str:
+def stueckliste_csv(m: Planmodell) -> str:
     zeilen = ["Pos;Menge;Artikel;Hersteller;Bezeichnung;BMK"]
-    zeilen += [";".join(str(x) for x in z) for z in stueckliste_zeilen(m, stamm)]
+    zeilen += [";".join(str(x) for x in z) for z in stueckliste_zeilen(m)]
     return "\n".join(zeilen) + "\n"

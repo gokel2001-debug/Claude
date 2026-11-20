@@ -367,6 +367,9 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     plan += [("Auslegungsnachweis", "auslegung", 0)]
     m.seiten = [(i + 1, t, a, x) for i, (t, a, x) in enumerate(plan)]
     assert m.seiten[SEITE_SPS - 1][2] == "sps" and (n_mot == 0 or m.seiten[ERSTE_DYN_SEITE - 1][2] == "motor_last")
+    # Auszug aus dem Gerätestamm: die Ausgabe (PDF, Listen) braucht danach nur noch das Planmodell
+    benutzt = {b.artikel for b in m.betriebsmittel} | {a.artikel for a in m.absicherungen} | {k.artikel for k in m.kabel}
+    m.artikel = {k: dict(art[k]) for k in sorted(benutzt) if k in art}
     return m
 
 

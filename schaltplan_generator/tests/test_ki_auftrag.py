@@ -42,7 +42,7 @@ def test_motor_nicht_m1_zeichnet_richtige_schutzorgane(tmp_path):
     d = yaml.safe_load((B / "projekt_beispiel.yaml").read_text(encoding="utf-8"))
     d["motoren"] = [dict(d["motoren"][0], bmk="M7")]
     m = regeln.plane(d, STAMM)
-    zeichnen.erzeuge_pdf(m, STAMM, str(tmp_path / "p.pdf"))
+    zeichnen.erzeuge_pdf(m, str(tmp_path / "p.pdf"))
     texte = [x.extract_text() for x in PdfReader(str(tmp_path / "p.pdf")).pages]
     last = next(t for t in texte if "-M7" in t and "-Q2" in t)
     assert "-K1" in last
