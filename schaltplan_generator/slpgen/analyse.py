@@ -17,6 +17,7 @@ import re
 import urllib.request
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import Any
 
 from pypdf import PdfReader
 
@@ -45,7 +46,7 @@ def analysiere_pdf(pfad: Path) -> dict:
         jahr = mt.group(3) or mt.group(4)
         jahre[int(jahr)] += 1
     kenn = Counter(mt.group(2) for mt in RE_BMK.finditer(text))
-    meta = r.metadata or {}
+    meta: Any = r.metadata or {}
     box = r.pages[0].mediabox if r.pages else None
     return {
         "datei": pfad.name,
