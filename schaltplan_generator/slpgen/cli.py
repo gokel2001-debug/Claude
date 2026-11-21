@@ -171,18 +171,46 @@ def cmd_korrektur(a):
     from .projektmodell import bereit_machen
     stamm, vorgaben = lade_yaml(a.stamm), _vorgaben(a.vorgaben)
 
+    kabel_neu: dict[str, float] = {}
+
     def probelauf(projekt: dict) -> None:                       # Regel nur speichern, wenn der Plan entsteht
-        regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0], stamm)
+        kabel_neu.update({k.bmk: k.querschnitt_mm2 for k in regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0],
+                                                                           stamm).kabel})
 
     r = erfasse_korrektur(_hausregeln_pfad(a.profil), a.art, a.wenn, a.dann, a.herkunft or Path(a.projekt).name,
                           a.grund, lade_projekt(a.projekt), stamm, a.gilt_ab, a.nur_projekt, a.bearbeiter, probelauf,
                           nur_vorschau=a.vorschau)
+    if a.art == "mindestquerschnitt":
+        from .lernschleife import lade_regeln, schalte, wende_an
+        pfad = _hausregeln_pfad(a.profil)
+        bisher = wende_an(lade_projekt(a.projekt), [x for x in lade_regeln(pfad)[0] if x["id"] != r["id"]])[0]
+        kabel_alt = {k.bmk: k.querschnitt_mm2 for k in regeln.plane(bereit_machen(bisher, stamm, vorgaben)[0], stamm).kabel}
+        aenderung = [f"{b}: {kabel_alt[b]:g} → {q:g} mm²".replace(".", ",") for b, q in kabel_neu.items()
+                     if b in kabel_alt and q != kabel_alt[b]]
+        if not aenderung:
+            if not a.vorschau:
+                schalte(pfad, r["id"], "loeschen")
+            raise regeln.RegelFehler("Alle Motor-/Leistungsleitungen haben schon mindestens diesen Querschnitt – "
+                                     "Korrektur würde nichts ändern (nicht gespeichert)")
+        r["vorschau"] += [f"Leitung {x}" for x in aenderung]
     if a.vorschau:
         print("Vorschau – so würde die Regel wirken (noch NICHT gespeichert):")
         print("\n".join(f"  • {x}" for x in r["vorschau"]))
         return
-    print(f"Hausregel {r['id']} gespeichert ({ARTEN[r['art']]}: {r['wenn']} → {r['dann']}). Sie wirkt ab dem nächsten "
-          f"Plan und steht im Auslegungsnachweis.")
+    was = f"mindestens {r['dann']} mm²".replace(".", ",") if r["art"] == "mindestquerschnitt" else f"{r['wenn']} → {r['dann']}"
+    print(f"Hausregel {r['id']} gespeichert ({ARTEN[r['art']]}: {was}). Sie wirkt ab dem nächsten Plan und steht im "
+          f"Auslegungsnachweis.")
+
+
+def cmd_artikelliste(a):
+    """Artikel und 24-V-Gruppen eines Projekts (Hilfe für Menüpunkt K)."""
+    daten = lade_projekt(a.projekt)
+    fg = [x for x in (daten.get("feldgeraete") or []) if isinstance(x, dict)] if isinstance(daten, dict) else []
+    art = lade_yaml(a.stamm).get("artikel", {})
+    print("Artikel im Projekt:")
+    for k in sorted({str(x.get("artikel")) for x in fg}):
+        print(f"  {k:<18} {art.get(k, {}).get('bezeichnung', '')}")
+    print("24-V-Gruppen: " + ", ".join(sorted({str(x.get("gruppe")) for x in fg if x.get("gruppe")})))
 
 
 def cmd_hausregel(a):
@@ -443,6 +471,10 @@ def main(argv=None):
     hr.add_argument("--profil", default=PROFIL)
     hr.add_argument("--bestaetigen", action="store_true", help="aktuelles Ergebnis aller Fälle als neues Soll übernehmen")
     hr.set_defaults(f=cmd_hausregeln)
+    al = sub.add_parser("artikelliste", help="Artikel und 24-V-Gruppen eines Projekts anzeigen")
+    al.add_argument("projekt")
+    al.add_argument("--stamm", default=STAMM)
+    al.set_defaults(f=cmd_artikelliste)
     hs = sub.add_parser("hausregel", help="Hausregel ein-/ausschalten oder löschen")
     hs.add_argument("aktion", choices=["ein", "aus", "loeschen"])
     hs.add_argument("id", help="z. B. R3")

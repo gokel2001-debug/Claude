@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 20.11.2026, manuell |
-| Aktuelles Paket | M2–M4, M2e, M5a–M5d erledigt → nächstes: M5e (Lernschleife ausbauen) |
+| Aktuelles Paket | M2–M4, M2e, M5a–M5e erledigt → nächstes: M6a (Ollama) laut Arbeitsvorrat |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 249/249 grün (ruff, mypy ohne Befund) |
+| Tests | 253/253 grün (ruff, mypy ohne Befund) |
 
 ## Paketübersicht
 | Paket | Status |
@@ -53,3 +53,4 @@
 | 21.11.2026 | Autostart Fr 22:07 | M5b Kennbuchstaben Netzteil/SPS-Karte und Anlagenaufbau aus Plänen lernen; Prüfer Software: 2 hoch (gelernter Wert still verworfen, A1 als SPS-Adresse) → behoben; 240/240 Tests |
 | 21.11.2026 | Autostart Fr 22:07 | M5c Lernschleife (Hausregeln mit Herkunft/Bearbeiter/Datum/Geltung, wirkt vor Prüfung+Planung, Regressionstest, ein/aus/löschen); Prüfer Software+Produkt: 7 hoch → behoben; 248/248 Tests |
 | 21.11.2026 | Autostart Fr 22:07 | M5d Datumsformat aus Hausprofil im Rahmen und Deckblatt; Spaltenraster nur 10 Spalten (Prüfer: 2 hoch – Verweise/Überlappung bei mehr Spalten → begrenzt, A45); 249/249 Tests |
+| 21.11.2026 | Autostart Sa 03:12 | M5e Mindestquerschnitt-Korrektur, Vorschau, Menüpunkte K/L, Artikelliste; Prüfer Software+Einsteiger: 2 hoch → behoben; 253/253 Tests |

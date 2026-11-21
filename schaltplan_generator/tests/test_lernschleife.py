@@ -145,3 +145,30 @@ def test_mindestquerschnitt_klartext(tmp_path):
         erfasse_korrektur(tmp_path / "h.yaml", "mindestquerschnitt", "motorleitung", "2,5", "x", "", ohne_motoren, STAMM)
     with pytest.raises(RegelFehler, match=r"z\. B\. 2,5"):
         erfasse_korrektur(tmp_path / "h.yaml", "mindestquerschnitt", "motor", "viel", "x", "", BEISPIEL, STAMM)
+
+
+def test_einsteiger_hilfen(tmp_path, capsys):
+    """M5e Einsteiger: Artikelliste, Groß-/Kleinschreibung, Hinweis auf neue Gruppe, klare Zahlmeldung."""
+    projekt = _projekt(tmp_path)
+    main(["artikelliste", str(projekt)])
+    aus = capsys.readouterr().out
+    assert "OPT-REF-PNP" in aus and "Sensorik" in aus
+    r = erfasse_korrektur(tmp_path / "h.yaml", "artikel_ersetzen", "opt-ref-pnp", "ind-m12-pnp", "x", "", BEISPIEL, STAMM,
+                          nur_vorschau=True)
+    assert (r["wenn"], r["dann"]) == ("OPT-REF-PNP", "IND-M12-PNP") and not (tmp_path / "h.yaml").exists()
+    r = erfasse_korrektur(tmp_path / "h.yaml", "gruppe_setzen", "IND-M12-PNP", "Sensorikk", "x", "", BEISPIEL, STAMM,
+                          nur_vorschau=True)
+    assert any("NEUE 24-V-Gruppe" in x for x in r["vorschau"])
+    with pytest.raises(RegelFehler, match=r"0,5 bis 240"):
+        erfasse_korrektur(tmp_path / "h.yaml", "mindestquerschnitt", "motorleitung", "0,3", "x", "", BEISPIEL, STAMM)
+
+
+def test_mindestquerschnitt_robust_und_strengerer_wert_gilt():
+    """Software-Befund M5e: leitungen leer/Komma ohne Absturz; Hausvorgabe 4 mm² schlägt Regel 2,5 mm²."""
+    from slpgen.projektmodell import mit_hausvorgaben
+    r = [{"id": "R1", "art": "mindestquerschnitt", "wenn": "motorleitung", "dann": "2.5"}]
+    assert wende_an({"leitungen": None}, r)[0]["leitungen"]["min_querschnitt_mm2"] == 2.5
+    assert wende_an({"leitungen": {"min_querschnitt_mm2": "4,0"}}, r)[0]["leitungen"]["min_querschnitt_mm2"] == "4,0"
+    neu, _ = wende_an({"leitungen": {}}, r)
+    zusammen, _ = mit_hausvorgaben(neu, {"leitungen": {"min_querschnitt_mm2": 4.0, "kappa": 56}})
+    assert zusammen["leitungen"]["min_querschnitt_mm2"] == 4.0 and zusammen["leitungen"]["kappa"] == 56

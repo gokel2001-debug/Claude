@@ -47,6 +47,7 @@ echo   Hausprofil:
 echo   6  Hausprofil lernen (Ordner mit Bestands-PDFs)
 echo   7  Hausprofil freigeben (Excel-Liste uebernehmen)
 echo   K  Korrektur merken (Hausregel, wirkt in allen weiteren Plaenen)
+echo   L  Hausregeln ansehen / abschalten
 echo.
 echo   Werkzeuge:
 echo   1  Beispielplan erzeugen und anzeigen (bisher + Hausstil)
@@ -68,6 +69,7 @@ if "%W%"=="7" goto :freigabe
 if "%W%"=="8" goto :kiauftrag
 if "%W%"=="9" goto :kiantwort
 if /i "%W%"=="K" goto :korrektur
+if /i "%W%"=="L" goto :hausregeln
 if "%W%"=="0" goto :ende
 goto :menue
 
@@ -211,6 +213,9 @@ set "KP="
 set /p "KP=> "
 if not defined KP goto :menue
 set "KP=%KP:"=%"
+%SLP% artikelliste "%KP%"
+if errorlevel 1 goto :fehler_lauf
+echo.
 echo Was soll sich in allen weiteren Plaenen aendern?
 echo   1 = Artikel ersetzen   2 = 24-V-Gruppe setzen   3 = Mindestquerschnitt Motor-/Leistungsleitung
 set "KA="
@@ -219,23 +224,40 @@ set "KART="
 if "%KA%"=="1" set "KART=artikel_ersetzen"
 if "%KA%"=="2" set "KART=gruppe_setzen"
 if "%KA%"=="3" set "KART=mindestquerschnitt"
-if not defined KART goto :menue
+if not defined KART echo Ungueltige Wahl - zurueck zum Menue. & pause & goto :menue
 set "KW=motorleitung"
+set "FRAGE=Mindestquerschnitt in mm2 (0,5 bis 240, z. B. 2,5): "
 if "%KART%"=="mindestquerschnitt" goto :korrektur_wert
 set "KW="
-set /p "KW=Artikel, fuer den die Regel gilt (z. B. OPT-REF-PNP): "
+set /p "KW=Artikel aus der Liste oben, fuer den die Regel gilt: "
+if not defined KW echo Kein Artikel eingegeben - zurueck zum Menue. & pause & goto :menue
+set "FRAGE=Ersatzartikel aus dem Geraetestamm: "
+if "%KART%"=="gruppe_setzen" set "FRAGE=24-V-Gruppe (aus der Liste oben oder neuer Name): "
 :korrektur_wert
 set "KD="
-set /p "KD=Neuer Wert (Ersatzartikel, Gruppe bzw. mm2 wie 2,5): "
+set /p "KD=%FRAGE%"
+if not defined KD echo Kein Wert eingegeben - zurueck zum Menue. & pause & goto :menue
 set "KG="
-set /p "KG=Grund (kurz): "
-set "KG=%KG:"=%"
+set /p "KG=Grund (kurz, Enter = ohne): "
+if defined KG set "KG=%KG:"=%"
 %SLP% korrektur "%KP%" --art %KART% --wenn "%KW%" --dann "%KD%" --grund "%KG%" --vorschau
 if errorlevel 1 goto :fehler_lauf
 set "OK="
 set /p "OK=So speichern? (J/N): "
-if /i not "%OK%"=="J" goto :menue
+if /i not "%OK%"=="J" echo Nicht gespeichert. & pause & goto :menue
 %SLP% korrektur "%KP%" --art %KART% --wenn "%KW%" --dann "%KD%" --grund "%KG%"
+if errorlevel 1 goto :fehler_lauf
+pause
+goto :menue
+
+:hausregeln
+%SLP% hausregeln
+echo.
+echo Regel abschalten: Nummer eingeben (z. B. R2) und Enter, nur Enter = zurueck
+set "RID="
+set /p "RID=> "
+if not defined RID goto :menue
+%SLP% hausregel aus "%RID%"
 if errorlevel 1 goto :fehler_lauf
 pause
 goto :menue

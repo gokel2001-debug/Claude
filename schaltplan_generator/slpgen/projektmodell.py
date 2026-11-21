@@ -336,6 +336,9 @@ def mit_hausvorgaben(daten: dict, vorgaben: dict) -> tuple[dict, list[str]]:
         if not isinstance(ziel, dict):
             continue
         teile = []
+        if name == "leitungen" and not _leer(ziel.get("min_querschnitt_mm2")) and not _leer(quelle.get("min_querschnitt_mm2")):
+            # Mindestwert aus Hausregel und Hausvorgabe: der strengere gilt
+            ziel["min_querschnitt_mm2"] = max(_zahl(ziel["min_querschnitt_mm2"]) or 0, _zahl(quelle["min_querschnitt_mm2"]) or 0)
         for f in felder:
             if f.name in quelle and _leer(ziel.get(f.name)):
                 ziel[f.name] = copy.deepcopy(quelle[f.name])

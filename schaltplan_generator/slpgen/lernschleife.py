@@ -47,7 +47,13 @@ def lade_regeln(pfad: str | Path) -> tuple[list[dict[str, Any]], list[str]]:
     regeln, hinweise = [], []
     for i, r in enumerate(roh, 1):
         fehlt = [k for k in PFLICHT if not isinstance(r, dict) or not isinstance(r.get(k), str) or not r.get(k)]
-        if fehlt or r["art"] not in ARTEN or not isinstance(r.get("aktiv", True), bool):
+        zahl_ok = True
+        if not fehlt and isinstance(r, dict) and r.get("art") == "mindestquerschnitt":
+            try:
+                zahl_ok = mm2(r["dann"]) > 0
+            except RegelFehler:
+                zahl_ok = False
+        if fehlt or r["art"] not in ARTEN or not isinstance(r.get("aktiv", True), bool) or not zahl_ok:
             grund = f"fehlt/ungültig: {', '.join(fehlt)}" if fehlt else "Art oder „aktiv“ (true/false) ungültig"
             hinweise.append(f"Hausregeln: Eintrag {i} übersprungen ({grund})")
             continue
@@ -88,13 +94,15 @@ def wende_an(projekt: dict[str, Any], regeln: list[dict[str, Any]]) -> tuple[dic
         geaendert = False
         for r in aktiv:
             if r["art"] == "mindestquerschnitt":
-                ltg = neu.setdefault("leitungen", {}) if isinstance(neu.get("leitungen", {}), dict) else {}
-                if float(ltg.get("min_querschnitt_mm2") or 0) < float(r["dann"]):
-                    ltg["min_querschnitt_mm2"] = float(r["dann"])
+                if not isinstance(neu.get("leitungen"), dict):
+                    neu["leitungen"] = {}
+                ltg = neu["leitungen"]
+                if mm2(ltg.get("min_querschnitt_mm2")) < mm2(r["dann"]):
+                    ltg["min_querschnitt_mm2"] = mm2(r["dann"])
                     geaendert = True
                     meldungen.append(f"Hausregel {r['id']} ({ARTEN[r['art']]}): Motor-/Leistungsleitungen mindestens "
-                                     f"{r['dann']} mm² – {r.get('bearbeiter', '?')}, {r.get('datum', '?')}, "
-                                     f"Herkunft {r.get('herkunft', '?')}")
+                                     f"{mm2(r['dann']):g} mm² – {r.get('bearbeiter', '?')}, {r.get('datum', '?')}, "
+                                     f"Herkunft {r.get('herkunft', '?')}".replace(".", ","))
                 continue
             feld = "artikel" if r["art"] == "artikel_ersetzen" else "gruppe"
             for fg in neu.get("feldgeraete") or []:
@@ -107,6 +115,16 @@ def wende_an(projekt: dict[str, Any], regeln: list[dict[str, Any]]) -> tuple[dic
         if not geaendert:
             return neu, meldungen
     raise RegelFehler("Hausregeln bilden einen Kreis (z. B. A → B → A) – eine der Regeln abschalten (Befehl hausregel aus)")
+
+
+def mm2(wert: Any) -> float:
+    """Querschnitt aus 2.5 / „2,5“ / None (0); ungültig -> RegelFehler im Klartext."""
+    if wert in (None, ""):
+        return 0.0
+    try:
+        return float(str(wert).replace(",", "."))
+    except ValueError:
+        raise RegelFehler(f"Mindestquerschnitt „{wert}“ ist keine Zahl – z. B. 2,5") from None
 
 
 def _naechste_id(regeln: list[dict[str, Any]]) -> str:
@@ -124,12 +142,16 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
     if art not in ARTEN:
         raise RegelFehler(f"Regelart „{art}“ unbekannt – möglich: {', '.join(ARTEN)}")
     artikel = stamm.get("artikel", {})
+    gross = {k.upper(): k for k in artikel}                     # Groß-/Kleinschreibung egal
+    wenn = gross.get(str(wenn).strip().upper(), str(wenn).strip())
+    if art == "artikel_ersetzen":
+        dann = gross.get(str(dann).strip().upper(), str(dann).strip())
     if art == "mindestquerschnitt":
         try:
             if wenn != ZIEL_MINDESTQUERSCHNITT or not 0.5 <= float(str(dann).replace(",", ".")) <= 240:
                 raise ValueError
         except ValueError:
-            raise RegelFehler("Mindestquerschnitt: --wenn motorleitung --dann <mm²>, z. B. 2,5") from None
+            raise RegelFehler("Bitte eine Zahl in mm² eingeben (0,5 bis 240), z. B. 2,5") from None
         dann = f"{float(str(dann).replace(',', '.')):g}"
         if not (projekt.get("motoren") or [fg for fg in projekt.get("feldgeraete") or []
                                           if isinstance(fg, dict) and fg.get("typical")]):
@@ -157,7 +179,9 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
                           f"alte Regel erst abschalten: hausregel aus {widerspruch[0]['id']}")
     mit_bisherigen, _ = wende_an(projekt, regeln)                 # Korrektur bezieht sich auf den erzeugten Plan
     if art == "mindestquerschnitt":
-        ausschnitt: dict[str, Any] = {"leitungen": copy.deepcopy(mit_bisherigen.get("leitungen") or {})}
+        alt_min = (mit_bisherigen.get("leitungen") or {}).get("min_querschnitt_mm2") \
+            if isinstance(mit_bisherigen.get("leitungen"), dict) else None
+        ausschnitt: dict[str, Any] = {"leitungen": {"min_querschnitt_mm2": alt_min}}
         betroffen: list[Any] = [ausschnitt]
     else:
         betroffen = [fg for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict) and fg.get("artikel") == wenn]
@@ -185,14 +209,27 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
             raise RegelFehler(f"Korrektur nicht gespeichert – mit ihr wäre der Plan nicht erzeugbar: {e}") from None
     regel["fall"]["erwartet"] = _teil(mit, ausschnitt)
     regel["vorschau"] = [x for x in mit_meldungen if x.startswith(f"Hausregel {regel['id']} ")]
+    if art == "gruppe_setzen":
+        gruppen = {fg.get("gruppe") for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict)}
+        if dann not in gruppen:
+            regel["vorschau"].append(f"Hinweis: „{dann}“ ist eine NEUE 24-V-Gruppe (eigener Abgang) – bisher: "
+                                     f"{', '.join(sorted(str(g) for g in gruppen if g))}")
     if not nur_vorschau:
         speichere_regeln(pfad, [*regeln, {k: v for k, v in regel.items() if k != "vorschau"}])
     return regel
 
 
 def _teil(modell: dict[str, Any], ausschnitt: dict[str, Any]) -> dict[str, Any]:
-    """Nur die Teile des Modells, die der Regressionsfall enthält (feldgeraete bzw. leitungen)."""
-    return {k: modell.get(k) for k in ausschnitt}
+    """Nur die Teile des Modells, die der Regressionsfall enthält (Feldgeräte bzw. Mindestquerschnitt)."""
+    teil: dict[str, Any] = {}
+    for k in ausschnitt:
+        if k == "leitungen":
+            roh = modell.get("leitungen")
+            ltg: dict[str, Any] = roh if isinstance(roh, dict) else {}
+            teil[k] = {"min_querschnitt_mm2": ltg.get("min_querschnitt_mm2")}
+        else:
+            teil[k] = modell.get(k)
+    return teil
 
 
 def _fall(r: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:

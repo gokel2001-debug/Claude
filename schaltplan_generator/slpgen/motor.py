@@ -41,8 +41,13 @@ def waehle_querschnitt(i_r: float, l_m: float, cos_phi: float, ltg: dict[str, An
         du = spannungsfall_prozent(i_r, l_m, cos_phi, ltg.get("kappa", 56), a, u_V, phasen)
         if i_z * f >= i_r and du <= ltg.get("du_max_prozent", 3.0):
             return a, i_z * f, du
-    raise MotorFehler(f"Kein Querschnitt in Tabelle i_z_A erfüllt I_r = {i_r} A / l = {l_m} m "
-                      f"-> Tabelle erweitern (Normwerte eintragen)")
+    vorhanden = " / ".join(f"{float(k):g}" for k in sorted(float(k) for k in ltg["i_z_A"])).replace(".", ",")
+    if a_min and a_min > max(float(k) for k in ltg["i_z_A"]):
+        raise MotorFehler(f"Für {a_min:g} mm² (Mindestquerschnitt aus Hausregel) fehlt ein Wert in der "
+                          f"Strombelastbarkeitstabelle – vorhanden: {vorhanden} mm². Tabelle in den Hausvorgaben ergänzen "
+                          f"oder kleineren Mindestquerschnitt wählen".replace(".", ","))
+    raise MotorFehler(f"Kein Querschnitt der Strombelastbarkeitstabelle ({vorhanden} mm²) reicht für {i_r:g} A bei "
+                      f"{l_m:g} m Leitungslänge – Tabelle in den Hausvorgaben um größere Querschnitte ergänzen".replace(".", ","))
 
 
 def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> list[Betriebsmittel]:
