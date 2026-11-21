@@ -237,9 +237,12 @@ def cmd_artikelliste(a):
         m = regeln.plane(bereit_machen(daten, lade_yaml(a.stamm), _vorgaben(a.vorgaben))[0], lade_yaml(a.stamm))
         gewaehlt = sorted({b.artikel for b in m.betriebsmittel if b.kategorie in AUSWAHL_KATEGORIEN})
         if gewaehlt:
-            print("Vom Programm gewählt (Frequenzumrichter, Schütze, Motorschutzschalter):")
+            print("Vom Programm gewählt (Frequenzumrichter, Schütze, Motorschutzschalter, Klemmen):")
             for k in gewaehlt:
                 print(f"  {k:<18} {art.get(k, {}).get('bezeichnung', '')}")
+            for rolle, k in (m.projekt.get("_klemmen") or {}).items():
+                if k not in gewaehlt:
+                    print(f"  {k:<18} {art.get(k, {}).get('bezeichnung', '')} (Klemme {rolle})")
     except regeln.RegelFehler:
         pass
 

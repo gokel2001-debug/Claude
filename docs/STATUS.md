@@ -3,11 +3,11 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 21.11.2026, Autostart Sa 03:12 |
-| Aktuelles Paket | M7b (Sicherheits-Platzhalter) erledigt; M7c (Motor mit Frequenzumrichter) erledigt → nächstes: M5f |
+| Aktuelles Paket | M7b (Sicherheits-Platzhalter) erledigt; M7c, M5f erledigt → nächstes: M8a (M4e zurückgestellt) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
-| Tests | 304/304 grün (ruff, mypy ohne Befund) |
+| Tests | 310/310 grün (ruff, mypy ohne Befund) |
 
 ## Paketübersicht
 | Paket | Status |
@@ -58,3 +58,4 @@
 | 21.11.2026 | Autostart Sa 03:12 | M7a eigener Artikelstamm (Excel/CSV-Export, Zuordnungsliste mit Vorschlägen, Wirkung in Stückliste/EPLAN, Menü A/Z); Prüfer: 2 hoch (Dezimalkomma-CSV, Vorschlag mit falschem Kennwert) → behoben; 270/270 Tests |
 | 21.11.2026 | Autostart Sa 03:12 | M7b Sicherheitskreis nur als Platzhalter: rote Seite SIK, „nicht für Fertigung“ bis Freigabevermerk (Name, Datum) der Elektrofachkraft, Not-Halt-Geräte an Standard-SPS als FEHLER (A49/A50; Prüfung 1 kritisch + 7 hoch → behoben). M7c Motor mit Frequenzumrichter (`anlauf: fu`, A51) umgesetzt |
 | 21.11.2026 | Autostart Sa 03:12 | M7c Motor mit Frequenzumrichter: FU-Auswahl, MSS auf Netzstrom, Motorleitung nach I_aus (geschirmt), Freigabe/Sollwert/Störung an SPS, STO nur als Platzhalter mit Freigabepflicht; Prüfer: 2 hoch → behoben; 304/304 Tests |
+| 21.11.2026 | Autostart Sa 03:12 | M5f Lernschleife: vom Programm gewählte Geräte (FU/Schütz/MSS/Klemmen) per Hausregel ersetzen mit Auslegungsprüfung, Sammelregel Kennbuchstabe → 24-V-Gruppe; Prüfer: 2 hoch → Klemmenrolle behoben, Bedingungen nach Motordaten → M5g; CI war rot (neue pypdf 7 → Typprüfung), behoben; 310/310 Tests |

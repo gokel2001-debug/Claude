@@ -231,7 +231,7 @@ if errorlevel 1 goto :fehler_lauf
 echo.
 echo Was soll sich in allen weiteren Plaenen aendern?
 echo   1 = Artikel ersetzen   2 = 24-V-Gruppe setzen   3 = Mindestquerschnitt Motor-/Leistungsleitung
-echo   4 = vom Programm gewaehltes Geraet ersetzen (Frequenzumrichter, Schuetz, Motorschutzschalter)
+echo   4 = vom Programm gewaehltes Geraet ersetzen (Frequenzumrichter, Schuetz, Motorschutzschalter, Klemme)
 set "KA="
 set /p "KA=> "
 set "KART="

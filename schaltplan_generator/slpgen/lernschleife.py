@@ -84,12 +84,12 @@ BEDINGUNG_KB = "kennbuchstabe:"       # Eigenschaftsbedingung: alle Feldgeräte 
 
 
 def kennbuchstaben(bmk: Any) -> str:
-    return re.match(r"[A-Z]*", str(bmk or "").strip().lstrip("-").upper()).group(0)  # type: ignore[union-attr]
+    return re.match(r"[A-Z]*", str(bmk or "").strip().rsplit("-", 1)[-1].upper()).group(0)  # type: ignore[union-attr]
 
 
 def _trifft(fg: dict[str, Any], wenn: str) -> bool:
-    if wenn.startswith(BEDINGUNG_KB):
-        return kennbuchstaben(fg.get("bmk")) == wenn[len(BEDINGUNG_KB):]
+    if wenn.lower().startswith(BEDINGUNG_KB):
+        return kennbuchstaben(fg.get("bmk")) == wenn[len(BEDINGUNG_KB):].strip().upper()
     return fg.get("artikel") == wenn
 
 
@@ -127,15 +127,16 @@ def wende_an(projekt: dict[str, Any], regeln: list[dict[str, Any]]) -> tuple[dic
                 ziele = [k for k, v in aus.items() if v == r["wenn"]]            # Kette A→B, B→C ergibt A→C
                 if r["wenn"] not in aus:                                     # eigener Eintrag nur einmal
                     ziele.append(r["wenn"])
-                for k in ziele:
+                for k in ziele:                 # Meldung je Gerät erst bei tatsächlichem Ersatz (motor.ersatz)
                     aus[k] = r["dann"]
                     geaendert = True
-                    meldungen.append(f"Hausregel {r['id']} ({ARTEN[r['art']]}): Programmauswahl {k} → {r['dann']} "
-                                     f"– {r.get('bearbeiter', '?')}, {r.get('datum', '?')}, Herkunft {r.get('herkunft', '?')}")
                 continue
             feld = "artikel" if r["art"] == "artikel_ersetzen" else "gruppe"
             for fg in neu.get("feldgeraete") or []:
                 if not isinstance(fg, dict) or not _trifft(fg, r["wenn"]) or fg.get(feld) == r["dann"]:
+                    continue
+                if r["wenn"].lower().startswith(BEDINGUNG_KB) and any(   # Artikelregel geht der Sammelregel vor
+                        x["art"] == r["art"] and x["wenn"] == fg.get("artikel") for x in aktiv):
                     continue
                 fg[feld] = r["dann"]
                 geaendert = True
@@ -197,6 +198,8 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
     elif not bedingung and wenn not in artikel:
         raise RegelFehler(f"Artikel „{wenn}“ gibt es nicht im Gerätestamm")
     if art == "auswahl_ersetzen":
+        if wenn == dann:
+            raise RegelFehler("Ersatz ist derselbe Artikel – Korrektur würde nichts ändern")
         kat = artikel[wenn].get("kategorie")
         if kat not in AUSWAHL_KATEGORIEN:
             raise RegelFehler(f"„{wenn}“ ({kat}) wählt das Programm nicht selbst – für Feldgeräte „Artikel ersetzen“ "

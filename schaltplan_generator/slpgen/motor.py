@@ -54,14 +54,23 @@ def waehle_querschnitt(i_r: float, l_m: float, cos_phi: float, ltg: dict[str, An
                       f"{l_m:g} m Leitungslänge – Tabelle in den Hausvorgaben um größere Querschnitte ergänzen".replace(".", ","))
 
 
-def ersatz(projekt: dict, key: str, art: dict, bmk: str, passt: Callable[..., bool], bedingung: str) -> str:
-    """Hausregel „vom Programm gewähltes Gerät ersetzen“ anwenden; der Ersatz muss die Auslegung weiter erfüllen."""
-    neu = (projekt.get("auswahl_ersetzen") or {}).get(key) if isinstance(projekt.get("auswahl_ersetzen"), dict) else None
+def ersatz(projekt: dict, key: str, art: dict, bmk: str, passt: Callable[..., bool], bedingung: str,
+           m: Planmodell | None = None) -> str:
+    """Hausregel „vom Programm gewähltes Gerät ersetzen“ anwenden; der Ersatz muss die Auslegung weiter erfüllen.
+    Jeder tatsächliche Ersatz steht im Auslegungsnachweis (auch wenn er von Hand ins Projektmodell geschrieben wurde)."""
+    zuordnung = projekt.get("auswahl_ersetzen")
+    neu = zuordnung.get(key) if isinstance(zuordnung, dict) else None
     if not neu:
         return key
-    if neu not in art or art[neu].get("kategorie") != art[key].get("kategorie") or not passt(art[neu]):
-        raise MotorFehler(f"{bmk}: Hausregel ersetzt {key} durch {neu} – {neu} erfüllt nicht {bedingung}; Regel "
-                          f"prüfen (Menü L)")
+    if not isinstance(neu, str) or neu not in art:
+        raise MotorFehler(f"{bmk}: Hausregel ersetzt {key} durch „{neu}“ – den gibt es nicht im Gerätestamm; Regel prüfen "
+                          f"(Menü L)")
+    if art[neu].get("kategorie") != art[key].get("kategorie") or not passt(art[neu]):
+        raise MotorFehler(f"{bmk}: Hausregel ersetzt {key} durch {neu} – {neu} erfüllt nicht "
+                          f"{bedingung.replace('.', ',')}; Regel prüfen (Menü L)")
+    if m is not None:
+        m.warnungen.append(f"Hausregel (vom Programm gewähltes Gerät): {bmk} {key} → {neu}, erfüllt "
+                           f"{bedingung.replace('.', ',')}")
     return str(neu)
 
 
@@ -109,15 +118,16 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
             fu_key = min(fus, key=lambda a: float(art[a]["i_aus_A"]))
             fu_key = ersatz(projekt, fu_key, art, mbmk, lambda d, i=i_n, p=float(mo["p_kW"]): float(d.get("i_aus_A", 0)) >= i
                             and float(d.get("p_kW", 0)) >= p and isinstance(d.get("i_ein_A"), (int, float)),
-                            f"I_aus ≥ {i_n:g} A und P ≥ {mo['p_kW']} kW")
+                            f"I_aus ≥ {i_n:g} A und P ≥ {mo['p_kW']} kW", m)
             i_netz = float(art[fu_key]["i_ein_A"])
 
         mss = [a for a in kat("motorschutz") if art[a]["bereich_A"][0] <= i_netz <= art[a]["bereich_A"][1]]
         if not mss:
             raise MotorFehler(f"{mbmk}: kein Motorschutzschalter mit Einstellbereich für {i_netz:g} A".replace(".", ","))
         mss_key = min(mss, key=lambda a: art[a]["bereich_A"][1])
-        mss_key = ersatz(projekt, mss_key, art, mbmk, lambda d, i=i_netz: d["bereich_A"][0] <= i <= d["bereich_A"][1],
-                         f"Einstellbereich mit {i_netz:g} A")
+        mss_key = ersatz(projekt, mss_key, art, mbmk,
+                         lambda d, i=i_netz: isinstance(d.get("bereich_A"), list) and len(d["bereich_A"]) == 2
+                         and d["bereich_A"][0] <= i <= d["bereich_A"][1], f"Einstellbereich mit {i_netz:g} A", m)
         if fu_key and art[mss_key]["bereich_A"][1] > float(art[fu_key]["vorsicherung_max_A"]):
             raise MotorFehler(f"{mbmk}: Motorschutzschalter {mss_key} über der zulässigen Vorsicherung von {fu_key} "
                               f"({art[fu_key]['vorsicherung_max_A']} A laut Datenblatt)")
@@ -127,7 +137,7 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
                 raise MotorFehler(f"Kein Schütz mit AC-3 >= {i_n} A")
             sch_key = min(sch, key=lambda a: art[a]["ac3_A"])
             sch_key = ersatz(projekt, sch_key, art, mbmk, lambda d, i=i_n: float(d.get("ac3_A", 0)) >= i,
-                             f"AC-3 ≥ {i_n:g} A")
+                             f"AC-3 ≥ {i_n:g} A", m)
         # Motorleitung hinter dem FU: Strom begrenzt der FU (bis I_aus), nicht der MSS davor -> Bemessung nach I_aus
         i_ltg = float(art[fu_key]["i_aus_A"]) if fu_key else i_n                      # ANNAHME A51
         a_mm2, i_z, du = waehle_querschnitt(i_ltg, float(mo["laenge_m"]), cos_phi, ltg)

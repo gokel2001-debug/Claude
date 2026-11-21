@@ -186,7 +186,7 @@ def test_auswahl_ersetzen_programmgewaehlte_geraete(tmp_path, capsys):
     pm = yaml.safe_load((tmp_path / "aus" / "P-2026-001_Planmodell.json").read_text(encoding="utf-8"))
     schuetze = {b["bmk"]: b["artikel"] for b in pm["betriebsmittel"] if b["kategorie"] == "schuetz"}
     assert "SCH-09" not in schuetze.values() and schuetze["-K1"] == "SCH-12"
-    assert any("Programmauswahl SCH-09 → SCH-12" in w for w in pm["warnungen"])
+    assert any("vom Programm gewähltes Gerät): -M1 SCH-09 → SCH-12, erfüllt AC-3 ≥ 1,9 A" in w for w in pm["warnungen"])
     regeln, _ = lade_regeln(profil.with_name("hausregeln.yaml"))
     assert regeln[0]["fall"]["erwartet"] == {"auswahl_ersetzen": {"SCH-09": "SCH-12"}} and not pruefe_regressionen(regeln)
     # Kette: SCH-12 -> SCH-18 verändert den alten Fall -> Regressionstest meldet es
@@ -232,7 +232,8 @@ def test_auswahl_ersetzen_klemme(tmp_path):
     """M5f Teil 2: Klemmenartikel (Leiste) per Hausregel – wirkt auf Planmodell und Hausstil-Stückliste."""
     from slpgen import regeln
     stamm = copy.deepcopy(STAMM)
-    stamm["artikel"]["RK-6"] = {"kategorie": "klemme", "hersteller": "Beispiel GmbH", "bezeichnung": "Reihenklemme 6 mm²"}
+    stamm["artikel"]["RK-6"] = {"kategorie": "klemme", "hersteller": "Beispiel GmbH", "bezeichnung": "Reihenklemme 6 mm²",
+                                "querschnitt_mm2": 6}
     p = {**copy.deepcopy(BEISPIEL), "auswahl_ersetzen": {"RK-4": "RK-6"}}
     m = regeln.plane(p, stamm)
     assert m.bm("-X2").artikel == "RK-6" and m.projekt["_klemmen"]["leistung"] == "RK-6" and "RK-4" not in m.artikel
@@ -240,8 +241,15 @@ def test_auswahl_ersetzen_klemme(tmp_path):
     erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
     text = "".join(s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages)
     assert "RK-6" in text
-    with pytest.raises(RegelFehler, match="Kategorie Klemme"):
+    with pytest.raises(RegelFehler, match="erfüllt nicht"):
         regeln.plane({**copy.deepcopy(BEISPIEL), "auswahl_ersetzen": {"RK-4": "SCH-09"}}, STAMM)
+    # Prüfung M5f (Software 1 / Produkt 1): PE bleibt PE, Querschnitt nicht kleiner
+    for falsch in ({"RK-PE": "RK-4"}, {"RK-4": "RK-2.5"}, {"RK-2.5": "RK-PE"}):
+        with pytest.raises(RegelFehler, match="erfüllt nicht"):
+            regeln.plane({**copy.deepcopy(BEISPIEL), "auswahl_ersetzen": falsch}, STAMM)
+    with pytest.raises(RegelFehler, match="gibt es nicht im Gerätestamm"):
+        regeln.plane({**copy.deepcopy(BEISPIEL), "auswahl_ersetzen": {"SCH-09": ["x"]}}, STAMM)
+    assert any("Klemmen (leistung) RK-4 → RK-6" in w for w in m.warnungen)    # jeder Ersatz im Nachweis
 
 
 def test_bedingung_kennbuchstabe_gruppe(tmp_path):
@@ -260,3 +268,16 @@ def test_bedingung_kennbuchstabe_gruppe(tmp_path):
         erfasse_korrektur(h, "artikel_ersetzen", "kennbuchstabe:B", "IND-M12-PNP", "x", "", BEISPIEL, STAMM)
     with pytest.raises(RegelFehler, match="ungültig"):
         erfasse_korrektur(h, "gruppe_setzen", "kennbuchstabe:B1", "S", "x", "", BEISPIEL, STAMM)
+
+
+def test_m5f_nacharbeit_rangfolge_und_klartext(tmp_path):
+    """Prüfung M5f Software 2/6/8: Artikelregel vor Sammelregel (kein Kreis), wenn = dann abgewiesen, Präfix robust."""
+    regeln_ = [{"id": "R1", "art": "gruppe_setzen", "wenn": "kennbuchstabe:B", "dann": "G1"},
+               {"id": "R2", "art": "gruppe_setzen", "wenn": "IND-M12-PNP", "dann": "G2"},
+               {"id": "R3", "art": "gruppe_setzen", "wenn": "Kennbuchstabe:Y", "dann": "G3"}]
+    neu, _ = wende_an(BEISPIEL, regeln_)
+    gruppen = {fg["bmk"]: (fg["artikel"], fg["gruppe"]) for fg in neu["feldgeraete"]}
+    assert all(g == ("G2" if a == "IND-M12-PNP" else "G1") for b, (a, g) in gruppen.items() if b.startswith("B"))
+    assert any(g == "G3" for b, (_, g) in gruppen.items() if b.startswith("Y"))
+    with pytest.raises(RegelFehler, match="derselbe Artikel"):
+        erfasse_korrektur(tmp_path / "h.yaml", "auswahl_ersetzen", "SCH-09", "sch-09", "x", "", BEISPIEL, STAMM)

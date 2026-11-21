@@ -141,9 +141,12 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     m.projekt["_netz"] = projekt["einspeisung"].get("netz", "")
     # Klemmenartikel: Standard, durch Hausregel „vom Programm gewähltes Gerät ersetzen“ änderbar (Lernschleife, A52)
     kl = {"leistung": "RK-4", "feld": "RK-2.5", "pe": "RK-PE"}
-    for rolle, key in kl.items():
+    for rolle, key in kl.items():       # Ersatz nur gleiche Rolle (PE bleibt PE) und mindestens gleicher Querschnitt
+        q_alt, pe_alt = float(stamm["artikel"][key].get("querschnitt_mm2") or 0), bool(stamm["artikel"][key].get("pe"))
         kl[rolle] = ersatz(projekt, key, stamm["artikel"], f"Klemmen ({rolle})",
-                           lambda d: d.get("kategorie") == "klemme", "die Kategorie Klemme")
+                           lambda d, q=q_alt, pe=pe_alt: bool(d.get("pe")) == pe
+                           and isinstance(d.get("querschnitt_mm2"), (int, float)) and d["querschnitt_mm2"] >= q,
+                           f"{'Schutzleiterklemme' if pe_alt else 'Reihenklemme (kein PE)'} ≥ {q_alt:g} mm²", m)
     m.projekt["_klemmen"] = kl
     art = stamm["artikel"]
     v24 = projekt["versorgung_24V"]
