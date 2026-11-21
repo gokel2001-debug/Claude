@@ -187,6 +187,7 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
         signale.extend([k, q, *teile])
     if motoren:
         n_kl = 4 * len(motoren)
-        m.betriebsmittel.append(Betriebsmittel("-X2", "RK-4", art["RK-4"]["bezeichnung"], "Klemmleiste Motoren",
+        rk = (m.projekt.get("_klemmen") or {}).get("leistung", "RK-4")
+        m.betriebsmittel.append(Betriebsmittel("-X2", rk, art[rk]["bezeichnung"], "Klemmleiste Motoren",
                                                "klemme", daten={"anzahl": n_kl}))
     return signale

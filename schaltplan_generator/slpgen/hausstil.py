@@ -1034,7 +1034,8 @@ class Hausplan:
         for k in self._klemmenzeilen():
             anlage, rest = k[0][1:].split("-", 1)
             leiste = "-" + rest.split(":")[0]
-            key = "RK-PE" if k[1] == "PE" else ("RK-4" if leiste == "-X1" else "RK-2.5")
+            kl = {"leistung": "RK-4", "feld": "RK-2.5", "pe": "RK-PE", **(self.m.projekt.get("_klemmen") or {})}
+            key = kl["pe"] if k[1] == "PE" else (kl["leistung"] if leiste == "-X1" else kl["feld"])
             klemmen[(anlage, leiste, key)] = klemmen.get((anlage, leiste, key), 0) + 1
         for (anlage, leiste, key), n in klemmen.items():
             a = artikel.get(key, {"hersteller": "", "bezeichnung": "Reihenklemme"})

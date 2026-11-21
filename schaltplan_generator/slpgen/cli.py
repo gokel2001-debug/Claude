@@ -180,7 +180,8 @@ def cmd_korrektur(a):
                                                                            stamm).kabel})
 
     def planartikel(projekt: dict) -> set[str]:                 # vom Programm gewählte Artikel im Plan
-        return {b.artikel for b in regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0], stamm).betriebsmittel}
+        m = regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0], stamm)
+        return {b.artikel for b in m.betriebsmittel} | set((m.projekt.get("_klemmen") or {}).values())
 
     r = erfasse_korrektur(_hausregeln_pfad(a.profil), a.art, a.wenn, a.dann, a.herkunft or Path(a.projekt).name,
                           a.grund, lade_projekt(a.projekt), stamm, a.gilt_ab, a.nur_projekt, a.bearbeiter, probelauf,

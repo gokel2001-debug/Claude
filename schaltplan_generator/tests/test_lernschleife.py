@@ -226,3 +226,19 @@ def test_auswahl_ersetzen_kreis():
               {"id": "R2", "art": "auswahl_ersetzen", "wenn": "SCH-12", "dann": "SCH-09"}]
     with pytest.raises(RegelFehler, match="Kreis"):
         wende_an(BEISPIEL, regeln)
+
+
+def test_auswahl_ersetzen_klemme(tmp_path):
+    """M5f Teil 2: Klemmenartikel (Leiste) per Hausregel – wirkt auf Planmodell und Hausstil-Stückliste."""
+    from slpgen import regeln
+    stamm = copy.deepcopy(STAMM)
+    stamm["artikel"]["RK-6"] = {"kategorie": "klemme", "hersteller": "Beispiel GmbH", "bezeichnung": "Reihenklemme 6 mm²"}
+    p = {**copy.deepcopy(BEISPIEL), "auswahl_ersetzen": {"RK-4": "RK-6"}}
+    m = regeln.plane(p, stamm)
+    assert m.bm("-X2").artikel == "RK-6" and m.projekt["_klemmen"]["leistung"] == "RK-6" and "RK-4" not in m.artikel
+    from slpgen.hausstil import erzeuge_hausstil_pdf
+    erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
+    text = "".join(s.extract_text() for s in PdfReader(str(tmp_path / "h.pdf")).pages)
+    assert "RK-6" in text
+    with pytest.raises(RegelFehler, match="Kategorie Klemme"):
+        regeln.plane({**copy.deepcopy(BEISPIEL), "auswahl_ersetzen": {"RK-4": "SCH-09"}}, STAMM)

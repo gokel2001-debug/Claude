@@ -27,8 +27,8 @@ from .modell import RegelFehler
 
 ARTEN = {"artikel_ersetzen": "Artikel ersetzen", "gruppe_setzen": "24-V-Gruppe setzen",
          "mindestquerschnitt": "Mindestquerschnitt Motor-/Leistungsleitung",
-         "auswahl_ersetzen": "vom Programm gewähltes Gerät ersetzen (FU/Schütz/Motorschutzschalter)"}
-AUSWAHL_KATEGORIEN = ("fu", "schuetz", "motorschutz")      # Geräte, die die Planung selbst aus dem Stamm wählt
+         "auswahl_ersetzen": "vom Programm gewähltes Gerät ersetzen (FU/Schütz/Motorschutzschalter/Klemme)"}
+AUSWAHL_KATEGORIEN = ("fu", "schuetz", "motorschutz", "klemme")      # Geräte, die die Planung selbst aus dem Stamm wählt
 ZIEL_MINDESTQUERSCHNITT = "motorleitung"
 PFLICHT = ("id", "art", "wenn", "dann")
 MAX_DURCHLAEUFE = 10                 # Regelketten A→B→C; mehr Durchläufe = Kreis
@@ -178,7 +178,7 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
         kat = artikel[wenn].get("kategorie")
         if kat not in AUSWAHL_KATEGORIEN:
             raise RegelFehler(f"„{wenn}“ ({kat}) wählt das Programm nicht selbst – für Feldgeräte „Artikel ersetzen“ "
-                              f"verwenden; hier nur Frequenzumrichter, Schütz, Motorschutzschalter")
+                              f"verwenden; hier nur Frequenzumrichter, Schütz, Motorschutzschalter, Klemme")
         if dann not in artikel or artikel[dann].get("kategorie") != kat:
             raise RegelFehler(f"Ersatz „{dann}“ muss ein Artikel derselben Art ({kat}) aus dem Gerätestamm sein")
     if art == "artikel_ersetzen":

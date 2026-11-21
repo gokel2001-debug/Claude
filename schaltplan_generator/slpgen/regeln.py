@@ -27,7 +27,7 @@ from .modell import (
     RegelFehler,
     SpsKanal,
 )
-from .motor import MOTOREN_JE_SEITE, plane_motoren, waehle_querschnitt
+from .motor import MOTOREN_JE_SEITE, ersatz, plane_motoren, waehle_querschnitt
 
 MAX_FELDKLEMMEN = 9           # je Feldgerät/Baustein (eine Seite, Spalten 1..9)
 VERTEILUNGEN = ("einzelsicherungen", "selektivmodul")
@@ -139,6 +139,12 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
         m.warnungen.append("Sicherheitsfunktionen (Not-Halt/PL) nur als PLATZHALTER – Auslegung, Validierung und Freigabe "
                            "durch Elektrofachkraft/Sicherheitsverantwortlichen erforderlich")
     m.projekt["_netz"] = projekt["einspeisung"].get("netz", "")
+    # Klemmenartikel: Standard, durch Hausregel „vom Programm gewähltes Gerät ersetzen“ änderbar (Lernschleife, A52)
+    kl = {"leistung": "RK-4", "feld": "RK-2.5", "pe": "RK-PE"}
+    for rolle, key in kl.items():
+        kl[rolle] = ersatz(projekt, key, stamm["artikel"], f"Klemmen ({rolle})",
+                           lambda d: d.get("kategorie") == "klemme", "die Kategorie Klemme")
+    m.projekt["_klemmen"] = kl
     art = stamm["artikel"]
     v24 = projekt["versorgung_24V"]
 
@@ -449,7 +455,8 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     if n_x2:                         # Stückliste: tatsächliche Zahl der Leistungsklemmen
         x2 = next((b for b in m.betriebsmittel if b.bmk == "-X2"), None)
         if x2 is None:
-            x2 = Betriebsmittel("-X2", "RK-4", artikel("RK-4")["bezeichnung"], "Klemmleiste Leistung", "klemme")
+            x2 = Betriebsmittel("-X2", kl["leistung"], artikel(kl["leistung"])["bezeichnung"], "Klemmleiste Leistung",
+                                "klemme")
             m.betriebsmittel.append(x2)
         x2.daten["anzahl"] = n_x2
     m.betriebsmittel.extend(meldungen)
@@ -459,7 +466,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
                           f"Kennzeichen (z. B. -F…, -K…, -Q…, -A…, -T…, -W…, -X…) nicht für Feldgeräte verwenden")
     m.warnungen = list(dict.fromkeys(m.warnungen))   # gleiche Hinweise nur einmal
 
-    m.betriebsmittel.append(Betriebsmittel("-X1", "RK-2.5", artikel("RK-2.5")["bezeichnung"],
+    m.betriebsmittel.append(Betriebsmittel("-X1", kl["feld"], artikel(kl["feld"])["bezeichnung"],
                                            "Klemmleiste Feld", "klemme",
                                            daten={"anzahl": knr - 1}))
     # ---- Seitenplan --------------------------------------------------------------
@@ -482,7 +489,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     assert m.seiten[SEITE_SPS - 1][2] == "sps" and (n_mot == 0 or m.seiten[ERSTE_DYN_SEITE - 1][2] == "motor_last")
     # Auszug aus dem Gerätestamm: die Ausgabe (PDF, Listen) braucht danach nur noch das Planmodell
     benutzt = {b.artikel for b in m.betriebsmittel} | {a.artikel for a in m.absicherungen} | {k.artikel for k in m.kabel}
-    benutzt |= {"RK-2.5", "RK-4", "RK-PE"}         # Reihen-/Schutzleiterklemmen der Listen im Hausstil
+    benutzt |= set(kl.values())                     # Reihen-/Schutzleiterklemmen der Listen im Hausstil
     m.artikel = {k: dict(art[k]) for k in sorted(benutzt) if k in art}
     return m
 

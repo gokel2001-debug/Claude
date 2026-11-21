@@ -205,8 +205,8 @@ def _pruefe_eintrag(typ: type, x: Any) -> list[str]:
 # --------------------------------------------------------------------------- #
 TEILE = {
     "projekt": ("Objekt", "Kopfdaten aus dem Projektmodell (nummer, bezeichnung, anlage, ort, …; `_netz` = Netzform; "
-                "`_sicherheit` = Platzhalterseite Sicherheit: not_halt, pl, stoppkategorie, funktionen, freigabe, "
-                "ausloeser, geraete, antriebe)"),
+                "`_klemmen` = Klemmenartikel je Rolle leistung/feld/pe; `_sicherheit` = Platzhalterseite Sicherheit: "
+                "not_halt, pl, stoppkategorie, funktionen, freigabe, ausloeser, geraete, antriebe)"),
     "betriebsmittel": ("Liste Betriebsmittel", "alle Geräte, Bausteinteile, Kabel, Klemmleisten mit Lage im Plan"),
     "klemmen": ("Liste Klemme", "Klemmenbelegung innen/außen je Leiste"),
     "sps_kanaele": ("Liste SpsKanal", "SPS-Kanalzuordnung mit Adresse"),
