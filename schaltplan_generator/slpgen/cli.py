@@ -443,14 +443,15 @@ def cmd_vergleichen(a):
 
 
 def cmd_abweichungen(a):
-    from .abweichung import schreibe_liste, vergleiche
+    from .abweichung import freier_name, schreibe_liste, vergleiche
     from .hausstil import lade_hausstil
     m = Planmodell.lade(a.nachbau)
     erg = vergleiche(Path(a.referenz), m, lade_hausstil(a.profil) if a.profil else None)
-    ziel = Path(a.ausgabe or Path(a.nachbau).with_name(Path(a.referenz).stem + "_Abweichungen.xlsx"))
+    ziel = freier_name(Path(a.ausgabe or Path(a.nachbau).with_name(Path(a.referenz).stem + "_Abweichungen.xlsx")))
     schreibe_liste(erg, ziel)
     for bereich, (g, r, n, q) in erg["kennzahlen"].items():
-        print(f"{bereich:<12} gemeinsam {g:>4}  nur Referenz {r:>4}  nur Nachbau {n:>4}  Übereinstimmung {q:.1%}".replace(".", ","))
+        quote = f"{q:.1%}".replace(".", ",") if q is not None else "NICHT AUSWERTBAR (im Referenzplan nichts erkannt)"
+        print(f"{bereich:<12} gemeinsam {g:>4}  nur Referenz {r:>4}  nur Nachbau {n:>4}  Übereinstimmung {quote}")
     print(f"Abweichungsliste: {ziel} – Spalte „Bewertung“ je Zeile ausfüllen (Elektrofachkraft).")
 
 
