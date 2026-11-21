@@ -8,6 +8,6 @@ Schritt-für-Schritt für Einsteiger. Echte Kundenpläne bleiben auf dem PC.
 | PC2 | Beispielplan im Hausstil ansehen | Menü 1, PDF mit „_Hausstil“ öffnen | Was weicht vom eigenen Hausstil ab? (Stichpunkte) |
 | PC3 | Hausprofil aus 10 echten Plänen lernen | Menü 6, Ordner mit Bestands-PDFs ins Fenster ziehen | Inhalt von `hausprofil\profil_uebersicht.txt` (enthält keine Kundendaten, nur Regeln) |
 | PC4 | Freigabeliste ausfüllen | `hausprofil\profil_freigabe.xlsx` JA/NEIN, Menü 7 | Meldung von Menü 7 |
-| PC5 | Lokale KI (Ollama) prüfen | folgt mit M6 | – |
+| PC5 | Lokale KI (Ollama) prüfen | Ollama installieren, `ollama pull qwen2.5:7b`, Menü 8 → „Lokale KI? J“ mit `beispiele\lastenheft_beispiel.md`, dann Menü 9 | Meldung von Menü 9 und Dauer der KI-Antwort |
 | PC6 | KI-Aufbereitung mit der im Betrieb freigegebenen KI erproben | `python -m slpgen ki-auftrag beispiele\lastenheft_beispiel.md`, Text in den Chat, Antwort speichern, `pruefen` | Meldung von `pruefen` und welche KI (Name) |
 | PC7 | Eigenen Artikelstamm bereitstellen (Produkt-Befund) | Excel- oder EPLAN-Artikelexport der häufigsten Artikel (Netzteile, Sicherungen, Klemmen, SPS-Karten) in `hausprofil\` ablegen | Spaltenköpfe der Datei (keine Inhalte) |

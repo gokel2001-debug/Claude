@@ -353,6 +353,16 @@ def cmd_ki_auftrag(a):
         print(f"ACHTUNG: sehr lang – viele KI-Chats nehmen so viel Text nicht auf. Lastenheft auf die Teile mit "
               f"Feldgeräten, Motoren und Einspeisung kürzen (Ziel unter {MAX_ZEICHEN:,} Zeichen).".replace(",", "."))
     antwort = quelle.with_name(quelle.stem + "_projektmodell.yaml")
+    if a.ollama:                                      # Stufe A lokal: Auftrag direkt an die lokale KI
+        from .lokale_ki import frage_lokale_ki
+        print(f"Lokale KI ({a.modell}) arbeitet – das kann einige Minuten dauern …")
+        antwort.write_text(frage_lokale_ki(text, a.ollama, a.modell), encoding="utf-8")
+        print(f"KI-Antwort gespeichert: {antwort}")
+        if MENUE:
+            print("Weiter mit Punkt 9 (KI-Antwort prüfen und Plan erzeugen).")
+        else:
+            print(f"Prüfen: python -m slpgen pruefen \"{antwort}\"")
+        return
     print("So geht es weiter:")
     if MENUE:
         print("1. Auftrag im KI-Chat einfügen und absenden (nur eine vom Betrieb freigegebene KI;")
@@ -498,6 +508,8 @@ def main(argv=None):
     ka.add_argument("lastenheft")
     ka.add_argument("--ziel", help="Ausgabedatei (Standard: <Lastenheft>_KI_Auftrag.txt)")
     ka.add_argument("--stamm", default=STAMM)
+    ka.add_argument("--ollama", help="lokale KI (Ollama), z. B. http://localhost:11434 – Auftrag wird direkt gesendet")
+    ka.add_argument("--modell", default="qwen2.5:7b", help="Modell der lokalen KI")
     ka.add_argument("--anleitung", default=str(PROG.parent / "docs" / "KI_AUFBEREITUNG.md"))
     ka.set_defaults(f=cmd_ki_auftrag)
     sc = sub.add_parser("schema", help="Schema des Projektmodells als Markdown schreiben")

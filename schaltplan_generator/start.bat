@@ -157,6 +157,9 @@ if not defined LH goto :menue
 set "LH=%LH:"=%"
 for %%F in ("%LH%") do (set "LHDIR=%%~dpF" & set "LHNAME=%%~nF")
 set "SLPGEN_MENUE=1"
+set "LOKAL="
+set /p "LOKAL=Lokale KI (Ollama auf diesem PC) verwenden? J/N (Enter = N, Chat im Browser): "
+if /i "%LOKAL%"=="J" goto :kiauftrag_lokal
 %SLP% ki-auftrag "%LH%"
 if errorlevel 1 goto :fehler_lauf
 set "CLIPDATEI=%LHDIR%%LHNAME%_KI_Auftrag.txt"
@@ -164,6 +167,12 @@ call :zwischenablage
 set "ANTWORT=%LHDIR%%LHNAME%_projektmodell.yaml"
 if not exist "%ANTWORT%" type nul > "%ANTWORT%"
 start "" notepad "%ANTWORT%"
+pause
+goto :menue
+
+:kiauftrag_lokal
+%SLP% ki-auftrag "%LH%" --ollama http://localhost:11434
+if errorlevel 1 goto :fehler_lauf
 pause
 goto :menue
 
