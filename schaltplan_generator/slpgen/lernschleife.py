@@ -17,6 +17,7 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import os
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,19 @@ def _datum(text: Any) -> dt.date | None:
         return None
 
 
+BEDINGUNG_KB = "kennbuchstabe:"       # Eigenschaftsbedingung: alle Feldgeräte mit diesem Kennbuchstaben (IEC 81346-2)
+
+
+def kennbuchstaben(bmk: Any) -> str:
+    return re.match(r"[A-Z]*", str(bmk or "").strip().lstrip("-").upper()).group(0)  # type: ignore[union-attr]
+
+
+def _trifft(fg: dict[str, Any], wenn: str) -> bool:
+    if wenn.startswith(BEDINGUNG_KB):
+        return kennbuchstaben(fg.get("bmk")) == wenn[len(BEDINGUNG_KB):]
+    return fg.get("artikel") == wenn
+
+
 def _gilt(regel: dict[str, Any], projekt: dict[str, Any]) -> bool:
     kopf = projekt.get("projekt") or {}
     if regel.get("nur_projekt") and str(kopf.get("nummer", "")) != str(regel["nur_projekt"]):
@@ -121,7 +135,7 @@ def wende_an(projekt: dict[str, Any], regeln: list[dict[str, Any]]) -> tuple[dic
                 continue
             feld = "artikel" if r["art"] == "artikel_ersetzen" else "gruppe"
             for fg in neu.get("feldgeraete") or []:
-                if not isinstance(fg, dict) or fg.get("artikel") != r["wenn"] or fg.get(feld) == r["dann"]:
+                if not isinstance(fg, dict) or not _trifft(fg, r["wenn"]) or fg.get(feld) == r["dann"]:
                     continue
                 fg[feld] = r["dann"]
                 geaendert = True
@@ -160,6 +174,14 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
     artikel = stamm.get("artikel", {})
     gross = {k.upper(): k for k in artikel}                     # Groß-/Kleinschreibung egal
     wenn = gross.get(str(wenn).strip().upper(), str(wenn).strip())
+    bedingung = wenn.lower().startswith(BEDINGUNG_KB)
+    if bedingung:
+        if art != "gruppe_setzen":
+            raise RegelFehler("Bedingung „kennbuchstabe:…“ gibt es nur für „24-V-Gruppe setzen“ – Artikel nur einzeln ersetzen")
+        kb = wenn[len(BEDINGUNG_KB):].strip().upper()
+        if not re.fullmatch(r"[A-Z]{1,3}", kb):
+            raise RegelFehler(f"Kennbuchstabe „{kb}“ ungültig – 1 bis 3 Buchstaben, z. B. kennbuchstabe:B")
+        wenn = BEDINGUNG_KB + kb
     if art in ("artikel_ersetzen", "auswahl_ersetzen"):
         dann = gross.get(str(dann).strip().upper(), str(dann).strip())
     if art == "mindestquerschnitt":
@@ -172,7 +194,7 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
         if not (projekt.get("motoren") or [fg for fg in projekt.get("feldgeraete") or []
                                           if isinstance(fg, dict) and fg.get("typical")]):
             raise RegelFehler("Im Projekt gibt es keine Motor-/Leistungsleitung – Korrektur würde nichts ändern")
-    elif wenn not in artikel:
+    elif not bedingung and wenn not in artikel:
         raise RegelFehler(f"Artikel „{wenn}“ gibt es nicht im Gerätestamm")
     if art == "auswahl_ersetzen":
         kat = artikel[wenn].get("kategorie")
@@ -188,7 +210,7 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
         if (a.get("kategorie"), a.get("signal")) != (b.get("kategorie"), b.get("signal")):
             raise RegelFehler(f"Ersatzartikel „{dann}“ passt nicht: {b.get('kategorie')}/{b.get('signal')} statt "
                               f"{a.get('kategorie')}/{a.get('signal')} – nur gleichartige Geräte ersetzen")
-    if art == "gruppe_setzen" and (artikel[wenn].get("signal") == "DO" or dann == "DO-Last"):
+    if art == "gruppe_setzen" and (dann == "DO-Last" or (not bedingung and artikel[wenn].get("signal") == "DO")):
         raise RegelFehler("DO-Aktoren laufen immer über die Lastspannung der DO-Karte (Gruppe DO-Last) – "
                           "diese Zuordnung ist nicht per Hausregel änderbar")
     if gilt_ab and _datum(gilt_ab) is None:
@@ -211,7 +233,7 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
         ausschnitt = {"auswahl_ersetzen": copy.deepcopy(vorher) if isinstance(vorher, dict) else {}}
         betroffen = [wenn] if planartikel is None or wenn in planartikel(mit_bisherigen) else []
     else:
-        betroffen = [fg for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict) and fg.get("artikel") == wenn]
+        betroffen = [fg for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict) and _trifft(fg, wenn)]
         ausschnitt = {"feldgeraete": copy.deepcopy(betroffen)}
     if not betroffen:
         raise RegelFehler(f"Im Plan kommt Artikel „{wenn}“ nicht vor (ggf. schon durch eine Hausregel ersetzt"
@@ -237,6 +259,8 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
             raise RegelFehler(f"Korrektur nicht gespeichert – mit ihr wäre der Plan nicht erzeugbar: {e}") from None
     regel["fall"]["erwartet"] = _teil(mit, ausschnitt)
     regel["vorschau"] = [x for x in mit_meldungen if x.startswith(f"Hausregel {regel['id']} ")]
+    if art == "gruppe_setzen" and bedingung:
+        regel["vorschau"].append("Hinweis: DO-Aktoren bleiben immer in der Gruppe DO-Last (Lastspannung der DO-Karte)")
     if art == "gruppe_setzen":
         gruppen = {fg.get("gruppe") for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict)}
         if dann not in gruppen:

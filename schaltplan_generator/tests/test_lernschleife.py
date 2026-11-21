@@ -242,3 +242,21 @@ def test_auswahl_ersetzen_klemme(tmp_path):
     assert "RK-6" in text
     with pytest.raises(RegelFehler, match="Kategorie Klemme"):
         regeln.plane({**copy.deepcopy(BEISPIEL), "auswahl_ersetzen": {"RK-4": "SCH-09"}}, STAMM)
+
+
+def test_bedingung_kennbuchstabe_gruppe(tmp_path):
+    """M5f Teil 3: Eigenschaftsbedingung – alle B-Geräte in eine 24-V-Gruppe; wirkt auch auf neue Geräte."""
+    from slpgen import regeln
+    h = tmp_path / "h.yaml"
+    r = erfasse_korrektur(h, "gruppe_setzen", "Kennbuchstabe:b", "Sensoren", "x", "Hausstandard", BEISPIEL, STAMM)
+    assert r["wenn"] == "kennbuchstabe:B" and any("DO-Aktoren bleiben" in x for x in r["vorschau"])
+    neu = copy.deepcopy(BEISPIEL)
+    neu["feldgeraete"].append({"bmk": "B9", "artikel": "IND-M12-PNP", "funktion": "Neu", "gruppe": "Allgemein"})
+    angewandt, _meldungen = wende_an(neu, lade_regeln(h)[0])
+    assert {fg["gruppe"] for fg in angewandt["feldgeraete"] if fg["bmk"].startswith("B")} == {"Sensoren"}
+    assert {fg["gruppe"] for fg in angewandt["feldgeraete"] if fg["bmk"].startswith("Y")} != {"Sensoren"}
+    assert "Sensoren" in regeln.plane(angewandt, STAMM).bilanz["gruppen"] and not pruefe_regressionen(lade_regeln(h)[0])
+    with pytest.raises(RegelFehler, match="nur für „24-V-Gruppe setzen“"):
+        erfasse_korrektur(h, "artikel_ersetzen", "kennbuchstabe:B", "IND-M12-PNP", "x", "", BEISPIEL, STAMM)
+    with pytest.raises(RegelFehler, match="ungültig"):
+        erfasse_korrektur(h, "gruppe_setzen", "kennbuchstabe:B1", "S", "x", "", BEISPIEL, STAMM)

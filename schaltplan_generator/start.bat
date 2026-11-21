@@ -244,7 +244,7 @@ set "KW=motorleitung"
 set "FRAGE=Mindestquerschnitt in mm2 (0,5 bis 240, z. B. 2,5): "
 if "%KART%"=="mindestquerschnitt" goto :korrektur_wert
 set "KW="
-set /p "KW=Artikel aus der Liste oben, fuer den die Regel gilt: "
+set /p "KW=Artikel aus der Liste oben, fuer den die Regel gilt (bei 2 auch kennbuchstabe:B = alle B-Geraete): "
 if not defined KW echo Kein Artikel eingegeben - zurueck zum Menue. & pause & goto :menue
 set "FRAGE=Ersatzartikel aus dem Geraetestamm: "
 if "%KART%"=="gruppe_setzen" set "FRAGE=24-V-Gruppe (aus der Liste oben oder neuer Name): "
