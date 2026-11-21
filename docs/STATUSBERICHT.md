@@ -1,16 +1,18 @@
 # STATUSBERICHT – Sammelbericht für die Überwachung
 
-Berichtszeitraum: seit Projektbeginn (noch keine Überwachungsantwort) – Sitzungen: 3 (20.11. manuell: ZIEL.md, M1–M4c; Autostart Fr 22:07: M4d, M2e, M5a–M5d; Autostart Sa 03:12: M5e, M6a, M7a)
+Berichtszeitraum: seit Projektbeginn (noch keine Überwachungsantwort) – Sitzungen: 4 (20.11. manuell: ZIEL.md, M1–M4c; Autostart Fr 22:07: M4d, M2e, M5a–M5d; Autostart Sa 03:12: M5e, M6a, M7a–M7c, M5f, M8a, M9a; Autostart Sa 08:17: durch Nutzungslimit erst 11:18 gestartet, nur Abschluss)
+Stand: 21.11.2026, letzter Commit siehe `git log` (nach fd2c066)
 Branch: `claude/ai-schaltplan-generator-u6lzbz`
 
 ## 1. Meilenstein aktuell / Fortschritt
-- M1 – 100 %, erledigt.
-- M2 – erledigt (M2a–M2d, CI grün auf Ubuntu+Windows); Fertig-Kriterium belegt mit einer unabhängigen KI-Instanz und synthetischem Lastenheft. Erprobung mit der im Betrieb freigegebenen KI = PC6.
-- M3 – erledigt: PDFs entstehen nur noch aus `planmodell.json` (aus JSON byte-gleich), Schema `docs/SCHEMA_PLANMODELL.md`, EPLAN-Adapter als Stub.
-- M4 – erledigt (SPS-Übersicht, Listen, Prüfbericht ohne Fehler am Testkorpus, Projektordner, Stempel „NICHT FÜR FERTIGUNG“); M4e (interner Umbau) zurückgestellt.
-- M5 – M5a–M5c erledigt (Geometrie/Schriftfeld, Kennbuchstaben und Anlagenaufbau lernen, Lernschleife mit Hausregeln); M5d erledigt (Datumsformat wirkt im Plan, Spaltenraster nur bei 10 Spalten); M5e erledigt (Mindestquerschnitt, Vorschau, Menü K/L); offen: M5f.
-- M6 – Kern erledigt: lokale KI über Ollama (Proxy umgangen, nur dieser PC), Erprobung mit echtem Ollama = PC5.
-- M7 – M7a erledigt: eigener Artikelstamm (Export einlesen, Zuordnung, Wirkung in Stückliste/EPLAN); offen: M7b Bausteine. Kriterium „Hausprofil aus 10 echten Plänen“ braucht PC3.
+| Meilenstein | Stand | Fortschritt (Schätzung, nicht gemessen) |
+|---|---|---|
+| M1–M4 | erledigt (M4e interner Umbau zurückgestellt) | 100 % |
+| M5 Lernen/Lernschleife | M5a–M5f erledigt; offen M5g (Bedingungen nach Motordaten, Regressionsfall gegen Planergebnis) | ca. 85 % |
+| M6 lokale KI | Kern erledigt; echter Ollama-Test = PC5 | ca. 80 % |
+| M7 Artikel/Bausteine | M7a–M7c erledigt (Artikelstamm, Sicherheits-Platzhalter, Motor mit FU); offen M7d (FU-Nacharbeit, Wende-/Stern-Dreieck); „10 echte Pläne“ = PC3 | ca. 70 % |
+| M8 Abnahme | M8a erledigt (Abweichungsliste Referenz ↔ Nachbau); offen M8b, echte Erprobung PC8 | ca. 40 % |
+| M9 Verteilung | M9a umgesetzt (Windows-Paket ohne Python, CI-Artefakt); offen Software-Prüfung M9a, M9b Installer | ca. 40 % |
 
 ## 2. Seit letztem Bericht erledigt
 | Datum | Paket | Ergebnis | Tests |
@@ -35,27 +37,35 @@ Branch: `claude/ai-schaltplan-generator-u6lzbz`
 | 21.11. | M5e | Korrekturart Mindestquerschnitt, Vorschau, Menüpunkte K/L, Artikelliste | 253/253 |
 | 21.11. | M6a | Lokale KI (Ollama): Auftrag direkt, Antwort wie Chat geprüft, Proxy umgangen | 263/263 |
 | 21.11. | M7a | Eigener Artikelstamm: Export → Zuordnungsliste (Vorschläge ohne Kennwert-Widerspruch) → Stückliste/EPLAN | 270/270 |
+| 21.11. | M7b | Sicherheitskreis nur als rote Platzhalterseite (Not-Halt/PL, Stoppkategorie, betroffene Antriebe); Plan „NICHT FÜR FERTIGUNG“ bis Freigabevermerk „Name, Datum“ der Elektrofachkraft (nie aus KI-Antwort); Not-Halt-Geräte an Standard-SPS = FEHLER | 296/296 |
+| 21.11. | M7c | Motorabgang mit Frequenzumrichter (`anlauf: fu`): FU-Auswahl, MSS auf Netzstrom, Motorleitung geschirmt nach I_aus, Freigabe/Sollwert/Störung an SPS, STO nur als Platzhalter | 304/304 |
+| 21.11. | M5f | Lernschleife: vom Programm gewählte Geräte (FU/Schütz/MSS/Klemmen) per Hausregel ersetzen mit Auslegungsprüfung; Sammelregel Kennbuchstabe → 24-V-Gruppe | 310/310 |
+| 21.11. | CI | rot durch neue pypdf 7 (Typprüfung) und Windows-Zeitverhalten eines Tests → beide behoben, CI grün | 310/310 |
+| 21.11. | M8a | Abweichungsliste Referenzplan ↔ Nachbau: Kennzeichen, Klemmen, Adressen, SPS-Belegung je Adresse, Artikel je Gerät; Excel mit Bewertung, Auszählung, Abnahmefeld; Menü V | 316/316 |
+| 21.11. | M9a | Windows-Programmpaket per PyInstaller ohne Python; Workflow „Paket“ baut auf Windows und prüft die Exe (Selbsttest, Excel, KI-Auftrag) – grün; start.bat erkennt die Exe | 318/318 |
 | 20.11. | Autostart | `docs/ARBEITSVORRAT.md` als Warteschlange; alle 3 Autostarts arbeiten sie ab und füllen sie auf ≥ 5 Pakete auf | – |
 
-Prüfungen (`docs/pruefungen/`): M2a 7 hoch, M2b 6 hoch, M2c 1 kritisch + 5 hoch, M3 1 hoch, M4a 2 hoch, M4b 3 hoch, M4c 4 hoch, M4d 3 hoch, M5a 3 hoch, M5b 2 hoch, M5c 7 hoch, M5d 2 hoch, M5e 2 hoch, M6a 2 hoch, M7a 2 hoch – alle behoben. Wichtigster Fund: Ohne Gegenmaßnahme wäre das Lastenheft bei eingestelltem Proxy an diesen statt an die lokale KI gegangen. Zweimal hat eine eigene Textersetzung start.bat beschädigt; der Strukturtest fängt das jetzt sofort. Der kritische Befund (zerrissenes Menü in start.bat) war ein eigener Einfügefehler; start.bat ist jetzt per Test abgesichert.
+Prüfungen (`docs/pruefungen/`): M2a 7 hoch, M2b 6 hoch, M2c 1 kritisch + 5 hoch, M3 1 hoch, M4a 2 hoch, M4b 3 hoch, M4c 4 hoch, M4d 3 hoch, M5a 3 hoch, M5b 2 hoch, M5c 7 hoch, M5d 2 hoch, M5e 2 hoch, M6a 2 hoch, M7a 2 hoch, M7b 1 kritisch + 7 hoch (inkl. Nachprüfung), M7c 2 hoch, M5f 2 hoch (1 neue Funktion → M5g), M8a 4 kritisch + 6 hoch (Rest → M8b), M9a Einsteiger 2 hoch – alle kritisch/hoch behoben oder als eigenes Paket eingeplant; Software-Prüfung M9a durch Nutzungslimit abgebrochen (offen). Wichtigster Fund: Ohne Gegenmaßnahme wäre das Lastenheft bei eingestelltem Proxy an diesen statt an die lokale KI gegangen. Zweimal hat eine eigene Textersetzung start.bat beschädigt; der Strukturtest fängt das jetzt sofort. Der kritische Befund (zerrissenes Menü in start.bat) war ein eigener Einfügefehler; start.bat ist jetzt per Test abgesichert.
 
 ## 3. Tests
-270/270 grün; ruff und mypy ohne Befund; CI (Ubuntu + Windows) mit Typprüfung; lokale Prüfung `vor_commit.sh`.
+318/318 grün (Nacht: +48 Tests: Sicherheit, FU, Lernschleife, Abweichungsliste, Exe-Pfade); ruff und mypy ohne Befund; CI Ubuntu+Windows grün; Workflow „Paket“ (Windows-Exe) grün.
 
 ## 4. Neue vorläufige Annahmen
-A17 DBU/LBU als Hausfarben; A18 Vorgaben nicht neu anbieten; A19 Hauptschalter als Hausvorgabe; A20 Hausvorgaben = Beispielwerte; A21 Kennbuchstaben der KI-Anleitung (Hausregel, nicht IEC 81346-2); A23 Längengrenze KI-Auftrag; A24 Ablage KI-Anleitung; A25 strukturierte Meldungen; A26 EPLAN-Importweg; A27 Kennzeichen-Strukturlogik; A28 Verbindungen; A29 Steckplatzreihenfolge; A30 SPS-Adressvergabe; A31–A33 offene Prüferpunkte (Ortsaspekt Feldgeräte, Kartenpins, Analogdetails).
+A17–A33 (siehe frühere Fassung); neu in dieser Nacht: A49 Sicherheit nur Platzhalter, A50 Freigabevermerk nur „Name, Datum“ und nie aus KI, A51 Motor mit FU (MSS als Vorsicherung auf I_ein, Motorleitung nach I_aus, STO-Platzhalter), A52 Hausregel für programmgewählte Geräte, A53 Sammelbedingung nur Kennbuchstabe, A54 Abweichungsliste (Hausstil-Muster, „nicht auswertbar“ statt 100 %), A55 Windows-Paket unsigniert als CI-Artefakt.
 
 ## 5. Offene Fehler / Risiken
 - Leitungsschutz-/Kurzschlussnachweise fehlen (A5, A15); I_z-Tabelle ohne Quelle (A3).
-- 230-V-Pumpen erscheinen in der 24-V-Abgangsliste (0 A) → M4d.
-- start.bat kann nur gelesen, nicht unter Windows ausgeführt werden (PC-Test nötig).
+- Abweichungsliste nur an selbst erzeugten Plänen erprobt – echte EPLAN-PDFs können „nicht auswertbar“ ergeben (PC8).
+- Windows-Paket unsigniert: Virenscanner/SmartScreen am Firmen-PC ungeprüft (PC9); Software-Prüfung M9a steht aus.
+- FU-Stammwerte und Sicherheitsangaben sind synthetisch bzw. Platzhalter – nichts davon ist fertigungsreif.
+- Nutzungslimit: Autostart 08:17 kam erst 11:18 an (5-h- und Wochenlimit), dadurch ging ein Fenster verloren.
 
 ## 6. Abweichungen von ZIEL.md
 - Steuerdateien in `docs/`, ZIEL.md unter `schaltplan_generator/docs/`.
 - „Externe KI“ für das M2-Kriterium: unabhängige KI-Instanz ohne Projektkontext statt Betriebs-KI (PC6 folgt).
 
 ## 7. Nächster geplanter Schritt
-Weiter im Arbeitsvorrat: M7b (Bausteine Motor 3~/FU, Sicherheits-Platzhalter), M8a, M5f, M4e.
+Software-Prüfung M9a nachholen, dann laut Arbeitsvorrat: M8b (Abnahme vertiefen), M5g (Regeln nach Motordaten), M7d (FU-Nacharbeit, weitere Anlaufarten), M9b (Installer), M4e. Am PC: PC3, PC5, PC7, PC8, PC9.
 
 ## 8. Fragen an die Überwachung (max. 3)
 0. Produkt-Prüfer empfiehlt Reihenfolge M4c → M4d → M5 → M8-Vorabtest mit echtem Plan → M7 → M6 → M4e und die Lernschleife (M5c) vor M7. ZIEL-Reihenfolge ist verbindlich – ändern? Umgesetzt: M4e (reiner Umbau) hinter M5/M6 gestellt; übrige Reihenfolge bleibt.
