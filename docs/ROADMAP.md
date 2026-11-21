@@ -10,7 +10,7 @@ ZIEL.md hat Vorrang. Reihenfolge der Meilensteine ist verbindlich.
 | M3 | Planungskern trennen (`planmodell.json`) | PDF entsteht nur noch aus dem Planmodell | **erledigt** 20.11.2026 (planmodell.json, Schema, EPLAN-Stub; PDFs aus JSON byte-gleich) |
 | M4 | SPS-Übersicht, Listen im Hausformat, Konsistenzprüfungen | Prüfbericht ohne Fehler am Testkorpus | **erledigt** 20.11.2026 (SPS-Übersicht, Listen, Prüfbericht ohne Fehler am Testkorpus; M4e = interner Umbau, A27) |
 | M5 | Geometrie und Schriftfeld lernen | Hausprofil aus 10 echten Plänen mit Sicherheitsangabe | offen (Vorarbeit: P2 Lernen aus Text) |
-| M6 | Ollama-Anbindung Stufe A | gleiches Ergebnis wie M2, lokal | offen |
+| M6 | Ollama-Anbindung Stufe A | gleiches Ergebnis wie M2, lokal | **Kern erledigt** 21.11.2026 (lokale KI über Ollama, Proxy umgangen; Erprobung am PC = PC5) |
 | M7 | Bausteinbibliothek erweitern (3~, FU, Sicherheitskreise als Platzhalter) | jeder Baustein mit Quelle/Annahme und Test | offen (Vorarbeit: P4a–P4c) |
 | M8 | Abnahme, Nachbau des Referenzplans | Abweichungsliste mit Bewertung | offen |
 | M9 | Installer/Exe (GitHub Actions), Handbuch, Browser-Oberfläche, EPLAN-Stub | DoD Punkt 6 erfüllt | offen |

@@ -356,7 +356,11 @@ def cmd_ki_auftrag(a):
     if a.ollama:                                      # Stufe A lokal: Auftrag direkt an die lokale KI
         from .lokale_ki import frage_lokale_ki
         print(f"Lokale KI ({a.modell}) arbeitet – das kann einige Minuten dauern …")
-        antwort.write_text(frage_lokale_ki(text, a.ollama, a.modell), encoding="utf-8")
+        neu = frage_lokale_ki(text, a.ollama, a.modell, fremder_server=a.fremder_server)
+        if antwort.exists():                          # von Hand korrigierte Antwort nicht verlieren
+            antwort.with_name(antwort.name + ".bak").write_bytes(antwort.read_bytes())
+            print(f"Bisherige Antwort gesichert als {antwort.name}.bak")
+        antwort.write_text(neu, encoding="utf-8")
         print(f"KI-Antwort gespeichert: {antwort}")
         if MENUE:
             print("Weiter mit Punkt 9 (KI-Antwort prüfen und Plan erzeugen).")
@@ -510,6 +514,8 @@ def main(argv=None):
     ka.add_argument("--stamm", default=STAMM)
     ka.add_argument("--ollama", help="lokale KI (Ollama), z. B. http://localhost:11434 – Auftrag wird direkt gesendet")
     ka.add_argument("--modell", default="qwen2.5:7b", help="Modell der lokalen KI")
+    ka.add_argument("--fremder-server", dest="fremder_server", action="store_true",
+                    help="KI-Server auf einem anderen Rechner ausdrücklich erlauben (Lastenheft verlässt den PC)")
     ka.add_argument("--anleitung", default=str(PROG.parent / "docs" / "KI_AUFBEREITUNG.md"))
     ka.set_defaults(f=cmd_ki_auftrag)
     sc = sub.add_parser("schema", help="Schema des Projektmodells als Markdown schreiben")
