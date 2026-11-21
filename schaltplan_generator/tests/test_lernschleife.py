@@ -121,3 +121,27 @@ def test_cli_ein_aus_loeschen_und_ids(tmp_path, capsys):
     assert "R2 [aus]" in aus and "R3 [aktiv]" in aus and "gilt immer" in aus
     with pytest.raises(SystemExit, match="gibt es nicht"):
         main(["hausregel", "ein", "R9", "--profil", str(profil)])
+
+
+def test_mindestquerschnitt_wirkt_auf_motorleitung_mit_vorschau(tmp_path, capsys):
+    """M5e: neue Korrekturart Mindestquerschnitt (Produkt-Befund), Vorschau speichert nichts."""
+    profil = tmp_path / "hausprofil" / "profil.yaml"
+    projekt = _projekt(tmp_path)
+    args = ["korrektur", str(projekt), "--art", "mindestquerschnitt", "--wenn", "motorleitung", "--dann", "2,5",
+            "--grund", "Hausstandard Motorleitungen", "--profil", str(profil)]
+    main([*args, "--vorschau"])
+    assert "Vorschau" in capsys.readouterr().out and not profil.with_name("hausregeln.yaml").exists()
+    main(args)
+    main(["generieren", str(projekt), "--ausgabe", str(tmp_path / "aus"), "--profil", str(profil)])
+    pm = yaml.safe_load((tmp_path / "aus" / "P-2026-001_Planmodell.json").read_text(encoding="utf-8"))
+    assert pm["kabel"] and all(k["querschnitt_mm2"] >= 2.5 for k in pm["kabel"])
+    regeln, _ = lade_regeln(profil.with_name("hausregeln.yaml"))
+    assert regeln[0]["fall"]["erwartet"]["leitungen"]["min_querschnitt_mm2"] == 2.5 and not pruefe_regressionen(regeln)
+
+
+def test_mindestquerschnitt_klartext(tmp_path):
+    ohne_motoren = {**copy.deepcopy(BEISPIEL), "motoren": []}
+    with pytest.raises(RegelFehler, match="keine Motor"):
+        erfasse_korrektur(tmp_path / "h.yaml", "mindestquerschnitt", "motorleitung", "2,5", "x", "", ohne_motoren, STAMM)
+    with pytest.raises(RegelFehler, match=r"z\. B\. 2,5"):
+        erfasse_korrektur(tmp_path / "h.yaml", "mindestquerschnitt", "motor", "viel", "x", "", BEISPIEL, STAMM)

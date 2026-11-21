@@ -46,6 +46,7 @@ echo.
 echo   Hausprofil:
 echo   6  Hausprofil lernen (Ordner mit Bestands-PDFs)
 echo   7  Hausprofil freigeben (Excel-Liste uebernehmen)
+echo   K  Korrektur merken (Hausregel, wirkt in allen weiteren Plaenen)
 echo.
 echo   Werkzeuge:
 echo   1  Beispielplan erzeugen und anzeigen (bisher + Hausstil)
@@ -66,6 +67,7 @@ if "%W%"=="6" goto :lernen
 if "%W%"=="7" goto :freigabe
 if "%W%"=="8" goto :kiauftrag
 if "%W%"=="9" goto :kiantwort
+if /i "%W%"=="K" goto :korrektur
 if "%W%"=="0" goto :ende
 goto :menue
 
@@ -202,6 +204,41 @@ echo Zwischenablage ging nicht. Bitte die Datei selbst kopieren (Editor oeffnet 
 echo "%CLIPDATEI%"
 start "" notepad "%CLIPDATEI%"
 exit /b 0
+
+:korrektur
+echo Projektdatei (Excel oder ..._projektmodell.yaml) in dieses Fenster ziehen und Enter druecken:
+set "KP="
+set /p "KP=> "
+if not defined KP goto :menue
+set "KP=%KP:"=%"
+echo Was soll sich in allen weiteren Plaenen aendern?
+echo   1 = Artikel ersetzen   2 = 24-V-Gruppe setzen   3 = Mindestquerschnitt Motor-/Leistungsleitung
+set "KA="
+set /p "KA=> "
+set "KART="
+if "%KA%"=="1" set "KART=artikel_ersetzen"
+if "%KA%"=="2" set "KART=gruppe_setzen"
+if "%KA%"=="3" set "KART=mindestquerschnitt"
+if not defined KART goto :menue
+set "KW=motorleitung"
+if "%KART%"=="mindestquerschnitt" goto :korrektur_wert
+set "KW="
+set /p "KW=Artikel, fuer den die Regel gilt (z. B. OPT-REF-PNP): "
+:korrektur_wert
+set "KD="
+set /p "KD=Neuer Wert (Ersatzartikel, Gruppe bzw. mm2 wie 2,5): "
+set "KG="
+set /p "KG=Grund (kurz): "
+set "KG=%KG:"=%"
+%SLP% korrektur "%KP%" --art %KART% --wenn "%KW%" --dann "%KD%" --grund "%KG%" --vorschau
+if errorlevel 1 goto :fehler_lauf
+set "OK="
+set /p "OK=So speichern? (J/N): "
+if /i not "%OK%"=="J" goto :menue
+%SLP% korrektur "%KP%" --art %KART% --wenn "%KW%" --dann "%KD%" --grund "%KG%"
+if errorlevel 1 goto :fehler_lauf
+pause
+goto :menue
 
 :selbsttest
 %SLP% generieren beispiele\projekt_beispiel.yaml --ausgabe ausgabe\selbsttest

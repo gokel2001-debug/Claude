@@ -33,7 +33,10 @@ def waehle_querschnitt(i_r: float, l_m: float, cos_phi: float, ltg: dict[str, An
     f = ltg.get("reduktionsfaktor", 1.0)
     if not ltg.get("i_z_A"):
         raise MotorFehler("Keine Strombelastbarkeitstabelle (Regeln: iz_…) angegeben")
+    a_min = float(ltg.get("min_querschnitt_mm2") or 0)          # Hausregel (Lernschleife), z. B. 2,5 mm²
     for a in sorted(float(k) for k in ltg["i_z_A"]):
+        if a < a_min:
+            continue
         i_z = ltg["i_z_A"][a] if a in ltg["i_z_A"] else ltg["i_z_A"][str(a)]
         du = spannungsfall_prozent(i_r, l_m, cos_phi, ltg.get("kappa", 56), a, u_V, phasen)
         if i_z * f >= i_r and du <= ltg.get("du_max_prozent", 3.0):

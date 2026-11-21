@@ -98,6 +98,8 @@ ABSCHNITTE: dict[str, tuple[str, bool, list[Feld], str, str]] = {
         Feld("reduktionsfaktor", "zahl", False, "Reduktionsfaktor Häufung/Umgebung", "0.8", (0.1, 1.0)),
         Feld("kappa", "zahl", False, "Leitfähigkeit in m/(Ω·mm²)", "56", (30, 60)),
         Feld("du_max_prozent", "zahl", False, "zulässiger Spannungsfall in %", "3.0", (0.5, 10)),
+        Feld("min_querschnitt_mm2", "zahl", False, "kleinster Querschnitt für Motor-/Leistungsleitungen in mm² (Hausregel)",
+             "2.5", (0.5, 240)),
     ], "Leitungsauslegung (Hausregeln, Freigabe durch Elektrofachkraft)", "Leitungsauslegung"),
 }
 PFLICHT_ABSCHNITTE = ("projekt", "einspeisung", "feldgeraete")

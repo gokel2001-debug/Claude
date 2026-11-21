@@ -9,6 +9,7 @@ Feldgeräte vorher/nachher, Projektdatum); `pruefe_regressionen` spielt alle Fä
 Regelarten (Grundgerüst, erweiterbar):
   artikel_ersetzen  Feldgerät mit Artikel `wenn` bekommt `dann` (gleiche Kategorie und gleiches Signal)
   gruppe_setzen     Feldgeräte mit Artikel `wenn` bekommen die 24-V-Gruppe `dann` (nicht für DO-Aktoren)
+  mindestquerschnitt  wenn = „motorleitung“: Motor-/Leistungsleitungen mindestens `dann` mm² (leitungen.min_querschnitt_mm2)
 Geltung: immer, ab Projektdatum (`gilt_ab`) und/oder nur für ein Projekt (`nur_projekt`).
 """
 from __future__ import annotations
@@ -24,7 +25,9 @@ import yaml
 
 from .modell import RegelFehler
 
-ARTEN = {"artikel_ersetzen": "Artikel ersetzen", "gruppe_setzen": "24-V-Gruppe setzen"}
+ARTEN = {"artikel_ersetzen": "Artikel ersetzen", "gruppe_setzen": "24-V-Gruppe setzen",
+         "mindestquerschnitt": "Mindestquerschnitt Motor-/Leistungsleitung"}
+ZIEL_MINDESTQUERSCHNITT = "motorleitung"
 PFLICHT = ("id", "art", "wenn", "dann")
 MAX_DURCHLAEUFE = 10                 # Regelketten A→B→C; mehr Durchläufe = Kreis
 
@@ -84,6 +87,15 @@ def wende_an(projekt: dict[str, Any], regeln: list[dict[str, Any]]) -> tuple[dic
     for _ in range(MAX_DURCHLAEUFE):
         geaendert = False
         for r in aktiv:
+            if r["art"] == "mindestquerschnitt":
+                ltg = neu.setdefault("leitungen", {}) if isinstance(neu.get("leitungen", {}), dict) else {}
+                if float(ltg.get("min_querschnitt_mm2") or 0) < float(r["dann"]):
+                    ltg["min_querschnitt_mm2"] = float(r["dann"])
+                    geaendert = True
+                    meldungen.append(f"Hausregel {r['id']} ({ARTEN[r['art']]}): Motor-/Leistungsleitungen mindestens "
+                                     f"{r['dann']} mm² – {r.get('bearbeiter', '?')}, {r.get('datum', '?')}, "
+                                     f"Herkunft {r.get('herkunft', '?')}")
+                continue
             feld = "artikel" if r["art"] == "artikel_ersetzen" else "gruppe"
             for fg in neu.get("feldgeraete") or []:
                 if not isinstance(fg, dict) or fg.get("artikel") != r["wenn"] or fg.get(feld) == r["dann"]:
@@ -105,13 +117,24 @@ def _naechste_id(regeln: list[dict[str, Any]]) -> str:
 def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft: str, grund: str,
                       projekt: dict[str, Any], stamm: dict[str, Any], gilt_ab: str | None = None,
                       nur_projekt: str | None = None, bearbeiter: str | None = None,
-                      probelauf: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
+                      probelauf: Callable[[dict[str, Any]], None] | None = None,
+                      nur_vorschau: bool = False) -> dict[str, Any]:
     """Korrektur als Hausregel speichern, samt Regressionsfall. Speichert nur, wenn die Regel wirkt und der
     Probelauf (Prüfung + Planung mit allen Regeln) gelingt."""
     if art not in ARTEN:
         raise RegelFehler(f"Regelart „{art}“ unbekannt – möglich: {', '.join(ARTEN)}")
     artikel = stamm.get("artikel", {})
-    if wenn not in artikel:
+    if art == "mindestquerschnitt":
+        try:
+            if wenn != ZIEL_MINDESTQUERSCHNITT or not 0.5 <= float(str(dann).replace(",", ".")) <= 240:
+                raise ValueError
+        except ValueError:
+            raise RegelFehler("Mindestquerschnitt: --wenn motorleitung --dann <mm²>, z. B. 2,5") from None
+        dann = f"{float(str(dann).replace(',', '.')):g}"
+        if not (projekt.get("motoren") or [fg for fg in projekt.get("feldgeraete") or []
+                                          if isinstance(fg, dict) and fg.get("typical")]):
+            raise RegelFehler("Im Projekt gibt es keine Motor-/Leistungsleitung – Korrektur würde nichts ändern")
+    elif wenn not in artikel:
         raise RegelFehler(f"Artikel „{wenn}“ gibt es nicht im Gerätestamm")
     if art == "artikel_ersetzen":
         if dann not in artikel:
@@ -133,7 +156,12 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
         raise RegelFehler(f"Widerspruch zu Hausregel {widerspruch[0]['id']} ({wenn} → {widerspruch[0]['dann']}) – "
                           f"alte Regel erst abschalten: hausregel aus {widerspruch[0]['id']}")
     mit_bisherigen, _ = wende_an(projekt, regeln)                 # Korrektur bezieht sich auf den erzeugten Plan
-    betroffen = [fg for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict) and fg.get("artikel") == wenn]
+    if art == "mindestquerschnitt":
+        ausschnitt: dict[str, Any] = {"leitungen": copy.deepcopy(mit_bisherigen.get("leitungen") or {})}
+        betroffen: list[Any] = [ausschnitt]
+    else:
+        betroffen = [fg for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict) and fg.get("artikel") == wenn]
+        ausschnitt = {"feldgeraete": copy.deepcopy(betroffen)}
     if not betroffen:
         raise RegelFehler(f"Im Plan kommt Artikel „{wenn}“ nicht vor (ggf. schon durch eine Hausregel ersetzt) – "
                           f"Korrektur würde nichts ändern")
@@ -143,11 +171,11 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
         "herkunft": herkunft, "bearbeiter": bearbeiter or os.environ.get("USERNAME") or os.environ.get("USER") or "unbekannt",
         "grund": grund, "datum": dt.date.today().isoformat(), "gilt_ab": gilt_ab or "", "nur_projekt": nur_projekt or "",
         "fall": {"projekt": {"nummer": kopf.get("nummer", ""), "datum": str(kopf.get("datum", ""))},
-                 "eingabe": copy.deepcopy(betroffen), "erwartet": None}}
-    fall = {"projekt": regel["fall"]["projekt"], "feldgeraete": copy.deepcopy(betroffen)}
+                 "eingabe": copy.deepcopy(ausschnitt), "erwartet": None}}
+    fall = {"projekt": regel["fall"]["projekt"], **copy.deepcopy(ausschnitt)}
     ohne, _ = wende_an(fall, regeln)
-    mit, _ = wende_an(fall, [*regeln, regel])
-    if mit["feldgeraete"] == ohne["feldgeraete"]:
+    mit, mit_meldungen = wende_an(fall, [*regeln, regel])
+    if _teil(mit, ausschnitt) == _teil(ohne, ausschnitt):
         raise RegelFehler("Die neue Regel ändert nichts (Geltung passt nicht zum Projekt oder eine andere Regel "
                           "verdeckt sie)")
     if probelauf:
@@ -155,9 +183,23 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
             probelauf(wende_an(projekt, [*regeln, regel])[0])
         except RegelFehler as e:
             raise RegelFehler(f"Korrektur nicht gespeichert – mit ihr wäre der Plan nicht erzeugbar: {e}") from None
-    regel["fall"]["erwartet"] = mit["feldgeraete"]
-    speichere_regeln(pfad, [*regeln, regel])
+    regel["fall"]["erwartet"] = _teil(mit, ausschnitt)
+    regel["vorschau"] = [x for x in mit_meldungen if x.startswith(f"Hausregel {regel['id']} ")]
+    if not nur_vorschau:
+        speichere_regeln(pfad, [*regeln, {k: v for k, v in regel.items() if k != "vorschau"}])
     return regel
+
+
+def _teil(modell: dict[str, Any], ausschnitt: dict[str, Any]) -> dict[str, Any]:
+    """Nur die Teile des Modells, die der Regressionsfall enthält (feldgeraete bzw. leitungen)."""
+    return {k: modell.get(k) for k in ausschnitt}
+
+
+def _fall(r: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """-> (Modell zum Durchspielen, Ausschnitt). Alte Fälle (Liste von Feldgeräten) bleiben lesbar."""
+    eingabe = r["fall"].get("eingabe", [])
+    ausschnitt = {"feldgeraete": eingabe} if isinstance(eingabe, list) else dict(eingabe)
+    return {"projekt": r["fall"].get("projekt", {}), **copy.deepcopy(ausschnitt)}, ausschnitt
 
 
 def schalte(pfad: str | Path, regel_id: str, aktion: str) -> dict[str, Any]:
@@ -182,13 +224,16 @@ def pruefe_regressionen(regeln: list[dict[str, Any]]) -> list[str]:
     for r in regeln:
         if r.get("aktiv", True) is not True or not isinstance(r.get("fall"), dict):
             continue
-        fall = {"projekt": r["fall"].get("projekt", {}), "feldgeraete": copy.deepcopy(r["fall"].get("eingabe", []))}
+        fall, ausschnitt = _fall(r)
         try:
             ist, _ = wende_an(fall, regeln)
         except RegelFehler as e:
             befunde.append(str(e))
             continue
-        if ist["feldgeraete"] != r["fall"].get("erwartet"):
+        erwartet = r["fall"].get("erwartet")
+        if isinstance(erwartet, list):                         # alter Fall: nur Feldgeräte
+            erwartet = {"feldgeraete": erwartet}
+        if _teil(ist, ausschnitt) != erwartet:
             befunde.append(f"Regressionsfall zu {r['id']} ({r['wenn']} → {r['dann']}) liefert jetzt ein anderes Ergebnis – "
                            f"eine spätere Regel verändert ihn (gewollt? dann: hausregeln --bestaetigen)")
     return befunde
@@ -199,7 +244,7 @@ def bestaetige(pfad: str | Path) -> int:
     regeln, _ = lade_regeln(pfad)
     for r in regeln:
         if isinstance(r.get("fall"), dict):
-            fall = {"projekt": r["fall"].get("projekt", {}), "feldgeraete": copy.deepcopy(r["fall"].get("eingabe", []))}
-            r["fall"]["erwartet"] = wende_an(fall, regeln)[0]["feldgeraete"]
+            fall, ausschnitt = _fall(r)
+            r["fall"]["erwartet"] = _teil(wende_an(fall, regeln)[0], ausschnitt)
     speichere_regeln(pfad, regeln)
     return len(regeln)

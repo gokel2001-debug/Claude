@@ -19,13 +19,13 @@ def test_jede_sprungmarke_einmal_und_jedes_ziel_vorhanden():
 
 
 def test_menue_verteilung_vollstaendig_und_zusammenhaengend():
-    punkte = re.findall(r"^echo\s+(\d)\s{2}", "\n".join(ZEILEN), re.MULTILINE)
+    punkte = re.findall(r"^echo\s+(\w)\s{2}", "\n".join(ZEILEN), re.MULTILINE)
     i = next(n for n, z in enumerate(ZEILEN) if z.startswith('set /p "W='))
     verteilung = []
     for z in ZEILEN[i + 1:]:
         if z.startswith("if defined W"):
             continue
-        mt = re.match(r'if "%W%"=="(\d)" goto :(\w+)$', z)
+        mt = re.match(r'if (?:/i )?"%W%"=="(\w)" goto :(\w+)$', z)
         if not mt:
             assert z == "goto :menue", f"nach der Verteilung erwartet 'goto :menue', gefunden: {z!r}"
             break

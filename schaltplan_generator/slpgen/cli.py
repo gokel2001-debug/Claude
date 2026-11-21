@@ -175,7 +175,12 @@ def cmd_korrektur(a):
         regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0], stamm)
 
     r = erfasse_korrektur(_hausregeln_pfad(a.profil), a.art, a.wenn, a.dann, a.herkunft or Path(a.projekt).name,
-                          a.grund, lade_projekt(a.projekt), stamm, a.gilt_ab, a.nur_projekt, a.bearbeiter, probelauf)
+                          a.grund, lade_projekt(a.projekt), stamm, a.gilt_ab, a.nur_projekt, a.bearbeiter, probelauf,
+                          nur_vorschau=a.vorschau)
+    if a.vorschau:
+        print("Vorschau – so würde die Regel wirken (noch NICHT gespeichert):")
+        print("\n".join(f"  • {x}" for x in r["vorschau"]))
+        return
     print(f"Hausregel {r['id']} gespeichert ({ARTEN[r['art']]}: {r['wenn']} → {r['dann']}). Sie wirkt ab dem nächsten "
           f"Plan und steht im Auslegungsnachweis.")
 
@@ -421,7 +426,8 @@ def main(argv=None):
     g.set_defaults(f=cmd_generieren)
     kr = sub.add_parser("korrektur", help="Korrektur als Hausregel speichern (Lernschleife)")
     kr.add_argument("projekt")
-    kr.add_argument("--art", required=True, choices=["artikel_ersetzen", "gruppe_setzen"])
+    kr.add_argument("--art", required=True, choices=["artikel_ersetzen", "gruppe_setzen", "mindestquerschnitt"])
+    kr.add_argument("--vorschau", action="store_true", help="nur zeigen, was sich ändern würde – nichts speichern")
     kr.add_argument("--wenn", required=True, help="Artikel, für den die Regel gilt")
     kr.add_argument("--dann", required=True, help="Ersatzartikel bzw. 24-V-Gruppe")
     kr.add_argument("--grund", default="", help="Begründung in Klartext")

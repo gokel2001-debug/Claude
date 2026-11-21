@@ -49,6 +49,7 @@ Danach erscheint ein Menü:
 | **7** | Hausprofil freigeben | In der Excel-Liste `hausprofil\profil_freigabe.xlsx` je Zeile **JA** (Wert in Spalte „Zur Freigabe“ stimmt) oder **NEIN** (stimmt nicht) wählen. Einen eigenen Wert nur zusammen mit JA eintragen. Speichern, dann Punkt 7. Nur freigegebene Werte verwendet das Programm beim Zeichnen im Hausstil (Einträge mit „wirkt im Plan noch nicht“ werden vorerst nur gespeichert). In der Liste stehen auch **Vorgaben** (Aderfarben je Potential, Kennbuchstaben) – mit JA bestätigen oder Ihren Wert eintragen. Ihre Freigaben bleiben beim erneuten Lernen erhalten. Welche Form ein eigener Wert haben muss, steht in der letzten Spalte „Erlaubte Form / Beispiel“ (z. B. Aderfarbe `DBU/WH`, Kennbuchstabe `T`, Klemmleiste `-X10`). Ist etwas falsch, meldet Punkt 7 alle Fehler auf einmal und übernimmt nichts – korrigieren, speichern, Punkt 7 erneut. |
 | **8** | KI-Auftrag aus Lastenheft erstellen | Lastenheft (.docx, .pdf, .txt) ins Fenster ziehen, Enter. Der Auftrag liegt danach in der **Zwischenablage**: im KI-Chat mit Strg+V einfügen und absenden (nur eine vom Betrieb freigegebene KI, sonst Kundennamen vorher entfernen). Der Editor öffnet `<Lastenheft>_projektmodell.yaml` neben dem Lastenheft: die **ganze Antwort der KI** hineinkopieren (vorhandenen Inhalt ersetzen) und speichern. Klappt die Zwischenablage nicht, öffnet sich der Auftrag im Editor: Strg+A, Strg+C. |
 | **9** | KI-Antwort prüfen und Plan erzeugen | `<Lastenheft>_projektmodell.yaml` ins Fenster ziehen, Enter. Ist alles vollständig, entstehen die PDFs im Unterordner `ausgabe` **neben dem Lastenheft** (öffnet sich); Annahmen und offene Fragen der KI stehen im Auslegungsnachweis. Fehlt etwas, liegt ein **Korrekturauftrag** in der Zwischenablage: im selben Chat einfügen, neue Antwort speichern, wieder Punkt 9. |
+| **K** | Korrektur merken | Projektdatei ins Fenster ziehen, dann Art wählen (1 Artikel ersetzen, 2 24-V-Gruppe, 3 Mindestquerschnitt Motorleitung), Wert und Grund eingeben. Das Programm zeigt zuerst eine **Vorschau**; erst mit **J** wird die Hausregel gespeichert. Sie wirkt in allen weiteren Plänen (siehe „Korrekturen merken“). |
 
 **Projektordner:** Jedes Projekt hat einen eigenen Ordner (Punkt 2 legt ihn unter `meine_projekte\<Name>` an; beim KI-Weg der Ordner des Lastenhefts). Die Ergebnisse (PDFs, Stückliste, Planmodell) entstehen im Unterordner `ausgabe` dieses Ordners (Ausnahme: Beispielplan und Selbsttest, Punkt 1 und 5, im Programmordner). Steht auf den Seiten rot **„NICHT FÜR FERTIGUNG“**, enthält der Prüfbericht Fehler – Einzelheiten im Auslegungsnachweis (letzte Seiten).
 
@@ -99,9 +100,10 @@ Wenn Sie im erzeugten Plan immer wieder dasselbe ändern (z. B. „bei uns induk
 können Sie die Korrektur als **Hausregel** speichern. Sie wirkt ab dem nächsten Plan automatisch und steht im
 Auslegungsnachweis unter „Angewendete Hausregeln“ (mit Bearbeiter, Datum und Herkunft).
 
-Heute noch über die Kommandozeile (ein Menüpunkt folgt):
+Im Menü über Punkt **K**; alternativ über die Kommandozeile:
 
-- Regel anlegen: `python -m slpgen korrektur <Projektdatei> --art artikel_ersetzen --wenn OPT-REF-PNP --dann IND-M12-PNP --grund "Hausstandard"`
+- Regel anlegen: `python -m slpgen korrektur <Projektdatei> --art artikel_ersetzen --wenn OPT-REF-PNP --dann IND-M12-PNP --grund "Hausstandard"` (mit `--vorschau` nur ansehen)
+- Mindestquerschnitt: `python -m slpgen korrektur <Projektdatei> --art mindestquerschnitt --wenn motorleitung --dann 2,5`
 - Regeln ansehen und prüfen: `python -m slpgen hausregeln`
 - Regel ausschalten, wieder einschalten, löschen: `python -m slpgen hausregel aus R1` (bzw. `ein`, `loeschen`)
 
