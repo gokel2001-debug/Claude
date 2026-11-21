@@ -72,7 +72,8 @@ def test_fehler_der_lokalen_ki_klartext(antwort, status, meldung):
 
 def test_server_nicht_erreichbar():
     with pytest.raises(RegelFehler, match="nicht erreichbar"):
-        frage_lokale_ki("x", "http://127.0.0.1:9", "m", zeitlimit_s=2)
+        # Windows weist geschlossene lokale Ports erst nach ~2 s TCP-Wiederholungen ab -> Zeitlimit großzügig
+        frage_lokale_ki("x", "http://127.0.0.1:9", "m", zeitlimit_s=10)
 
 
 def test_proxy_wird_umgangen(monkeypatch):
