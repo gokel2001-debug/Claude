@@ -26,7 +26,8 @@ def _schema_kurz() -> str:
     z = []
     for name in ("projekt", "einspeisung", "feldgeraete", "motoren", "sicherheit"):
         _, liste, felder, text, _ = ABSCHNITTE[name]
-        felder = [f for f in felder if not (name == "einspeisung" and f.name != "netz")]
+        felder = [f for f in felder if not (name == "einspeisung" and f.name != "netz")
+                  and not (name == "sicherheit" and f.name in ("freigabe", "ausgenommen"))]   # nur Elektrofachkraft
         z.append(f"{name}{' (Liste)' if liste else ''} – {text}:")
         z += [f"  {f.name}{' (Pflicht)' if f.pflicht else ''}: {f.text}" for f in felder]
     return "\n".join(z)

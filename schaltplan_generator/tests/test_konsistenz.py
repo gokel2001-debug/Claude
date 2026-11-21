@@ -210,7 +210,10 @@ def test_sicherheit_nur_als_platzhalter(tmp_path):
     ("Not-Halt gefordert?", True), ("NOT-AUS am Schrank", True), ("Not Halt vor Ort", True), ("Schutztür Pumpenraum", True),
     ("Lichtgitter am Einlauf", True), ("Sicherheitsrelais vorhanden?", True), ("Kategorie 3 nach ISO 13849", True),
     ("welcher PL d?", True), ("SIL 2 gefordert", True), ("Emergency stop", True),
+    ("Welcher PL ist gefordert?", True), ("Zuhaltung Schutztür", True),
     ("Silo Füllstand", False), ("Ventil auf", False), ("Fossil", False), ("PLZ Baustelle", False), ("Pl. 3 prüfen", False),
+    ("PLC Kommunikation", False), ("SPS PLC", False), ("Notausgang Leuchte", False), ("Sicherheitsbeleuchtung", False),
+    ("Wendeschütz verriegelt", False), ("Kategorie 3 Überspannung", False),
 ])
 def test_sicherheit_suchmuster(text, treffer):
     """Prüfer M7b Elektro 3 / Software 1+2: Auslöser vollständig, keine Fehlalarme bei üblichen Wörtern."""
@@ -228,7 +231,16 @@ def test_sicherheit_feldgeraet_und_freigabe(tmp_path):
     assert len(fehler) == 2 and "-S9" in fehler[1]
     p["sicherheit"] = {"freigabe": "M. Muster, 2026-11-21"}
     befunde = [b for b in pruefe_plan(regeln.plane(p, STAMM)) if b.pruefung == "Sicherheit"]
-    assert [b.art for b in befunde] == [HINWEIS] and "M. Muster" in befunde[0].text
+    assert [b.art for b in befunde] == [HINWEIS, FEHLER] and "M. Muster" in befunde[0].text   # Gerät bleibt FEHLER (N3)
+    p["sicherheit"]["ausgenommen"] = "S9"
+    assert [b.art for b in pruefe_plan(regeln.plane(p, STAMM)) if b.pruefung == "Sicherheit"] == [HINWEIS, HINWEIS]
+    for unsinn in ("NEIN", "offen", "-", "Muster"):                         # N2: nur „Name, Datum“
+        p["sicherheit"]["freigabe"] = unsinn
+        assert FEHLER in [b.art for b in pruefe_plan(regeln.plane(p, STAMM)) if b.pruefung == "Sicherheit"][:1]
+    p["sicherheit"]["freigabe"] = "M. Muster, 21.11.2026"
+    p["offene_fragen"] = ["Not-Halt?"]                                     # N1: KI-Antwort darf nicht freigeben
+    erste = next(b for b in pruefe_plan(regeln.plane(p, STAMM)) if b.pruefung == "Sicherheit")
+    assert erste.art == FEHLER and "KI-Antwort" in erste.text
 
 
 def test_sicherheit_excel_und_rundreise(tmp_path):

@@ -75,9 +75,12 @@ def _anschluss(g: Betriebsmittel) -> str:
 
 # Begriffe der Sicherheitstechnik; lieber zu viele als zu wenige Treffer (ZIEL.md: konservativste Variante)  # ANNAHME A49
 SICHERHEIT_MUSTER = re.compile(
-    r"not[\s-]?(halt|aus|stopp?)|emergency|schutzt(ü|ue)r|verriegel|lichtgitter|lichtvorhang|zweihand|"
-    r"sicherheits|13849|62061|performance\s+level|\bSIL\s?[1-4]?\b|\bPL\s?[a-e]?r?\b(?!\.)|kategorie\s*[b1-4]\b|\bSTO\b",
+    r"not[\s-]?(halt|aus(?!gang)|stopp?)|emergency|schutzt(ü|ue)r|zuhaltung|t(ü|ue)rverriegel|lichtgitter|lichtvorhang|"
+    r"zweihand|sicherheits(?!beleucht)|13849|62061|performance\s+level|\bSIL\s?[1-4]?\b|\bPL\b(?!\.)|"
+    r"\bPL\s?(?-i:[a-e])r?\b|kategorie\s*[b1-4]\b(?!\s*(ü|ue)berspannung)|\bSTO\b",
     re.I)
+RE_FREIGABE = re.compile(r"\s*([^\W\d_][\w .'-]*[^\W\d_])\s*[,;]\s*(\d{4}-\d{2}-\d{2}|\d{1,2}\.\d{1,2}\.\d{4})\s*")
+KEINE_FREIGABE = ("nein", "offen", "ausstehend", "keine", "n.n.", "nn")
 
 
 def sicherheitsbedarf(projekt: dict[str, Any]) -> dict[str, Any] | None:
@@ -90,17 +93,34 @@ def sicherheitsbedarf(projekt: dict[str, Any]) -> dict[str, Any] | None:
     si = projekt.get("sicherheit") or {}
     ausloeser = [f"{k}: {x}" for k in ("offene_fragen", "annahmen") for x in projekt.get(k) or []
                  if SICHERHEIT_MUSTER.search(str(x))]
-    geraete = ["-" + str(g.get("bmk", "")).lstrip("-") for g in projekt.get("feldgeraete") or []
-               if SICHERHEIT_MUSTER.search(f"{g.get('funktion', '')} {g.get('artikel', '')}")]
+    treffer = {"-" + str(g.get("bmk", "")).lstrip("-"): t.group(0) for g in projekt.get("feldgeraete") or []
+               if (t := SICHERHEIT_MUSTER.search(f"{g.get('funktion', '')} {g.get('artikel', '')}"))}
+    geraete = list(treffer)
     antriebe = ["-" + str(mo.get("bmk", "")).lstrip("-") for mo in projekt.get("motoren") or []]
     ausloeser += [f"Motor -{str(mo.get('bmk', '')).lstrip('-')}: {mo.get('funktion')}" for mo in projekt.get("motoren") or []
                   if SICHERHEIT_MUSTER.search(str(mo.get("funktion") or ""))]
     if not (si or ausloeser or geraete):
         return None
+    # Freigabevermerk nur in der Form „Name, Datum“; aus einer KI-Antwort (annahmen/offene_fragen) nie  # ANNAHME A50
+    roh = str(si.get("freigabe") or "").strip()
+    freigabe, freigabe_problem = "", ""
+    if roh:
+        f = RE_FREIGABE.fullmatch(roh)
+        if "annahmen" in projekt or "offene_fragen" in projekt:
+            freigabe_problem = (f"Freigabevermerk „{roh}“ steht in einer KI-Antwort und wird nicht anerkannt – nur die "
+                                f"Elektrofachkraft trägt ihn ein (Excel-Blatt Sicherheit)")
+        elif not f or f.group(1).strip().lower() in KEINE_FREIGABE:
+            freigabe_problem = f"Freigabevermerk „{roh}“ unlesbar – Form „Name, Datum“, z. B. „M. Muster, 2026-11-21“"
+        else:
+            freigabe = roh
+    ausgenommen = {"-" + x.strip().lstrip("-").upper() for x in re.split(r"[,;\s]+", str(si.get("ausgenommen") or ""))
+                   if x.strip()}
     return {"not_halt": _ja_nein(si["not_halt"]) if si.get("not_halt") not in (None, "") else None,
             "pl": str(si.get("pl") or ""), "funktionen": str(si.get("funktionen") or ""),
-            "stoppkategorie": str(si.get("stoppkategorie") or ""), "freigabe": str(si.get("freigabe") or "").strip(),
-            "ausloeser": ausloeser[:6], "geraete": geraete, "antriebe": antriebe}
+            "stoppkategorie": str(si.get("stoppkategorie") or ""), "freigabe": freigabe,
+            "freigabe_problem": freigabe_problem, "ausloeser": ausloeser[:6], "geraete": geraete,
+            "treffer": treffer, "ausgenommen": sorted(ausgenommen & set(geraete)) if freigabe else [],
+            "antriebe": antriebe}
 
 
 def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:

@@ -108,6 +108,8 @@ ABSCHNITTE: dict[str, tuple[str, bool, list[Feld], str, str]] = {
         Feld("stoppkategorie", "text", False, "Stoppkategorie 0/1/2 nach EN 60204-1 laut Risikobeurteilung", "0"),
         Feld("freigabe", "text", False, "Freigabevermerk der Elektrofachkraft (Name, Datum) – erst dann entfällt "
              "„nicht für Fertigung“; die Auslegung selbst liegt außerhalb dieses Plans", "M. Muster, 2026-11-21"),
+        Feld("ausgenommen", "text", False, "Feldgeräte (BMK, mit Komma), die trotz Sicherheitsbegriff an der Standard-SPS "
+             "bleiben dürfen – nur mit Freigabevermerk wirksam", "S9"),
     ], "Sicherheitsfunktionen – nur Platzhalter, Auslegung und Freigabe durch Elektrofachkraft", "Sicherheit"),
 }
 PFLICHT_ABSCHNITTE = ("projekt", "einspeisung", "feldgeraete")

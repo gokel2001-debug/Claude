@@ -113,3 +113,4 @@ Pflichtabschnitte: projekt, einspeisung, feldgeraete.
 | `funktionen` | Text | – | weitere Sicherheitsfunktionen in Klartext | `Schutztür Pumpenraum` |
 | `stoppkategorie` | Text | – | Stoppkategorie 0/1/2 nach EN 60204-1 laut Risikobeurteilung | `0` |
 | `freigabe` | Text | – | Freigabevermerk der Elektrofachkraft (Name, Datum) – erst dann entfällt „nicht für Fertigung“; die Auslegung selbst liegt außerhalb dieses Plans | `M. Muster, 2026-11-21` |
+| `ausgenommen` | Text | – | Feldgeräte (BMK, mit Komma), die trotz Sicherheitsbegriff an der Standard-SPS bleiben dürfen – nur mit Freigabevermerk wirksam | `S9` |

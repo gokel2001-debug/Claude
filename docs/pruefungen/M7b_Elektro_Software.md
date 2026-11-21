@@ -23,3 +23,11 @@ Prüfer: Elektro/Norm, Software-Qualität (Agenten, ändern keinen Code). Nachar
 
 Folge für Anwender: Auf dem KI-Weg fragt die KI immer nach Not-Halt → Plan entsteht, ist aber „NICHT FÜR FERTIGUNG“,
 bis die Elektrofachkraft den Freigabevermerk einträgt (beabsichtigt, ZIEL.md „Pflicht zur Freigabe“).
+
+## Nachprüfung Elektro (Commit 0cbd43d)
+| Nr. | Schwere | Befund (kurz) | Nacharbeit | Stand |
+|---|---|---|---|---|
+| N1 | hoch | KI kann Freigabevermerk selbst setzen | Feld nicht im KI-Schema; Vermerk aus KI-Antwort wird nicht anerkannt (FEHLER mit Klartext), A50 | behoben |
+| N2 | hoch | jeder Text gilt als Freigabe („NEIN“, „offen“) | Form „Name, Datum“ Pflicht, Füllwörter abgelehnt | behoben |
+| N3 | hoch | Vermerk hebt FEHLER je Gerät auf | Gerätefehler bleibt; nur Feld `ausgenommen` (mit gültigem Vermerk) macht HINWEIS | behoben |
+| N4 | mittel | Fehlalarme PLC, Notausgang, Sicherheitsbeleuchtung, Wendeschütz verriegelt, Überspannungskategorie | Muster eingegrenzt, Trefferwort im FEHLER-Text, 6 Negativfälle | behoben |

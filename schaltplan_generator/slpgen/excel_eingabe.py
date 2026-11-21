@@ -39,7 +39,8 @@ SICHERHEIT_FELDER = [
     ("not_halt", "JA / NEIN / leer = nicht angegeben (nur Platzhalterseite, keine Auslegung)"),
     ("pl", "geforderter PL_r laut Risikobeurteilung, z. B. PL d"), ("stoppkategorie", "0, 1 oder 2 (EN 60204-1)"),
     ("funktionen", "weitere Sicherheitsfunktionen in Klartext, z. B. Schutztür"),
-    ("freigabe", "Name, Datum der Elektrofachkraft – erst dann entfällt „nicht für Fertigung“"),
+    ("freigabe", "Name, Datum der Elektrofachkraft (z. B. M. Muster, 2026-11-21) – erst dann entfällt „nicht für Fertigung“"),
+    ("ausgenommen", "nur mit Freigabe: BMK von Feldgeräten, die trotz Sicherheitsbegriff an der Standard-SPS bleiben (Komma)"),
 ]
 VORZEICHEN = {"anlage": "=", "ort": "+"}
 FELD_SPALTEN = ["BMK", "Artikel", "Funktion", "Gruppe"]

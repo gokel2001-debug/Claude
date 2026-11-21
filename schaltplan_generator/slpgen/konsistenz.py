@@ -268,14 +268,22 @@ def _sicherheit(m: Planmodell) -> list[Befund]:
     if not isinstance(si, dict):
         return [Befund(FEHLER, "Sicherheit", "Angabe zur Sicherheit im Planmodell unlesbar – Plan neu erzeugen", SI_QUELLE)]
     if si.get("freigabe"):
-        return [Befund(HINWEIS, "Sicherheit", f"Sicherheitsfunktion im Plan nur als Platzhalter; Freigabevermerk: "
-                                              f"{si['freigabe']} (Auslegung außerhalb dieses Plans)", SI_QUELLE)]
-    befunde = [Befund(FEHLER, "Sicherheit", "Sicherheitsfunktion nicht ausgelegt (nur Platzhalterseite SIK) – Auslegung "
-                                            "durch Elektrofachkraft, danach Freigabevermerk unter sicherheit.freigabe "
-                                            "(Name, Datum) eintragen", SI_QUELLE)]
-    befunde += [Befund(FEHLER, "Sicherheit", f"{g}: sicherheitsbezogenes Gerät liegt an einem Standard-SPS-Eingang – "
-                                             f"Anschluss nur über Sicherheitsschaltgerät/-steuerung; durch Elektrofachkraft "
-                                             f"festlegen", SI_QUELLE) for g in si.get("geraete", [])]
+        befunde = [Befund(HINWEIS, "Sicherheit", f"Sicherheitsfunktion im Plan nur als Platzhalter; Freigabevermerk: "
+                                                 f"{si['freigabe']} (Auslegung außerhalb dieses Plans)", SI_QUELLE)]
+    else:
+        befunde = [Befund(FEHLER, "Sicherheit", (si.get("freigabe_problem") or "Sicherheitsfunktion nicht ausgelegt")
+                          + " (nur Platzhalterseite SIK) – Auslegung durch Elektrofachkraft, danach Freigabevermerk "
+                            "„Name, Datum“ im Excel-Blatt Sicherheit eintragen", SI_QUELLE)]
+    treffer = si.get("treffer") or {}
+    for g in si.get("geraete", []):          # bleibt auch mit Freigabevermerk, außer ausdrücklich ausgenommen
+        if g in (si.get("ausgenommen") or []):
+            befunde.append(Befund(HINWEIS, "Sicherheit", f"{g}: von der Elektrofachkraft als nicht sicherheitsbezogen "
+                                                         f"ausgenommen (Standard-SPS)", SI_QUELLE))
+        else:
+            befunde.append(Befund(FEHLER, "Sicherheit", f"{g} („{treffer.get(g, '?')}“): sicherheitsbezogenes Gerät liegt "
+                                                        f"an einem Standard-SPS-Eingang – Anschluss nur über "
+                                                        f"Sicherheitsschaltgerät/-steuerung; durch Elektrofachkraft "
+                                                        f"festlegen oder unter „ausgenommen“ eintragen", SI_QUELLE))
     return befunde
 
 
