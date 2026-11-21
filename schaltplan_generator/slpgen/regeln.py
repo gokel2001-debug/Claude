@@ -73,15 +73,43 @@ def _anschluss(g: Betriebsmittel) -> str:
     return ""
 
 
+# Begriffe der Sicherheitstechnik; lieber zu viele als zu wenige Treffer (ZIEL.md: konservativste Variante)  # ANNAHME A49
+SICHERHEIT_MUSTER = re.compile(
+    r"not[\s-]?(halt|aus|stopp?)|emergency|schutzt(ü|ue)r|verriegel|lichtgitter|lichtvorhang|zweihand|"
+    r"sicherheits|13849|62061|performance\s+level|\bSIL\s?[1-4]?\b|\bPL\s?[a-e]?r?\b(?!\.)|kategorie\s*[b1-4]\b|\bSTO\b",
+    re.I)
+
+
+def sicherheitsbedarf(projekt: dict[str, Any]) -> dict[str, Any] | None:
+    """Sicherheitsanforderung aus Abschnitt `sicherheit`, Annahmen, offenen Fragen und Feldgeräten erkennen.
+
+    Liefert nur Angaben für die Platzhalterseite – nie eine Auslegung. Feldgeräte mit Sicherheitsbegriff werden
+    gesondert gemeldet, weil sie sonst wie normale Geräte an der Standard-SPS landen.
+    """
+    from .projektmodell import _ja_nein
+    si = projekt.get("sicherheit") or {}
+    ausloeser = [f"{k}: {x}" for k in ("offene_fragen", "annahmen") for x in projekt.get(k) or []
+                 if SICHERHEIT_MUSTER.search(str(x))]
+    geraete = ["-" + str(g.get("bmk", "")).lstrip("-") for g in projekt.get("feldgeraete") or []
+               if SICHERHEIT_MUSTER.search(f"{g.get('funktion', '')} {g.get('artikel', '')}")]
+    antriebe = ["-" + str(mo.get("bmk", "")).lstrip("-") for mo in projekt.get("motoren") or []]
+    ausloeser += [f"Motor -{str(mo.get('bmk', '')).lstrip('-')}: {mo.get('funktion')}" for mo in projekt.get("motoren") or []
+                  if SICHERHEIT_MUSTER.search(str(mo.get("funktion") or ""))]
+    if not (si or ausloeser or geraete):
+        return None
+    return {"not_halt": _ja_nein(si["not_halt"]) if si.get("not_halt") not in (None, "") else None,
+            "pl": str(si.get("pl") or ""), "funktionen": str(si.get("funktionen") or ""),
+            "stoppkategorie": str(si.get("stoppkategorie") or ""), "freigabe": str(si.get("freigabe") or "").strip(),
+            "ausloeser": ausloeser[:6], "geraete": geraete, "antriebe": antriebe}
+
+
 def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     pk = projekt["projekt"]
     m = Planmodell(projekt={k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in pk.items()})
-    sicherheit = projekt.get("sicherheit") or {}
-    fragen = " ".join(str(x) for x in projekt.get("offene_fragen") or [])
-    if sicherheit or re.search(r"not-?halt|performance level|\bPL\b|sil\b", fragen, re.I):
+    si_bedarf = sicherheitsbedarf(projekt)
+    if si_bedarf:
         # ZIEL.md: Sicherheitsrelevantes nur als Platzhalter mit Freigabepflicht   # ANNAHME A49
-        m.projekt["_sicherheit"] = {"not_halt": bool(sicherheit.get("not_halt", True)), "pl": str(sicherheit.get("pl") or ""),
-                                    "funktionen": str(sicherheit.get("funktionen") or "")}
+        m.projekt["_sicherheit"] = si_bedarf
         m.warnungen.append("Sicherheitsfunktionen (Not-Halt/PL) nur als PLATZHALTER – Auslegung, Validierung und Freigabe "
                            "durch Elektrofachkraft/Sicherheitsverantwortlichen erforderlich")
     m.projekt["_netz"] = projekt["einspeisung"].get("netz", "")

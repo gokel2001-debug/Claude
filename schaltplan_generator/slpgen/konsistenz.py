@@ -256,12 +256,27 @@ def _motorschutz(m: Planmodell) -> list[Befund]:
     return befunde
 
 
+SI_QUELLE = ("EN 60204-1:2018 Abschn. 9.2.3.4.2 (Not-Halt); EN ISO 13849-1:2023 Abschn. 4 (PL_r) – Abschnitte vor "
+             "Freigabe gegen die Normausgabe prüfen; ANNAHME A49")
+
+
 def _sicherheit(m: Planmodell) -> list[Befund]:
-    """Sicherheitsfunktionen sind nur Platzhalter -> immer sichtbar im Prüfbericht."""
-    if m.projekt.get("_sicherheit"):
-        return [Befund(HINWEIS, "Sicherheit", "Sicherheitsfunktion nur als Platzhalter – Freigabe durch Elektrofachkraft "
-                                              "erforderlich", "ZIEL.md: Sicherheitsrelevantes nur als Platzhalter")]
-    return []
+    """Sicherheitsfunktionen sind nur Platzhalter: ohne Freigabevermerk FEHLER (= Stempel „nicht für Fertigung“)."""
+    si = m.projekt.get("_sicherheit")
+    if not si:
+        return []
+    if not isinstance(si, dict):
+        return [Befund(FEHLER, "Sicherheit", "Angabe zur Sicherheit im Planmodell unlesbar – Plan neu erzeugen", SI_QUELLE)]
+    if si.get("freigabe"):
+        return [Befund(HINWEIS, "Sicherheit", f"Sicherheitsfunktion im Plan nur als Platzhalter; Freigabevermerk: "
+                                              f"{si['freigabe']} (Auslegung außerhalb dieses Plans)", SI_QUELLE)]
+    befunde = [Befund(FEHLER, "Sicherheit", "Sicherheitsfunktion nicht ausgelegt (nur Platzhalterseite SIK) – Auslegung "
+                                            "durch Elektrofachkraft, danach Freigabevermerk unter sicherheit.freigabe "
+                                            "(Name, Datum) eintragen", SI_QUELLE)]
+    befunde += [Befund(FEHLER, "Sicherheit", f"{g}: sicherheitsbezogenes Gerät liegt an einem Standard-SPS-Eingang – "
+                                             f"Anschluss nur über Sicherheitsschaltgerät/-steuerung; durch Elektrofachkraft "
+                                             f"festlegen", SI_QUELLE) for g in si.get("geraete", [])]
+    return befunde
 
 
 def _texte(m: Planmodell) -> list[Befund]:

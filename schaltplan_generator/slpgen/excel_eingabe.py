@@ -5,6 +5,7 @@ Blätter der Vorlage:
   Regeln       Feld | Wert   (24 V, SPS, Leitungen)
   Feldgeraete  BMK | Artikel | Funktion | Gruppe
   Motoren      BMK | Funktion | P_kW | I_N_A | cos_phi | Laenge_m
+  Sicherheit   Feld | Wert   (optional: Not-Halt/PL – nur Platzhalter, Freigabe durch Elektrofachkraft)
   Artikel      Auszug Gerätestamm (nur Information, Quelle der Auswahllisten)
 """
 from __future__ import annotations
@@ -33,6 +34,12 @@ REGEL_FELDER = [
     ("adresse_DI", "{byte}.{bit}"), ("adresse_DO", "{byte}.{bit}"), ("adresse_AI", "{wort}"), ("adresse_AO", "{wort}"),
     ("leitungen_freigegeben", "JA erst nach Prüfung der I_z-Werte"), ("verlegeart", ""),
     ("reduktionsfaktor", ""), ("kappa", "Leitfähigkeit Cu"), ("du_max_prozent", "zul. Spannungsfall"),
+]
+SICHERHEIT_FELDER = [
+    ("not_halt", "JA / NEIN / leer = nicht angegeben (nur Platzhalterseite, keine Auslegung)"),
+    ("pl", "geforderter PL_r laut Risikobeurteilung, z. B. PL d"), ("stoppkategorie", "0, 1 oder 2 (EN 60204-1)"),
+    ("funktionen", "weitere Sicherheitsfunktionen in Klartext, z. B. Schutztür"),
+    ("freigabe", "Name, Datum der Elektrofachkraft – erst dann entfällt „nicht für Fertigung“"),
 ]
 VORZEICHEN = {"anlage": "=", "ort": "+"}
 FELD_SPALTEN = ["BMK", "Artikel", "Funktion", "Gruppe"]
@@ -119,6 +126,12 @@ def lade_excel(pfad: str | Path) -> dict[str, Any]:
                             if d.get(LAENGE_SPALTE) not in (None, "") else {})}
                         for d in _tabelle(wb["Feldgeraete"], FELD_SPALTEN)],
     }
+    if "Sicherheit" in wb.sheetnames:
+        s = _felder(wb["Sicherheit"])
+        si = {k: (str(s[k]).strip().lower() if k == "not_halt" else str(s[k]).strip())
+              for k, _ in SICHERHEIT_FELDER if s.get(k) not in (None, "")}
+        if si:
+            projekt["sicherheit"] = si
     if "Motoren" in wb.sheetnames:
         motoren = [{"bmk": str(d["BMK"]), "funktion": str(d["Funktion"]),
                     "p_kW": _zahl(d["P_kW"], f"Motoren Z.{d['_zeile']}"),
@@ -198,6 +211,13 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
     for mo in projekt.get("motoren", []):
         wm.append([mo["bmk"], mo.get("funktion", ""), mo["p_kW"], mo["i_N_A"], mo.get("cos_phi", 0.8),
                    mo["laenge_m"]])
+
+    ws = wb.create_sheet("Sicherheit", 4)
+    _kopf(ws, ["Feld", "Wert", "Hinweis"])
+    si = projekt.get("sicherheit") or {}
+    for k, hinweis in SICHERHEIT_FELDER:
+        w = si.get(k, "")
+        ws.append([k, ("JA" if w else "NEIN") if isinstance(w, bool) else w, hinweis])
 
     for blatt in wb.worksheets:
         for spalte, breite in zip("ABCDEF", (22, 34, 48, 12, 10, 10)):

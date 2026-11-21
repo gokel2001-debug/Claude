@@ -111,3 +111,5 @@ Pflichtabschnitte: projekt, einspeisung, feldgeraete.
 | `not_halt` | ja / nein | – | Not-Halt gefordert (wird nur als Platzhalter gezeichnet) | `true` |
 | `pl` | Text | – | geforderter Performance Level laut Risikobeurteilung (z. B. PL d) | `PL d` |
 | `funktionen` | Text | – | weitere Sicherheitsfunktionen in Klartext | `Schutztür Pumpenraum` |
+| `stoppkategorie` | Text | – | Stoppkategorie 0/1/2 nach EN 60204-1 laut Risikobeurteilung | `0` |
+| `freigabe` | Text | – | Freigabevermerk der Elektrofachkraft (Name, Datum) – erst dann entfällt „nicht für Fertigung“; die Auslegung selbst liegt außerhalb dieses Plans | `M. Muster, 2026-11-21` |

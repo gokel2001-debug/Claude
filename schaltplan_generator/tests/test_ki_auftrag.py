@@ -30,8 +30,9 @@ def test_ki_antwort_zum_beispiel_lastenheft_ergibt_plan(tmp_path):
     assert any("SPS-CPU" in x for x in ergaenzt) and roh["annahmen"]
     m = regeln.plane(modell, STAMM)
     assert {"-M1", "-M2", "-M3", "-Y1", "-B1", "-B2", "-P1"} <= {b.bmk for b in m.betriebsmittel}
-    main(["generieren", str(B / "projektmodell_ki_beispiel.yaml"), "--stamm", str(B / "geraetestamm.yaml"),
-          "--vorgaben", str(B / "hausvorgaben.yaml"), "--ausgabe", str(tmp_path), "--profil", str(tmp_path / "x.yaml")])
+    with pytest.raises(SystemExit, match="Sicherheitsfunktion nicht ausgelegt"):   # Not-Halt offen -> nicht für Fertigung
+        main(["generieren", str(B / "projektmodell_ki_beispiel.yaml"), "--stamm", str(B / "geraetestamm.yaml"),
+              "--vorgaben", str(B / "hausvorgaben.yaml"), "--ausgabe", str(tmp_path), "--profil", str(tmp_path / "x.yaml")])
     text = "".join(s.extract_text() for s in PdfReader(str(tmp_path / "P-2026-017_Stromlaufplan.pdf")).pages)
     assert "-M3" in text and "Leitungslänge Umwälzpumpe Heizkreis Süd 30 m" in text   # KI-Annahme im Nachweis
 
@@ -125,7 +126,8 @@ def test_echte_ki_rohantwort_ergibt_plan(tmp_path, capsys):
     main(["pruefen", str(roh)])
     aus = capsys.readouterr().out
     assert "vollständig" in aus and "10 offene Fragen" in aus
-    main(["generieren", str(roh), "--ausgabe", str(tmp_path), "--profil", str(tmp_path / "x.yaml")])
+    with pytest.raises(SystemExit, match="Sicherheitsfunktion nicht ausgelegt"):
+        main(["generieren", str(roh), "--ausgabe", str(tmp_path), "--profil", str(tmp_path / "x.yaml")])
     text = "".join(s.extract_text() for s in PdfReader(str(tmp_path / "P-2026-017_Stromlaufplan.pdf")).pages)
     assert "-M3" in text and "Offene Frage: Reparatur-/Trennschalter" in text
 

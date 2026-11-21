@@ -63,6 +63,7 @@ Danach erscheint ein Menü:
 | **Projekt** | Nummer, Bezeichnung, Kunde, Anlage, Ort, Datum … | Anlage/Ort **ohne** `=`/`+` eingeben (sonst hält Excel es für eine Formel) |
 | **Feldgeraete** | je Zeile ein Gerät: BMK (z. B. `B7`), Artikel, Funktion, Gruppe, optional **Baustein** | Artikel aus der **Auswahlliste** wählen (Liste = Blatt *Artikel*). Für Geräte mit mehreren Signalen (z. B. Zähler mit Impuls + Drahtbruch, Pumpe) in Spalte „Baustein“ einen Eintrag aus Blatt *Bausteine* wählen; Spalte „Leitungslänge m“: Pflicht bei Pumpen (Spannungsfall), sonst für die Kabelliste (leer = „nach Feldmaß“) |
 | **Motoren** | BMK, Funktion, Leistung kW, Nennstrom A, cos φ, Kabellänge m | Werte vom Typenschild |
+| **Sicherheit** | Not-Halt (JA/NEIN/leer), PL, Stoppkategorie, Freigabe | Das Programm zeichnet **keine** Sicherheitsschaltung, nur eine rote Platzhalterseite. Der Plan bleibt „NICHT FÜR FERTIGUNG“, bis die Elektrofachkraft die Sicherheitsfunktion ausgelegt hat und bei *freigabe* Name und Datum einträgt. Feldgeräte mit „Not-Halt“, „Not-Aus“, „Schutztür“ o. Ä. im Funktionstext lösen das ebenfalls aus |
 | **Regeln** | Reserve, Absicherungsfaktor, Netzteile, SPS-Module, Leitungswerte | erst ändern, wenn klar ist, was es bewirkt |
 | **Artikel** | nur zum Nachschlagen | neue Artikel kommen in `beispiele\geraetestamm.yaml` |
 

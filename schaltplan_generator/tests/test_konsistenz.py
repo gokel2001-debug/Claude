@@ -35,7 +35,9 @@ def _korpus():
 def test_testkorpus_ohne_fehler(name):
     m = regeln.plane(copy.deepcopy(_korpus()[name]), STAMM)
     befunde = pruefe_plan(m)
-    assert not [b for b in befunde if b.art == FEHLER], befunde
+    sicher = [b for b in befunde if b.pruefung == "Sicherheit"]
+    assert bool(sicher) == (name == "ki")                    # KI-Beispiel fragt nach Not-Halt -> Platzhalter (A49)
+    assert not [b for b in befunde if b.art == FEHLER and b.pruefung != "Sicherheit"], befunde
     assert not [b for b in befunde if b.pruefung == "Text"]          # keine Wortdopplung mehr (M4a Elektro 8)
 
 
@@ -192,7 +194,7 @@ def test_sicherheit_nur_als_platzhalter(tmp_path):
     p = copy.deepcopy(BEISPIEL)
     p["sicherheit"] = {"not_halt": True, "pl": "PL d", "funktionen": "Schutztür"}
     m = regeln.plane(p, STAMM)
-    assert any(b.pruefung == "Sicherheit" and b.art == HINWEIS for b in pruefe_plan(m))
+    assert [b.art for b in pruefe_plan(m) if b.pruefung == "Sicherheit"] == [FEHLER]   # ohne Freigabevermerk gesperrt
     seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
     i = [a for a, _, _ in seiten].index("SIK")
     text = PdfReader(str(tmp_path / "h.pdf")).pages[i].extract_text()
@@ -202,3 +204,44 @@ def test_sicherheit_nur_als_platzhalter(tmp_path):
     frage = copy.deepcopy(BEISPIEL)
     frage["offene_fragen"] = ["Not-Halt: welcher PL?"]
     assert regeln.plane(frage, STAMM).projekt["_sicherheit"]["pl"] == ""        # aus offener Frage abgeleitet
+
+
+@pytest.mark.parametrize("text, treffer", [
+    ("Not-Halt gefordert?", True), ("NOT-AUS am Schrank", True), ("Not Halt vor Ort", True), ("Schutztür Pumpenraum", True),
+    ("Lichtgitter am Einlauf", True), ("Sicherheitsrelais vorhanden?", True), ("Kategorie 3 nach ISO 13849", True),
+    ("welcher PL d?", True), ("SIL 2 gefordert", True), ("Emergency stop", True),
+    ("Silo Füllstand", False), ("Ventil auf", False), ("Fossil", False), ("PLZ Baustelle", False), ("Pl. 3 prüfen", False),
+])
+def test_sicherheit_suchmuster(text, treffer):
+    """Prüfer M7b Elektro 3 / Software 1+2: Auslöser vollständig, keine Fehlalarme bei üblichen Wörtern."""
+    assert bool(regeln.SICHERHEIT_MUSTER.search(text)) == treffer
+
+
+def test_sicherheit_feldgeraet_und_freigabe(tmp_path):
+    """Prüfer M7b Elektro 1/4/5: Not-Halt-Taster als Feldgerät -> FEHLER je Gerät; Freigabevermerk hebt die Sperre auf."""
+    p = copy.deepcopy(BEISPIEL)
+    p["feldgeraete"].append({"bmk": "S9", "artikel": "IND-M12-PNP", "funktion": "Not-Halt Taster Schrank", "gruppe": "Sensorik"})
+    m = regeln.plane(p, STAMM)
+    si = m.projekt["_sicherheit"]
+    assert si["geraete"] == ["-S9"] and si["not_halt"] is None                  # nichts selbst festgelegt
+    fehler = [b.text for b in pruefe_plan(m) if b.pruefung == "Sicherheit" and b.art == FEHLER]
+    assert len(fehler) == 2 and "-S9" in fehler[1]
+    p["sicherheit"] = {"freigabe": "M. Muster, 2026-11-21"}
+    befunde = [b for b in pruefe_plan(regeln.plane(p, STAMM)) if b.pruefung == "Sicherheit"]
+    assert [b.art for b in befunde] == [HINWEIS] and "M. Muster" in befunde[0].text
+
+
+def test_sicherheit_excel_und_rundreise(tmp_path):
+    """Prüfer M7b Software 5/7: Excel-Blatt Sicherheit; _sicherheit übersteht planmodell.json."""
+    from slpgen.excel_eingabe import lade_excel, schreibe_vorlage
+    from slpgen.modell import Planmodell
+    p = copy.deepcopy(BEISPIEL)
+    p["sicherheit"] = {"not_halt": True, "pl": "PL d"}
+    schreibe_vorlage(p, STAMM, tmp_path / "p.xlsx")
+    assert lade_excel(tmp_path / "p.xlsx")["sicherheit"] == {"not_halt": "ja", "pl": "PL d"}
+    leer = copy.deepcopy(BEISPIEL)
+    schreibe_vorlage(leer, STAMM, tmp_path / "leer.xlsx")
+    assert "sicherheit" not in lade_excel(tmp_path / "leer.xlsx")
+    m = regeln.plane(p, STAMM)
+    m.speichere(tmp_path / "pm.json")
+    assert Planmodell.lade(tmp_path / "pm.json").projekt["_sicherheit"] == m.projekt["_sicherheit"]

@@ -272,7 +272,7 @@ class Hausplan:
                     self.pos[f"karte:{k.geraet_bmk}"] = Ort(kenn, i + 1, 0)      # Kanaltabelle: Kanal in Spalte 0
 
         if m.projekt.get("_sicherheit"):                 # Sicherheitskreis nur als Platzhalter (ZIEL.md)
-            self._neu("SIK", "Sicherheitskreis (Platzhalter)").seiten.append(("Sicherheitskreis – NICHT FREIGEGEBEN",
+            self._neu("SIK", "Sicherheitskreis (Platzhalter)", "PLH").seiten.append(("Sicherheitskreis – NICHT FREIGEGEBEN",
                                                                                self._s_sicherheit))
         for kenn, titel, art, zeichner, n in (
                 ("KAB", "Kabelübersicht", "KAB", self._s_kabel, len(self._kabelzeilen())),
@@ -354,7 +354,7 @@ class Hausplan:
         b.text(X0 + 112, YS - 12, p.get("kunde", ""), 2)
         b.text(X0 + 172, YS - 7, a.titel[:40], 2.8, True)
         b.text(X0 + 172, YS - 14, titel[:40], 2.5)
-        b.text(X0 + 172, YS - 21, "Stromlaufplan" if a.art == "EFS" else "", 2.2)
+        b.text(X0 + 172, YS - 21, {"EFS": "Stromlaufplan", "PLH": "Platzhalter"}.get(a.art, ""), 2.2)
         b.text(X0 + 252, YS - 6, f"Projekt-Nr. {p.get('nummer', '')}", 2.2)
         b.text(X0 + 252, YS - 15, f"Zeichnung-Nr. {self.zeichnungsnummer(a)}", 2.3, True)
         b.text(X0 + 332, YS - 6, f"= {a.kennung}", 2.6, True)
@@ -761,12 +761,20 @@ class Hausplan:
                ausr="m")
         b.text((X0 + X1) / 2, 204, "Sicherheitsverantwortlichen nach Risikobeurteilung erforderlich.", 3.5, ausr="m")
         b.c.restoreState()
-        zeilen = [f"Not-Halt gefordert: {'ja' if si.get('not_halt') else 'nein'}",
-                  f"Performance Level laut Risikobeurteilung: {si.get('pl') or 'offen'}",
+        nh = {True: "ja", False: "nein (laut Lastenheft) – Begründung aus der Risikobeurteilung nachweisen",
+              None: "nicht angegeben – aus der Risikobeurteilung festlegen"}[si.get("not_halt")]
+        zeilen = [f"Not-Halt gefordert: {nh}",
+                  f"Erforderlicher Performance Level PL_r (EN ISO 13849-1): {si.get('pl') or 'offen'}",
+                  f"Stoppkategorie (EN 60204-1): {si.get('stoppkategorie') or 'offen'}",
                   f"Weitere Sicherheitsfunktionen: {si.get('funktionen') or 'offen'}",
+                  f"Betroffene Antriebe (nur Aufzählung): {', '.join(si.get('antriebe') or []) or 'keine Motorabgänge'}",
+                  f"Sicherheitsbezogene Feldgeräte, derzeit an Standard-SPS: {', '.join(si.get('geraete') or []) or '–'}",
+                  "Orte der Not-Halt-Befehlsgeräte: offen",
+                  f"Freigabe (Name, Datum): {si.get('freigabe') or 'AUSSTEHEND'}",
                   "Hinweis: Das Programm legt keine Sicherheitsschaltung aus (keine Bauteilwahl, keine Verdrahtung)."]
+        zeilen += [f"Erkannt aus {t}" for t in si.get("ausloeser") or []]
         for i, t in enumerate(zeilen):
-            b.text(X0 + 40, 185 - i * 9, t, 3.2)
+            b.text(X0 + 40, 188 - i * 6.5, t if len(t) <= 150 else t[:147] + "…", 3.0)
 
     def _s_cpu(self, b: Blatt, a: Anlage):
         cpu = self.m.bm("-A1")

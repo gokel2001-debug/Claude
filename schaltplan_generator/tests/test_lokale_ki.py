@@ -49,7 +49,8 @@ def test_lastenheft_ueber_lokale_ki_zum_plan(tmp_path, capsys):
     antwort = tmp_path / "lastenheft_projektmodell.yaml"
     assert antwort.exists() and "gespeichert" in capsys.readouterr().out
     main(["pruefen", str(antwort)])
-    main(["generieren", str(antwort), "--profil", str(tmp_path / "x.yaml")])
+    with pytest.raises(SystemExit, match="Sicherheitsfunktion nicht ausgelegt"):     # Not-Halt offen (A49)
+        main(["generieren", str(antwort), "--profil", str(tmp_path / "x.yaml")])
     assert (tmp_path / "ausgabe" / "P-2026-017_Stromlaufplan_Hausstil.pdf").exists()
 
 
