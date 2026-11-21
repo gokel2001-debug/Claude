@@ -1,7 +1,7 @@
 # STATUSBERICHT – Sammelbericht für die Überwachung
 
 Berichtszeitraum: seit Projektbeginn (noch keine Überwachungsantwort) – Sitzungen: 4 (20.11. manuell: ZIEL.md, M1–M4c; Autostart Fr 22:07: M4d, M2e, M5a–M5d; Autostart Sa 03:12: M5e, M6a, M7a–M7c, M5f, M8a, M9a; Autostart Sa 08:17: durch Nutzungslimit erst 11:18 gestartet, nur Abschluss)
-Stand: 21.11.2026, letzter Commit siehe `git log` (nach fd2c066)
+Stand: 21.11.2026, letzter Commit 95ad855 (+ diese Ergänzung)
 Branch: `claude/ai-schaltplan-generator-u6lzbz`
 
 ## 1. Meilenstein aktuell / Fortschritt
@@ -70,4 +70,4 @@ Software-Prüfung M9a nachholen, dann laut Arbeitsvorrat: M8b (Abnahme vertiefen
 ## 8. Fragen an die Überwachung (max. 3)
 0. Produkt-Prüfer empfiehlt Reihenfolge M4c → M4d → M5 → M8-Vorabtest mit echtem Plan → M7 → M6 → M4e und die Lernschleife (M5c) vor M7. ZIEL-Reihenfolge ist verbindlich – ändern? Umgesetzt: M4e (reiner Umbau) hinter M5/M6 gestellt; übrige Reihenfolge bleibt.
 1. Sollen die Steuerdateien nach `schaltplan_generator/docs/` umziehen? Annahme: bleiben in `docs/`.
-2. Für die Elektrofachkraft: A3, A5, A11, A12, A17, A20, A21, A30, A31, A34, A36, A42, A44, A45, A46, A47 in `docs/OFFENE_PUNKTE.md`; am PC: PC3 (echte Pläne lernen), PC5 (Ollama), PC7 (Artikelexport).
+2. Für die Elektrofachkraft: A3, A5, A11, A12, A17, A20, A21, A30, A31, A34, A36, A42, A44, A45, A46, A47, **neu A49–A51 (Sicherheit, FU)** in `docs/OFFENE_PUNKTE.md`; am PC: PC3 (echte Pläne lernen), PC5 (Ollama), PC7 (Artikelexport), **PC8 (Abnahme an 3 echten Plänen), PC9 (Programmpaket ohne Python)**.
