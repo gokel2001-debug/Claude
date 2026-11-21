@@ -8,6 +8,7 @@ title Stromlaufplan-Generator (slpgen)
 
 rem ---- Windows-Programmpaket: fertiges Programm im Ordner programm\ (kein Python noetig) ----
 if exist "programm\slpgen.exe" set "SLP=programm\slpgen.exe" & goto :bereit_exe
+if exist "programm\" goto :keineexe
 
 rem ---- Python suchen: bevorzugt Versionen, fuer die alle Bibliotheken fertig vorliegen ----
 set "PY="
@@ -327,6 +328,15 @@ echo.
 echo SELBSTTEST OK - Programm ist funktionsfaehig.
 pause
 goto :menue
+
+:keineexe
+echo.
+echo FEHLER: Die Programmdatei programm\slpgen.exe fehlt.
+echo Ursache meist: ZIP nicht vollstaendig entpackt (rechte Maustaste - Alle extrahieren)
+echo oder der Virenscanner hat die Datei in Quarantaene verschoben - dann bitte die IT fragen.
+echo Python wird fuer dieses Programmpaket NICHT benoetigt. Details: ANLEITUNG_EINSTEIGER.md Abschnitt 6
+pause
+goto :ende
 
 :keinpython
 echo.

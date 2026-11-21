@@ -11,10 +11,20 @@ einer Elektrofachkraft geprüft werden.
 
 ## 0 Ohne Python: fertiges Programmpaket (erprobt nur automatisch, PC-Test steht aus)
 
-1. Im GitHub-Repository oben **„Actions“** → links **„Paket“** → den obersten grünen Lauf öffnen.
+1. Im GitHub-Repository (im Browser **angemeldet**) oben **„Actions“** → links **„Paket“** → den obersten grünen
+   Lauf öffnen, bei dem unter dem Titel der Zweig **`claude/ai-schaltplan-generator-u6lzbz`** steht.
 2. Unten bei **Artifacts** auf **„Stromlaufplan-Generator-Windows“** klicken (ZIP wird geladen).
 3. ZIP mit der rechten Maustaste → **„Alle extrahieren…“**, z. B. nach `C:\slpgen`.
-4. Im entpackten Ordner **`start.bat`** doppelklicken – Schritte 1 und 2 entfallen.
+4. Im entpackten Ordner **`start.bat`** doppelklicken – Schritte 1 und 2 entfallen, das Programm startet sofort
+   (keine Einrichtung, kein Internet nötig).
+
+Steht bei „Artifacts“ nichts oder „expired“: Pakete werden nur 14 Tage aufbewahrt – geladene ZIP daher selbst
+aufheben; für ein neues Paket den Betreuer bitten, den Lauf neu zu starten („Re-run“).
+
+**Neue Version einspielen, ohne Gelerntes zu verlieren:** Hausprofil (gelernte Werte, Freigaben, Hausregeln,
+Artikelzuordnung) liegt im Ordner **`hausprofil`**, Ihre Projekte in **`meine_projekte`**. Neue ZIP in einen
+**neuen** Ordner entpacken, dann diese **zwei Ordner** aus dem alten in den neuen Ordner kopieren. Eigene Änderungen
+in `beispiele\` (z. B. Gerätestamm) vorher sichern – das neue Paket bringt eigene Beispieldateien mit.
 
 Windows kann beim ersten Start warnen („Der Computer wurde durch Windows geschützt“), weil das Programm nicht
 signiert ist: „Weitere Informationen“ → „Trotzdem ausführen“ – nur nach Rücksprache mit der IT.
@@ -42,9 +52,11 @@ Auf Firmen-PCs braucht man dafür eventuell die IT (Administratorrechte).
 
 **Doppelklick auf `start.bat`.**
 
-- Beim **ersten Start** richtet sich das Programm selbst ein (1–3 Minuten, Internet nötig).
+- **Programmpaket (Abschnitt 0):** startet sofort.
+- **Python-Weg (Abschnitte 1–2):** beim **ersten Start** richtet sich das Programm selbst ein (1–3 Minuten, Internet nötig).
 - Meldet Windows „Der Computer wurde durch Windows geschützt“: **„Weitere Informationen“ → „Trotzdem ausführen“**.
-  (Die Datei ist ein einfaches Textskript; Inhalt mit dem Editor einsehbar.)
+  (`start.bat` ist ein einfaches Textskript, mit dem Editor einsehbar; das Programmpaket enthält zusätzlich das
+  nicht signierte Programm `programm\slpgen.exe` – im Zweifel IT fragen.)
 
 Danach erscheint ein Menü:
 
@@ -96,6 +108,7 @@ Im Ordner **`ausgabe`**:
 | Meldung | Ursache | Lösung |
 |---|---|---|
 | „Python wurde nicht gefunden“ | Python fehlt oder Haken „PATH“ nicht gesetzt | Schritt 1 wiederholen, Haken setzen |
+| „Die Programmdatei programm\slpgen.exe fehlt“ (Programmpaket) | ZIP nicht entpackt oder Virenscanner-Quarantäne | ZIP mit „Alle extrahieren…“ entpacken; meldet der Virenscanner `slpgen.exe`, IT fragen (Programm ist nicht signiert) |
 | „FEHLER bei der Einrichtung“ | kein Internet / Firmen-Proxy | Ordner `.venv` löschen, mit Internet erneut starten; ggf. IT fragen |
 | „Microsoft Visual C++ 14.0 or greater is required“ (Bibliothek PyYAML) | sehr neue Python-Version ohne fertige Bibliothek | ab dieser Programmversion automatisch umgangen; bei älterer `start.bat` neue Version laden. Alternativ Python 3.13 zusätzlich installieren |
 | „Datei gesperrt“ | PDF oder Excel noch geöffnet | Datei schließen, erneut erzeugen |
