@@ -437,5 +437,7 @@ def schema_markdown() -> str:
         for f in felder:
             ber = f" ({f.bereich[0]:g}…{f.bereich[1]:g})" if f.bereich else ""
             typ = TYP_KLARTEXT[f.typ.partition(":")[0]]
+            if f.typ.startswith("wahl:"):
+                typ += ": " + " / ".join(f.typ.partition(":")[2].split("|"))
             z.append(f"| `{f.name}` | {typ}{ber} | {'ja' if f.pflicht else '–'} | {f.text} | `{f.beispiel}` |")
     return "\n".join(z) + "\n"

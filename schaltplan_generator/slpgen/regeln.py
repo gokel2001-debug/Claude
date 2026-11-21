@@ -456,7 +456,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     doppelt = sorted({b.bmk for b in m.betriebsmittel if [x.bmk for x in m.betriebsmittel].count(b.bmk) > 1})
     if doppelt:
         raise RegelFehler(f"Kennzeichen doppelt vergeben: {', '.join(doppelt)} – vom Programm vergebene "
-                          f"Kennzeichen (z. B. -F…, -K…, -Q…, -A…) nicht für Feldgeräte verwenden")
+                          f"Kennzeichen (z. B. -F…, -K…, -Q…, -A…, -T…, -W…, -X…) nicht für Feldgeräte verwenden")
     m.warnungen = list(dict.fromkeys(m.warnungen))   # gleiche Hinweise nur einmal
 
     m.betriebsmittel.append(Betriebsmittel("-X1", "RK-2.5", artikel("RK-2.5")["bezeichnung"],

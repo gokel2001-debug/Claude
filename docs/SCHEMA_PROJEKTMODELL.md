@@ -72,7 +72,7 @@ Pflichtabschnitte: projekt, einspeisung, feldgeraete.
 | `i_N_A` | Zahl (Punkt oder Komma, ohne Einheit) (0.01…1000) | ja | Bemessungsstrom in A (Typenschild) | `1.9` |
 | `cos_phi` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1) | – | Leistungsfaktor (Typenschild), Standard 0,8 | `0.78` |
 | `laenge_m` | Zahl (Punkt oder Komma, ohne Einheit) (0.1…1000) | ja | Leitungslänge Schrank–Motor in m | `12` |
-| `anlauf` | Auswahl | – | direkt (Schütz, Standard) oder fu (Frequenzumrichter mit Freigabe, Sollwert 4–20 mA, Störmeldung) | `fu` |
+| `anlauf` | Auswahl: direkt / fu | – | direkt (Schütz, Standard) oder fu (Frequenzumrichter mit Freigabe, Sollwert 4–20 mA, Störmeldung) | `fu` |
 
 ### `versorgung_24V` (H) – 24-V-Versorgung (Hausregeln)
 

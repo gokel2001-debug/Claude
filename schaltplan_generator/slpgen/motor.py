@@ -15,6 +15,8 @@ from .modell import Betriebsmittel, Kabel, Klemme, Planmodell, RegelFehler
 
 MOTOREN_JE_SEITE = 4
 ANLAUFARTEN = ("direkt", "fu")
+FU_PFLICHT = {"p_kW": "Bemessungsleistung (p_kW)", "i_aus_A": "Ausgangsstrom (i_aus_A)",
+              "i_ein_A": "Netzeingangsstrom (i_ein_A)", "vorsicherung_max_A": "max. Vorsicherung (vorsicherung_max_A)"}
 
 
 class MotorFehler(RegelFehler):
@@ -83,6 +85,11 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
         if anlauf == "fu":
             # ANNAHME A51: kleinster FU mit I_aus >= I_N und P >= P_N; Motorschutzschalter als Leitungs-/Kurzschlussschutz
             # vor dem FU, eingestellt auf den Netzeingangsstrom laut Datenblatt; Motorschutz übernimmt der FU (I²t)
+            for a in kat("fu"):                        # eigene FU-Artikel: Pflichtwerte im Klartext melden
+                fehlt = [w for w in FU_PFLICHT if not isinstance(art[a].get(w), (int, float))]
+                if fehlt:
+                    raise MotorFehler(f"Artikel {a} (Frequenzumrichter): {', '.join(FU_PFLICHT[w] for w in fehlt)} "
+                                      f"fehlt – bitte aus dem Datenblatt im Gerätestamm ergänzen")
             fus = [a for a in kat("fu") if float(art[a]["i_aus_A"]) >= i_n and float(art[a]["p_kW"]) >= float(mo["p_kW"])]
             if not fus:
                 raise MotorFehler(f"{mbmk}: kein Frequenzumrichter mit I_aus ≥ {i_n:g} A und P ≥ {mo['p_kW']} kW im "
@@ -92,9 +99,9 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
 
         mss = [a for a in kat("motorschutz") if art[a]["bereich_A"][0] <= i_netz <= art[a]["bereich_A"][1]]
         if not mss:
-            raise MotorFehler(f"Kein Motorschutzschalter mit Einstellbereich für {i_netz} A")
+            raise MotorFehler(f"{mbmk}: kein Motorschutzschalter mit Einstellbereich für {i_netz:g} A".replace(".", ","))
         mss_key = min(mss, key=lambda a: art[a]["bereich_A"][1])
-        if fu_key and art[mss_key]["bereich_A"][1] > float(art[fu_key].get("vorsicherung_max_A", 1e9)):
+        if fu_key and art[mss_key]["bereich_A"][1] > float(art[fu_key]["vorsicherung_max_A"]):
             raise MotorFehler(f"{mbmk}: Motorschutzschalter {mss_key} über der zulässigen Vorsicherung von {fu_key} "
                               f"({art[fu_key]['vorsicherung_max_A']} A laut Datenblatt)")
         if not fu_key:
@@ -108,7 +115,8 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
         kab = [a for a in kat("kabel") if art[a]["adern"] == 4 and art[a]["querschnitt_mm2"] == a_mm2
                and bool(art[a].get("geschirmt")) == bool(fu_key)]
         if not kab:
-            raise MotorFehler(f"Kein Kabel 4 x {a_mm2} mm²{' geschirmt' if fu_key else ''} im Gerätestamm")
+            raise MotorFehler(f"{mbmk}: kein Kabel 4 x {a_mm2:g} mm²{' geschirmt (geschirmt: true)' if fu_key else ''} "
+                              f"im Gerätestamm".replace(".", ","))
 
         q = Betriebsmittel(f"-Q{nr + 1}", mss_key, art[mss_key]["bezeichnung"], f"Schutz {mbmk}",
                            "motorschutz", s_last, sp,

@@ -86,3 +86,48 @@ def test_fu_ueber_excel(tmp_path):
     schreibe_vorlage(_fu_projekt(), STAMM, tmp_path / "p.xlsx")
     d = lade_excel(tmp_path / "p.xlsx")
     assert [mo.get("anlauf") for mo in d["motoren"]] == ["direkt", "fu", "direkt", "direkt"]
+
+
+def test_fu_stammwerte_und_vorsicherung():
+    """Software M7c 1/4: eigener FU ohne Pflichtwert -> Klartext; MSS über zulässiger Vorsicherung -> Fehler."""
+    stamm = copy.deepcopy(STAMM)
+    del stamm["artikel"]["FU-1.5"]["i_ein_A"]
+    with pytest.raises(RegelFehler, match=r"FU-1.5.*Netzeingangsstrom \(i_ein_A\) fehlt"):
+        regeln.plane(_fu_projekt(), stamm)
+    stamm = copy.deepcopy(STAMM)
+    stamm["artikel"]["FU-1.5"]["vorsicherung_max_A"] = 2
+    with pytest.raises(RegelFehler, match="zulässigen Vorsicherung"):
+        regeln.plane(_fu_projekt(), stamm)
+    stamm = copy.deepcopy(STAMM)
+    for k in [k for k, d in stamm["artikel"].items() if d.get("geschirmt")]:
+        del stamm["artikel"][k]
+    with pytest.raises(RegelFehler, match=r"-M2: kein Kabel 4 x 1,5 mm² geschirmt"):
+        regeln.plane(_fu_projekt(), stamm)
+
+
+def test_fu_viele_motoren_rundreise_eplan(tmp_path):
+    """Software M7c 4: mehrere FU über Seitenwechsel, planmodell.json-Rundreise, EPLAN-Aufbereitung."""
+    from slpgen import eplan_adapter
+    from slpgen.modell import Planmodell
+    p = copy.deepcopy(BEISPIEL)
+    p["motoren"] = [dict(p["motoren"][1], bmk=f"M{i}", anlauf="fu" if i % 2 else "direkt") for i in range(1, 7)]
+    m = regeln.plane(p, STAMM)
+    assert len([b for b in m.betriebsmittel if b.kategorie == "fu"]) == 3
+    m.speichere(tmp_path / "pm.json")
+    m2 = Planmodell.lade(tmp_path / "pm.json")
+    assert m2.als_dict() == m.als_dict()
+    zeichnen.erzeuge_pdf(m2, str(tmp_path / "a.pdf"))
+    erzeuge_hausstil_pdf(m2, str(tmp_path / "h.pdf"))
+    assert eplan_adapter.aufbereiten(m2)
+
+
+def test_fu_excel_spalte_von_hand(tmp_path):
+    """Software M7c 3: alte Vorlage, Spalte „Anlauf“ von Hand ergänzt -> wird erkannt."""
+    from openpyxl import load_workbook
+    schreibe_vorlage(copy.deepcopy(BEISPIEL), STAMM, tmp_path / "p.xlsx")
+    wb = load_workbook(tmp_path / "p.xlsx")
+    ws = wb["Motoren"]
+    ws.cell(1, 7).value = "Anlauf"
+    ws.cell(3, 7).value = "FU"
+    wb.save(tmp_path / "p.xlsx")
+    assert [mo.get("anlauf") for mo in lade_excel(tmp_path / "p.xlsx")["motoren"]][:2] == ["direkt", "fu"]

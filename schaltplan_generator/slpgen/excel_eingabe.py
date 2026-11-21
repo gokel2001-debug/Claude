@@ -66,6 +66,11 @@ def _felder(ws) -> dict[str, Any]:
     return out
 
 
+def _anlauf_spalte(zeile: dict[str, Any]) -> str:
+    """Spalte „Anlauf…“ großzügig erkennen (auch von Hand in alte Vorlagen eingefügt)."""
+    return next((k for k in zeile if isinstance(k, str) and k.strip().lower().startswith("anlauf")), ANLAUF_SPALTE)
+
+
 def _tabelle(ws, spalten: list[str]) -> list[dict[str, Any]]:
     kopf = [str(c.value).strip() if c.value else "" for c in ws[1]]
     fehlt = [s for s in spalten if s not in kopf]
@@ -140,7 +145,8 @@ def lade_excel(pfad: str | Path) -> dict[str, Any]:
                     "i_N_A": _zahl(d["I_N_A"], f"Motoren Z.{d['_zeile']}"),
                     "cos_phi": _zahl(d["cos_phi"], f"Motoren Z.{d['_zeile']}"),
                     "laenge_m": _zahl(d["Laenge_m"], f"Motoren Z.{d['_zeile']}"),
-                    **({"anlauf": str(d[ANLAUF_SPALTE]).strip().lower()} if d.get(ANLAUF_SPALTE) not in (None, "") else {})}
+                    **({"anlauf": str(d[_anlauf_spalte(d)]).strip().lower()}
+                       if d.get(_anlauf_spalte(d)) not in (None, "") else {})}
                    for d in _tabelle(wb["Motoren"], MOTOR_SPALTEN)]
         if motoren:
             projekt["motoren"] = motoren
