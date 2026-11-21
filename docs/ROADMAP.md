@@ -14,6 +14,7 @@ ZIEL.md hat Vorrang. Reihenfolge der Meilensteine ist verbindlich.
 | M7 | Bausteinbibliothek erweitern (3~, FU, Sicherheitskreise als Platzhalter) | jeder Baustein mit Quelle/Annahme und Test | offen (Vorarbeit: P4a–P4c) |
 | M8 | Abnahme, Nachbau des Referenzplans | Abweichungsliste mit Bewertung | offen |
 | M9 | Installer/Exe (GitHub Actions), Handbuch, Browser-Oberfläche, EPLAN-Stub | DoD Punkt 6 erfüllt | offen |
+| M10 | Anwender-Oberfläche nach ZIEL 4a/4b/4c (lokal im Browser, in der Exe): geführter Ablauf in 6 Schritten, Offene Punkte, Lernschleife per Markieren, Gelernt-Seite | E2E-Test in CI, UX/Einsteiger ohne hoch | offen (Überwachung Ü-E1, 21.11.2026; Teilpakete M10a–M10f) |
 
 ## Erledigte Pakete (vor ZIEL.md)
 | Paket | Inhalt | Beitrag zu |

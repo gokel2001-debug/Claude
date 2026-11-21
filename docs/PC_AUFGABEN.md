@@ -2,6 +2,13 @@
 
 Schritt-für-Schritt für Einsteiger. Echte Kundenpläne bleiben auf dem PC.
 
+**Nächster PC-Tag (ca. 2 h, Reihenfolge laut Überwachung Ü-E4):**
+1. **PC9** (20 min) – Programmpaket laden, `start.bat`, Menü 5 → „SELBSTTEST OK“?
+2. **PC3** (30 min) – Menü 6 mit dem Ordner Ihrer Bestands-PDFs (Kopie), Ergebnis `hausprofil\profil_uebersicht.txt`.
+3. **PC8** (45 min) – **ein** echtes Projekt nur aus dem Lastenheft nachbauen (Menü 9 oder 3), dann Menü V mit dem Referenz-PDF; nur das Blatt „Zusammenfassung“ zurückmelden.
+4. **PC5** (15 min) – Ollama, nur wenn Zeit bleibt.
+5. **PC7** (10 min) – Spaltenköpfe Ihres Artikelexports.
+
 | Nr. | Aufgabe | Schritte | Ergebnis zurückmelden |
 |---|---|---|---|
 | PC1 | Programm starten und Selbsttest | ZIP vom Branch laden, entpacken, `schaltplan_generator\start.bat` doppelklicken, Menü 5 | Text „SELBSTTEST OK“ oder Bildschirmfoto der Meldung |

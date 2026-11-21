@@ -1,6 +1,6 @@
 # ZIEL.md – Auftrag für Claude Code (Langläufer)
 
-Diese Datei liegt im Repo unter `schaltplan_generator/docs/ZIEL.md` und wird in `CLAUDE.md` verlinkt. Sie hat Vorrang vor ROADMAP.md, wenn die beiden sich widersprechen. Bei jedem Start zuerst lesen.
+Diese Datei liegt im Repo unter `schaltplan_generator/docs/ZIEL.md` und wird in `CLAUDE.md` verlinkt; die Steuerdateien (ROADMAP, STATUS, ENTSCHEIDUNGEN, OFFENE_PUNKTE, PC_AUFGABEN, STATUSBERICHT, berichte/, pruefungen/) liegen im Repo-Ordner `docs/`. Sie hat Vorrang vor ROADMAP.md, wenn die beiden sich widersprechen. Bei jedem Start zuerst lesen.
 
 ## 0. Selbststart: Was du tust, wenn du diese Datei erhältst
 

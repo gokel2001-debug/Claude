@@ -3,7 +3,7 @@
 | Feld | Inhalt |
 |---|---|
 | Stand | 21.11.2026, Autostart Sa 03:12 |
-| Aktuelles Paket | M7b, M7c, M5f, M8a erledigt; M9a umgesetzt (Software-Prüfung offen) → nächster Lauf: Software-Prüfung M9a, dann M8b/M5g/M7d |
+| Aktuelles Paket | Überwachungsantwort 21.11. übernommen → nächstes: M9p (Software-Prüfung M9a), dann M10a (Oberfläche) |
 | Nächster Schritt | oberstes offenes Paket in docs/ARBEITSVORRAT.md (Warteschlange für Autostarts) |
 | **Für Sie** | Menüpunkt 1: die PDF mit „_Hausstil“ ansehen und E11 beantworten |
 | **Bitte bestätigen** | **E8–E18** – siehe [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md) („ja“ genügt; E14/E15 bitte mit Elektrofachkraft) |
@@ -61,3 +61,4 @@
 | 21.11.2026 | Autostart Sa 03:12 | M5f Lernschleife: vom Programm gewählte Geräte (FU/Schütz/MSS/Klemmen) per Hausregel ersetzen mit Auslegungsprüfung, Sammelregel Kennbuchstabe → 24-V-Gruppe; Prüfer: 2 hoch → Klemmenrolle behoben, Bedingungen nach Motordaten → M5g; CI war rot (neue pypdf 7 → Typprüfung), behoben; 310/310 Tests |
 | 21.11.2026 | Autostart Sa 03:12 | M8a Abweichungsliste Referenzplan ↔ Nachbau (Kennzeichen, Klemmen, Adressen, SPS-Belegung je Adresse, Artikel je Gerät; Excel mit Bewertung, Auszählung, Abnahmefeld; Menü V); Prüfer: 4 kritisch + 6 hoch → behoben bzw. M8b; CI Windows-Test (Zeitlimit) behoben |
 | 21.11.2026 | Autostart Sa 03:12/08:17 | M9a Windows-Programmpaket (PyInstaller, Workflow „Paket“ auf Windows grün mit Selbsttest der Exe); Einsteiger-Prüfung: 2 hoch → behoben; Nutzungslimit (5 h, dann Woche) unterbrach den Lauf, Autostart 08:17 kam erst 11:18 an → keine neuen Pakete, Abschluss |
+| 21.11.2026 | manuell | Überwachungsantwort übernommen: Bericht archiviert (`docs/berichte/`), Ü-E1–E6 + E19, M10 (Oberfläche) und M4f (Leitungsschutz/Kurzschluss) eingeplant, PC-Tag-Reihenfolge, `EFK_FREIGABE.xlsx`, neuer Sammelbericht mit DoD-Abgleich |
