@@ -23,16 +23,17 @@ Branch: `claude/ai-schaltplan-generator-u6lzbz`
 | M7 | 3 von 4 (M7a–c; offen M7d) | – |
 | M8 | 1 von 2 (M8a; offen M8b) | echte Abnahme = PC8 |
 | M9 | 2 von 3 (M9a, M9p; offen M9b Installer) | – |
-| M10 | 0 von 6 (M10a–f) | neu (Ü-E1) |
+| M10 | 1 von 6 (M10a; offen M10b–f) | neu (Ü-E1) |
 
 ## 2. Seit letztem Bericht erledigt
 | Datum | Paket | Ergebnis | Erprobt an | Tests |
 |---|---|---|---|---|
 | 21.11. | Überwachungsantwort übernommen | archiviert, Ü-E1–E6 in `ENTSCHEIDUNGEN.md`, E19 (Technik M10) vorläufig, Arbeitsvorrat auf neue Reihenfolge, ROADMAP M10, PC-Tag-Reihenfolge, Satz in ZIEL.md (Ü-E5), `docs/EFK_FREIGABE.xlsx` (55 Annahmen) | – | 318/318 |
 | 21.11. | M9p | Software-Prüfung M9a nachgeholt: keine kritisch/hoch; behoben: Prüfausgabe im Artefakt, nur git-erfasste Beispiele ins Paket, Exe-Hinweistexte, Workflow-Rechte; Test ergänzt | synthetisch (CI-Windows-Lauf) | 319/319 |
+| 21.11. | M10a | Oberfläche im Browser (nur 127.0.0.1): Projektliste, Projekt anlegen, Projektseite mit 6-Schritte-Leiste, Excel/Ordner öffnen, Hilfe; eigenes Fenster, Menü bleibt frei; Prüfung UX+Einsteiger 4 hoch → behoben | synthetisch (E2E per HTTP, Bildschirmfotos) | 331/331 |
 
 ## 3. Tests
-319/319 grün; ruff und mypy ohne Befund; CI Ubuntu+Windows und Workflow „Paket“ (Windows-Exe) grün.
+331/331 grün; ruff und mypy ohne Befund; CI Ubuntu+Windows und Workflow „Paket“ (Windows-Exe) grün.
 
 ## 4. Neue vorläufige Entscheidungen
 E19 – Oberfläche als lokaler Webserver aus der Python-Standardbibliothek (127.0.0.1, ohne Internet, ohne neue Abhängigkeit, im Exe-Paket lauffähig, End-to-End-Test per HTTP in CI).
@@ -55,7 +56,7 @@ E19 – Oberfläche als lokaler Webserver aus der Python-Standardbibliothek (127
 - Steuerdateien in `docs/` (bestätigt Ü-E5).
 
 ## 7. Nächster geplanter Schritt
-M10a (Oberfläche Grundgerüst). Arbeitsvorrat: M10a–f, M4f, M8b, M5g, M7d, M9b, M4e.
+M10b (Unterlagen einlesen + prüfen in der Oberfläche). Arbeitsvorrat: M10a–f, M4f, M8b, M5g, M7d, M9b, M4e.
 
 ## 8. Fragen an die Überwachung (max. 3)
 1. E19 (Oberfläche als lokaler Webserver aus der Standardbibliothek) – so bestätigen?

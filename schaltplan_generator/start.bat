@@ -88,8 +88,10 @@ if "%W%"=="0" goto :ende
 goto :menue
 
 :oberflaeche
-%SLP% oberflaeche
-if errorlevel 1 goto :fehler_lauf
+start "Stromlaufplan-Generator Oberflaeche" %SLP% oberflaeche
+echo Die Oberflaeche oeffnet sich im Browser (eigenes Fenster "Stromlaufplan-Generator Oberflaeche").
+echo Dieses Menue bleibt nutzbar. Zum Beenden das Oberflaechen-Fenster schliessen.
+pause
 goto :menue
 
 :beispiel

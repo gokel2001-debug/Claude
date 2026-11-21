@@ -476,9 +476,10 @@ def cmd_oberflaeche(a):
     if not a.nicht_oeffnen:
         url = oeffnen(server)
     print(f"Oberfläche läuft im Browser: {url}")
-    print("Dieses Fenster offen lassen. Beenden: Enter drücken (oder Fenster schließen).")
+    print("Dieses Fenster offen lassen, solange Sie die Oberfläche nutzen. Beenden: Fenster schließen (oder B + Enter).")
     try:
-        input()
+        while input().strip().upper() != "B":          # versehentliches Enter beendet nicht
+            print(f"Oberfläche läuft weiter: {url} – Beenden: Fenster schließen oder B + Enter")
     except EOFError:                       # ohne Konsoleneingabe (Hintergrundstart): laufen, bis beendet
         import threading
         threading.Event().wait()
