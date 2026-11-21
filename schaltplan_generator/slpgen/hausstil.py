@@ -276,6 +276,7 @@ class Hausplan:
                     self.pos[f"karte:{k.geraet_bmk}"] = Ort(kenn, i + 1, 0)      # Kanaltabelle: Kanal in Spalte 0
 
         if m.projekt.get("_sicherheit"):                 # Sicherheitskreis nur als Platzhalter (ZIEL.md)
+            self.pos["sik"] = Ort("SIK", 1, 0)
             self._neu("SIK", "Sicherheitskreis (Platzhalter)", "PLH").seiten.append(("Sicherheitskreis – NICHT FREIGEGEBEN",
                                                                                self._s_sicherheit))
         for kenn, titel, art, zeichner, n in (
@@ -702,7 +703,11 @@ class Hausplan:
             b.text(x - 11, 184.5, f"I_aus = {k.daten['i_aus_A']:g} A".replace(".", ","), 2, ausr="r")
             b.text(x - 11, 181, f"DI1 {self.ref(self.pos[f'kanal:{k.bmk}'], a.kennung)}", 1.9, ausr="r")
             b.text(x - 11, 177.5, f"AI1 {self.ref(self.pos[f'kanal:{k.bmk}.2'], a.kennung)}", 1.9, ausr="r")
-            b.text(x + 10, 192, k.artikel, 1.9)
+            b.text(x + 14, 192, k.artikel, 1.9)
+            b.text(x + 14, 188.5, f"RL1 {self.ref(self.pos[f'kanal:{k.bmk}.3'], a.kennung)}", 1.9)
+            for d, (ein, aus) in zip((-6, 0, 6), (("L1", "U"), ("L2", "V"), ("L3", "W"))):
+                b.text(x + d + 0.6, 195, ein, 1.6)
+                b.text(x + d + 0.6, 171.5, aus, 1.6)
         else:
             b.text(x - 11, 186, "-K1", 3, True, "r")
             b.text(x - 11, 182.5, f"A1-A2 {self.ref(self.pos[f'kanal:{k.bmk}'], a.kennung)}", 1.9, ausr="r")
@@ -765,11 +770,11 @@ class Hausplan:
             b.rechteck(x - 5, 150, 10, 10, 0.4)
             b.text(x, 154, pin, 2.2, True, "m")
             b.text(x - 7, 154, "-T1", 3, True, "r")
-            b.text(x - 7, 150.5, self.ref(self.pos[f"haupt:{q.bmk}"], a.kennung), 1.9, ausr="r")
+            b.text(x - 7, 150.5, self.ref(self.pos[f"haupt:{k.bmk}"], a.kennung), 1.9, ausr="r")
         # Rückmeldung Motorschutzschalter 13/14 und Störrelais des FU: Kontaktspeisung 24L+
         fa = self.pos.get(q.daten.get("absicherung", ""))
         for spalte, kanal, name, kontakt, ref in ((6, q.bmk, "-Q1", ("13", "14"), self.pos[f"haupt:{q.bmk}"]),
-                                                  (8, f"{k.bmk}.3", "-T1", ("RL1", "RL2"), self.pos[f"haupt:{q.bmk}"])):
+                                                  (8, f"{k.bmk}.3", "-T1", ("RL1", "RL2"), self.pos[f"haupt:{k.bmk}"])):
             xb = self.x(spalte)
             b.text(xb - 1, 266, f"24L+ {self.ref(fa, a.kennung)}", 2, ausr="r")
             b.linie(xb, 268, xb, 205)
@@ -780,6 +785,14 @@ class Hausplan:
             b.text(xb + 2, 194, kontakt[1], 1.9)
             b.linie(xb, 193, xb, 172)
             self._sps_kasten(b, xb, 140, kanal, a.kennung, f"{name}:{kontakt[1]}")
+        b.c.saveState()                                   # STO nur als Platzhalter (A49/A51)
+        b.c.setStrokeColorRGB(0.8, 0, 0)
+        b.c.setFillColorRGB(0.8, 0, 0)
+        b.rechteck(self.x(0) - 12, 150, 40, 40, 0.8)
+        for i, t in enumerate(("STO – PLATZHALTER", "Sicherheitsfunktion,", "Beschaltung nach", "Risikobeurteilung,",
+                               "Freigabe Elektrofachkraft", f"siehe {self.ref(self.pos.get('sik'), a.kennung)}")):
+            b.text(self.x(0) + 8, 183 - i * 5, t, 2.2 if i else 2.6, i == 0, "m")
+        b.c.restoreState()
         b.text(self.x(5), 128, "Bezugspotential DI/AI (COM, AGND) und Störrelais RL1/RL2 (Arbeits-/Ruhestrom) laut "
                                "Datenblatt des FU anschließen (A51)", 1.8)
 

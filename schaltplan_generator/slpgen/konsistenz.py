@@ -208,8 +208,8 @@ def _schutzorgan_je_kabel(m: Planmodell) -> dict[str, str]:
     """Kabel -> Motorschutzschalter, der es schützt (Motor-Direktstart und Bausteine mit Leistungsteil)."""
     zuordnung = {}
     for x in m.betriebsmittel:
-        if x.kategorie == "motor":
-            zuordnung[x.daten["kabel"]] = x.daten["mss"]
+        if x.kategorie == "motor":            # hinter einem FU schützt dessen Stromgrenze die Motorleitung (A51)
+            zuordnung[x.daten["kabel"]] = x.daten.get("fu") or x.daten["mss"]
         if x.daten.get("leistung"):
             zuordnung[x.daten["leistung"]["kabel"]] = x.daten["leistung"]["mss"]
     return zuordnung

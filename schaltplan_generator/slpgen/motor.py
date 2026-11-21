@@ -102,7 +102,9 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
             if not sch:
                 raise MotorFehler(f"Kein Schütz mit AC-3 >= {i_n} A")
             sch_key = min(sch, key=lambda a: art[a]["ac3_A"])
-        a_mm2, i_z, du = waehle_querschnitt(i_n, float(mo["laenge_m"]), cos_phi, ltg)
+        # Motorleitung hinter dem FU: Strom begrenzt der FU (bis I_aus), nicht der MSS davor -> Bemessung nach I_aus
+        i_ltg = float(art[fu_key]["i_aus_A"]) if fu_key else i_n                      # ANNAHME A51
+        a_mm2, i_z, du = waehle_querschnitt(i_ltg, float(mo["laenge_m"]), cos_phi, ltg)
         kab = [a for a in kat("kabel") if art[a]["adern"] == 4 and art[a]["querschnitt_mm2"] == a_mm2
                and bool(art[a].get("geschirmt")) == bool(fu_key)]
         if not kab:
@@ -119,6 +121,7 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
                                "fu", s_last, sp + 1,
                                {"signal": "DO", "i_A": float(art[fu_key].get("i_steuer_A", 0.01)), "gruppe": "DO-Last",
                                 "steuer_seite": s_steu, "steuer_spalte": sp, "i_aus_A": art[fu_key]["i_aus_A"],
+                                "i_r_A": float(art[fu_key]["i_aus_A"]),     # Stromgrenze = Schutz der Motorleitung
                                 "funktion_sps": f"Freigabe {mbmk} {mo.get('funktion', '')}".strip(),
                                 "teilsignale": [f"-T{nr}.2", f"-T{nr}.3"]})
             for nr_t, sig, text, pin, gruppe in ((2, "AO", "Sollwert Drehzahl", "AI1", "-"),
@@ -128,14 +131,15 @@ def plane_motoren(m: Planmodell, projekt: dict, art: dict, erste_seite: int) -> 
                                             {"signal": sig, "i_A": 0.0, "gruppe": gruppe, "eltern": k.bmk,
                                              "fu_pin": pin, "steuer_seite": s_steu, "steuer_spalte": sp + 1}))
             m.warnungen.append(f"{mbmk}: Frequenzumrichter {fu_key} – Vorsicherung, EMV (Schirmauflage beidseitig), "
-                               f"Ableitstrom/RCD-Typ und Motorschutz-Parameter nach Herstellerangabe prüfen (A51)")
+                               f"Ableitstrom/RCD-Typ/PE, Motorschutz-Parameter (I²t = I_N) und Stromgrenze ≤ I_aus "
+                               f"nach Herstellerangabe; STO (sicher abgeschaltetes Moment) nur als Platzhalter (A49/A51)")
         else:
             k = Betriebsmittel(f"-K{nr}", sch_key, art[sch_key]["bezeichnung"], f"Schütz {mbmk}",
                                "schuetz", s_last, sp + 1,
                                {"signal": "DO", "i_A": art[sch_key]["spule_W"] / 24.0, "gruppe": "DO-Last",
                                 "steuer_seite": s_steu, "steuer_spalte": sp,
                                 "funktion_sps": f"Ein {mbmk} {mo.get('funktion', '')}".strip()})
-        w = Kabel(f"-W{nr}", kab[0], "-X2", mbmk, 4, a_mm2, float(mo["laenge_m"]), i_n,
+        w = Kabel(f"-W{nr}", kab[0], "-X2", mbmk, 4, a_mm2, float(mo["laenge_m"]), i_ltg,
                   round(i_z, 2), round(du, 2), s_last, sp + 1)
         mot = Betriebsmittel(mbmk, mo.get("artikel", "KUNDE"), f"Drehstrommotor {mo['p_kW']} kW",
                              mo.get("funktion", ""), "motor", s_last, sp,

@@ -417,6 +417,11 @@ def s_motor_steuer(b: Blatt, m: Planmodell, seite: int, idx: int):
             for i, t in enumerate(k.daten.get("teilsignale", [])):
                 kn = next(c for c in m.sps_kanaele if c.geraet_bmk == t)
                 b.text(x - 6, 88 - i * 3.5, f"{kn.funktion}: {kn.art} {kn.adresse} ({kn.anschluss})", 1.9)
+            b.c.saveState()
+            b.c.setFillColorRGB(0.8, 0, 0)
+            b.text(x - 6, 77.5, "STO: PLATZHALTER – Sicherheitsfunktion nach Risikobeurteilung, Freigabe Elektrofachkraft",
+                   1.9, True)
+            b.c.restoreState()
         else:
             for i, kontakt in enumerate(("1-2", "3-4", "5-6")):
                 b.text(x - 6, 88 - i * 3.5, f"{kontakt}  {verweis(k.seite, (k.spalte or 1) - 1)}", 1.9)

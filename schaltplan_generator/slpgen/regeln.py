@@ -103,6 +103,8 @@ def sicherheitsbedarf(projekt: dict[str, Any]) -> dict[str, Any] | None:
     antriebe = ["-" + str(mo.get("bmk", "")).lstrip("-") for mo in projekt.get("motoren") or []]
     ausloeser += [f"Motor -{str(mo.get('bmk', '')).lstrip('-')}: {mo.get('funktion')}" for mo in projekt.get("motoren") or []
                   if SICHERHEIT_MUSTER.search(str(mo.get("funktion") or ""))]
+    ausloeser += [f"Motor -{str(mo.get('bmk', '')).lstrip('-')}: Frequenzumrichter – STO/Stillsetzen nach Risikobeurteilung"
+                  for mo in projekt.get("motoren") or [] if str(mo.get("anlauf") or "").strip().lower() == "fu"]
     if not (si or ausloeser or geraete):
         return None
     # Freigabevermerk nur in der Form „Name, Datum“; aus einer KI-Antwort (annahmen/offene_fragen) nie  # ANNAHME A50

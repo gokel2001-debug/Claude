@@ -41,7 +41,11 @@ def test_fu_auslegung_und_signale():
     assert not any(b.bmk == "-K2" for b in m.betriebsmittel)                       # kein Schütz beim FU
     ohne = regeln.plane(copy.deepcopy(BEISPIEL), STAMM)
     assert m.bilanz["i_motoren_A"] == pytest.approx(ohne.bilanz["i_motoren_A"] - 3.5 + 3.7)
-    assert not [b for b in pruefe_plan(m) if b.art == FEHLER]
+    fehler = [b for b in pruefe_plan(m) if b.art == FEHLER]
+    assert [b.pruefung for b in fehler] == ["Sicherheit"]          # STO nur Platzhalter -> Freigabe nötig (Elektro M7c 1)
+    assert any("STO" in t for t in m.projekt["_sicherheit"]["ausloeser"])
+    assert w.i_b_A == 4.1 and w.i_z_A >= 4.1                       # Motorleitung nach I_aus des FU (Elektro M7c 2/3)
+    assert not [b for b in pruefe_plan(m) if b.pruefung == "Leitungsschutz" and b.art == FEHLER]
     assert any("Frequenzumrichter FU-1.5" in w for w in m.warnungen)
 
 
@@ -54,8 +58,17 @@ def test_fu_in_beiden_pdfs(tmp_path):
     i = [(a, t) for a, _, t in seiten].index(("M02", "Lastkreis"))
     r = PdfReader(str(tmp_path / "h.pdf"))
     last, steuer = r.pages[i].extract_text(), r.pages[i + 1].extract_text()
-    assert "-T1" in last and "I_aus = 4,1 A" in last and "geschirmt" in last
+    assert "-T1" in last and "I_aus = 4,1 A" in last and "geschirmt" in last and "RL1" in last
+    assert "STO – PLATZHALTER" in steuer
     assert "%QW" in steuer and "RL1" in steuer and "DI1" in steuer and "AI1" in steuer
+
+
+def test_fu_grenzfall_i_ein_kleiner_i_n():
+    """Elektro M7c 2: I_ein < I_N darf keinen falschen Leitungsschutz-FEHLER geben (Schutz der Motorleitung = FU)."""
+    p = copy.deepcopy(BEISPIEL)
+    p["motoren"][2].update(anlauf="fu", p_kW=3.0, i_N_A=7.0)
+    befunde = pruefe_plan(regeln.plane(p, STAMM))
+    assert not [b for b in befunde if b.pruefung == "Leitungsschutz" and b.art == FEHLER], befunde
 
 
 def test_fu_fehlerfaelle():
