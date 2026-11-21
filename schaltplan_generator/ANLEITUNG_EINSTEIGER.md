@@ -9,6 +9,16 @@ einer Elektrofachkraft geprüft werden.
 
 ---
 
+## 0 Ohne Python: fertiges Programmpaket (erprobt nur automatisch, PC-Test steht aus)
+
+1. Im GitHub-Repository oben **„Actions“** → links **„Paket“** → den obersten grünen Lauf öffnen.
+2. Unten bei **Artifacts** auf **„Stromlaufplan-Generator-Windows“** klicken (ZIP wird geladen).
+3. ZIP mit der rechten Maustaste → **„Alle extrahieren…“**, z. B. nach `C:\slpgen`.
+4. Im entpackten Ordner **`start.bat`** doppelklicken – Schritte 1 und 2 entfallen.
+
+Windows kann beim ersten Start warnen („Der Computer wurde durch Windows geschützt“), weil das Programm nicht
+signiert ist: „Weitere Informationen“ → „Trotzdem ausführen“ – nur nach Rücksprache mit der IT.
+
 ## 1 Einmalig: Python installieren (ca. 5 Minuten)
 
 1. https://www.python.org/downloads/ öffnen → gelben Knopf **„Download Python 3.x“** klicken.

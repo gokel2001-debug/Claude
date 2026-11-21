@@ -31,3 +31,32 @@ def test_menue_verteilung_vollstaendig_und_zusammenhaengend():
             break
         verteilung.append(mt.group(1))
     assert sorted(verteilung) == sorted(punkte)
+
+
+def test_exe_paket_ohne_python():
+    """M9a: liegt programm\\slpgen.exe vor, nutzt start.bat die Exe und überspringt die Python-Einrichtung."""
+    zeilen = (Path(__file__).resolve().parent.parent / "start.bat").read_bytes().decode().split("\r\n")
+    i = next(i for i, z in enumerate(zeilen) if z.startswith('if exist "programm\\slpgen.exe"'))
+    assert "goto :bereit_exe" in zeilen[i] and i < zeilen.index("rem ---- Python suchen: bevorzugt Versionen, fuer die alle "
+                                                                  "Bibliotheken fertig vorliegen ----")
+    assert zeilen[zeilen.index(":bereit_exe") - 2] == ":bereit"
+
+
+def test_programmordner_als_exe(monkeypatch, tmp_path):
+    """M9a: im PyInstaller-Paket ist der Programmordner der Ordner über programm\\ (dort liegen start.bat, hausprofil)."""
+    import importlib
+    import sys
+
+    import slpgen.cli as cli
+    (tmp_path / "programm").mkdir()
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "KI_AUFBEREITUNG.md").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "programm" / "slpgen.exe"))
+    try:
+        neu = importlib.reload(cli)
+        assert neu.PROG == tmp_path.resolve() and neu.DOCS == tmp_path.resolve() / "docs"
+        assert neu.PROFIL == str(tmp_path.resolve() / "hausprofil" / "profil.yaml")
+    finally:
+        monkeypatch.undo()
+        importlib.reload(cli)

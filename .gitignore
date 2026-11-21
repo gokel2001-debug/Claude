@@ -6,3 +6,5 @@
 *VERTRAULICH*
 slpgen_fehler.log
 hausregeln*.yaml
+schaltplan_generator/dist/
+schaltplan_generator/build_exe/

@@ -6,6 +6,9 @@ chcp 65001 >nul
 set "PYTHONIOENCODING=utf-8"
 title Stromlaufplan-Generator (slpgen)
 
+rem ---- Windows-Programmpaket: fertiges Programm im Ordner programm\ (kein Python noetig) ----
+if exist "programm\slpgen.exe" set "SLP=programm\slpgen.exe" & goto :bereit_exe
+
 rem ---- Python suchen: bevorzugt Versionen, fuer die alle Bibliotheken fertig vorliegen ----
 set "PY="
 for %%V in (3.13 3.14 3.12) do if not defined PY py -%%V -c "pass" >nul 2>nul && set "PY=py -%%V"
@@ -27,6 +30,7 @@ echo ok> ".venv\eingerichtet.txt"
 
 :bereit
 set "SLP=.venv\Scripts\python.exe -m slpgen"
+:bereit_exe
 if not exist "meine_projekte" mkdir "meine_projekte"
 
 :menue

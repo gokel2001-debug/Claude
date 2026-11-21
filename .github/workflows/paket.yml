@@ -1,0 +1,41 @@
+# Windows-Programmpaket (ZIEL M9): Exe mit PyInstaller bauen, Selbsttest mit der Exe, Paket als Artefakt
+name: Paket
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  windows-paket:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: schaltplan_generator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Abhängigkeiten
+        run: python -m pip install -r requirements.txt pyinstaller
+      - name: Paket bauen
+        run: python paket_bauen.py
+      - name: Startprüfung der Exe (Hilfe, Selbsttest wie Menüpunkt 5, Excel-Weg, KI-Auftrag)
+        working-directory: schaltplan_generator/dist/Stromlaufplan-Generator
+        shell: cmd
+        run: |
+          programm\slpgen.exe --help || exit /b 1
+          programm\slpgen.exe generieren beispiele\projekt_beispiel.yaml --ausgabe ausgabe\selbsttest || exit /b 1
+          programm\slpgen.exe generieren beispiele\Projekt_Vorlage.xlsx --ausgabe ausgabe\excel || exit /b 1
+          programm\slpgen.exe ki-auftrag beispiele\lastenheft_beispiel.md || exit /b 1
+          if not exist ausgabe\selbsttest\P-2026-001_Stromlaufplan_Hausstil.pdf exit /b 1
+          if exist hausprofil exit /b 1
+      - name: Prüfausgaben entfernen
+        working-directory: schaltplan_generator/dist/Stromlaufplan-Generator
+        shell: cmd
+        run: |
+          rmdir /s /q ausgabe
+          del /q beispiele\lastenheft_beispiel_KI-Auftrag.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stromlaufplan-Generator-Windows
+          path: schaltplan_generator/dist/Stromlaufplan-Generator
+          retention-days: 14

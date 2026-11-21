@@ -14,7 +14,11 @@ import yaml
 from . import analyse, regeln, zeichnen
 from .modell import Planmodell
 
-PROG = Path(__file__).resolve().parent.parent          # Programmordner (start.bat liegt dort)
+# Programmordner (start.bat liegt dort). Als Windows-Programm (PyInstaller): <Paket>\programm\slpgen.exe -> <Paket>
+PROG = (Path(sys.executable).resolve().parent.parent if getattr(sys, "frozen", False)
+        else Path(__file__).resolve().parent.parent)
+# Dokumente: im Paket neben start.bat (docs\), in der Entwicklung im Repository-Ordner docs\
+DOCS = PROG / "docs" if (PROG / "docs" / "KI_AUFBEREITUNG.md").exists() else PROG.parent / "docs"
 PROFIL = str(PROG / "hausprofil" / "profil.yaml")      # fester Ort, unabhängig vom aktuellen Ordner
 STAMM = str(PROG / "beispiele" / "geraetestamm.yaml")
 VORGABEN = str(PROG / "beispiele" / "hausvorgaben.yaml")
@@ -573,7 +577,7 @@ def main(argv=None):
     ka.add_argument("--modell", default="qwen2.5:7b", help="Modell der lokalen KI")
     ka.add_argument("--fremder-server", dest="fremder_server", action="store_true",
                     help="KI-Server auf einem anderen Rechner ausdrücklich erlauben (Lastenheft verlässt den PC)")
-    ka.add_argument("--anleitung", default=str(PROG.parent / "docs" / "KI_AUFBEREITUNG.md"))
+    ka.add_argument("--anleitung", default=str(DOCS / "KI_AUFBEREITUNG.md"))
     ka.set_defaults(f=cmd_ki_auftrag)
     sc = sub.add_parser("schema", help="Schema des Projektmodells als Markdown schreiben")
     sc.add_argument("ziel", nargs="?", help="Zieldatei (Standard: docs/SCHEMA_PROJEKTMODELL.md bzw. SCHEMA_PLANMODELL.md)")
