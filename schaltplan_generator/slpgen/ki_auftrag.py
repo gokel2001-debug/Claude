@@ -24,7 +24,7 @@ def _anleitung(pfad: Path) -> str:
 
 def _schema_kurz() -> str:
     z = []
-    for name in ("projekt", "einspeisung", "feldgeraete", "motoren"):
+    for name in ("projekt", "einspeisung", "feldgeraete", "motoren", "sicherheit"):
         _, liste, felder, text, _ = ABSCHNITTE[name]
         felder = [f for f in felder if not (name == "einspeisung" and f.name != "netz")]
         z.append(f"{name}{' (Liste)' if liste else ''} – {text}:")

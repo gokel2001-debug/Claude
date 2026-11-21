@@ -103,3 +103,11 @@ Pflichtabschnitte: projekt, einspeisung, feldgeraete.
 | `kappa` | Zahl (Punkt oder Komma, ohne Einheit) (30…60) | – | Leitfähigkeit in m/(Ω·mm²) | `56` |
 | `du_max_prozent` | Zahl (Punkt oder Komma, ohne Einheit) (0.5…10) | – | zulässiger Spannungsfall in % | `3.0` |
 | `min_querschnitt_mm2` | Zahl (Punkt oder Komma, ohne Einheit) (0.5…240) | – | kleinster Querschnitt für Motor-/Leistungsleitungen in mm² (Hausregel) | `2.5` |
+
+### `sicherheit` (P) – Sicherheitsfunktionen – nur Platzhalter, Auslegung und Freigabe durch Elektrofachkraft
+
+| Feld | Art | Pflicht | Bedeutung | Beispiel |
+|---|---|---|---|---|
+| `not_halt` | ja / nein | – | Not-Halt gefordert (wird nur als Platzhalter gezeichnet) | `true` |
+| `pl` | Text | – | geforderter Performance Level laut Risikobeurteilung (z. B. PL d) | `PL d` |
+| `funktionen` | Text | – | weitere Sicherheitsfunktionen in Klartext | `Schutztür Pumpenraum` |

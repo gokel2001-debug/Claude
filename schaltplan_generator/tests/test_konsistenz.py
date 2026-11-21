@@ -182,3 +182,23 @@ def test_stempel_im_rand_und_csv(tmp_path):
     assert not stueckliste_csv(m).startswith("NICHT")
     _stoere_adresse(m)
     assert stueckliste_csv(m).startswith("NICHT FÜR FERTIGUNG")
+
+
+def test_sicherheit_nur_als_platzhalter(tmp_path):
+    """M7b: Not-Halt/PL -> rot gerahmte Platzhalterseite, Hinweis im Prüfbericht, keine Sicherheitsschaltung."""
+    from pypdf import PdfReader
+
+    from slpgen.hausstil import erzeuge_hausstil_pdf
+    p = copy.deepcopy(BEISPIEL)
+    p["sicherheit"] = {"not_halt": True, "pl": "PL d", "funktionen": "Schutztür"}
+    m = regeln.plane(p, STAMM)
+    assert any(b.pruefung == "Sicherheit" and b.art == HINWEIS for b in pruefe_plan(m))
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
+    i = [a for a, _, _ in seiten].index("SIK")
+    text = PdfReader(str(tmp_path / "h.pdf")).pages[i].extract_text()
+    assert "PLATZHALTER" in text and "PL d" in text and "Schutztür" in text
+    ohne = regeln.plane(copy.deepcopy(BEISPIEL), STAMM)
+    assert "_sicherheit" not in ohne.projekt                                   # ohne Anforderung keine Seite
+    frage = copy.deepcopy(BEISPIEL)
+    frage["offene_fragen"] = ["Not-Halt: welcher PL?"]
+    assert regeln.plane(frage, STAMM).projekt["_sicherheit"]["pl"] == ""        # aus offener Frage abgeleitet

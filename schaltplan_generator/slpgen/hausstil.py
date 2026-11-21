@@ -271,6 +271,9 @@ class Hausplan:
                 for k in [k for k in m.sps_kanaele if k.modul_bmk == mod]:
                     self.pos[f"karte:{k.geraet_bmk}"] = Ort(kenn, i + 1, 0)      # Kanaltabelle: Kanal in Spalte 0
 
+        if m.projekt.get("_sicherheit"):                 # Sicherheitskreis nur als Platzhalter (ZIEL.md)
+            self._neu("SIK", "Sicherheitskreis (Platzhalter)").seiten.append(("Sicherheitskreis – NICHT FREIGEGEBEN",
+                                                                               self._s_sicherheit))
         for kenn, titel, art, zeichner, n in (
                 ("KAB", "Kabelübersicht", "KAB", self._s_kabel, len(self._kabelzeilen())),
                 ("KPL", "Klemmenplan", "KPL", self._s_klemmen, len(self._klemmenplan()[0])),
@@ -745,6 +748,25 @@ class Hausplan:
             if k.signal == signal:
                 return f"={kenn}{leiste}:{nr_je[(kenn, leiste)]}"
         return ""
+
+    def _s_sicherheit(self, b: Blatt, a: Anlage):
+        """Platzhalterseite: keine Schaltung, nur Anforderungen und Freigabepflicht (rot gerahmt)."""
+        si = self.m.projekt["_sicherheit"]
+        b.c.saveState()
+        b.c.setStrokeColorRGB(0.8, 0, 0)
+        b.c.setFillColorRGB(0.8, 0, 0)
+        b.rechteck(X0 + 30, 120, X1 - X0 - 60, 120, 1.2)
+        b.text((X0 + X1) / 2, 222, "PLATZHALTER – SICHERHEITSFUNKTION NICHT AUSGELEGT", 7, True, "m")
+        b.text((X0 + X1) / 2, 210, "Nicht für die Fertigung. Auslegung, Validierung und Freigabe durch Elektrofachkraft /", 3.5,
+               ausr="m")
+        b.text((X0 + X1) / 2, 204, "Sicherheitsverantwortlichen nach Risikobeurteilung erforderlich.", 3.5, ausr="m")
+        b.c.restoreState()
+        zeilen = [f"Not-Halt gefordert: {'ja' if si.get('not_halt') else 'nein'}",
+                  f"Performance Level laut Risikobeurteilung: {si.get('pl') or 'offen'}",
+                  f"Weitere Sicherheitsfunktionen: {si.get('funktionen') or 'offen'}",
+                  "Hinweis: Das Programm legt keine Sicherheitsschaltung aus (keine Bauteilwahl, keine Verdrahtung)."]
+        for i, t in enumerate(zeilen):
+            b.text(X0 + 40, 185 - i * 9, t, 3.2)
 
     def _s_cpu(self, b: Blatt, a: Anlage):
         cpu = self.m.bm("-A1")

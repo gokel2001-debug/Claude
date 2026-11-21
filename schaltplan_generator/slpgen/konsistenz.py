@@ -31,7 +31,7 @@ class Befund:
 def pruefe_plan(m: Planmodell) -> list[Befund]:
     pruefungen: list[Callable[[Planmodell], list[Befund]]] = [
         _bmk_eindeutig, _verweise, _klemmen, _potentiale, _sps, _absicherungen, _netzteil, _do_last, _leitungen,
-        _motorschutz, _texte]
+        _motorschutz, _sicherheit, _texte]
     befunde: list[Befund] = []
     for f in pruefungen:
         try:
@@ -254,6 +254,14 @@ def _motorschutz(m: Planmodell) -> list[Befund]:
         if abs(i_r - i_nenn) > 1e-6:
             befunde.append(Befund(HINWEIS, "Motorschutz", f"{mss_bmk}: Einstellwert {i_r} A ≠ Bemessungsstrom {i_nenn} A", Q_MSS))
     return befunde
+
+
+def _sicherheit(m: Planmodell) -> list[Befund]:
+    """Sicherheitsfunktionen sind nur Platzhalter -> immer sichtbar im Prüfbericht."""
+    if m.projekt.get("_sicherheit"):
+        return [Befund(HINWEIS, "Sicherheit", "Sicherheitsfunktion nur als Platzhalter – Freigabe durch Elektrofachkraft "
+                                              "erforderlich", "ZIEL.md: Sicherheitsrelevantes nur als Platzhalter")]
+    return []
 
 
 def _texte(m: Planmodell) -> list[Befund]:

@@ -19,7 +19,7 @@ Du bist Elektroplaner im Schaltschrankbau. Lies das Lastenheft am Ende und erste
 ### Ausgabe
 - Antworte **nur** mit einem YAML-Block (```yaml … ```), ohne weiteren Text.
 - Erste Zeile: `schema: projektmodell/1`.
-- Gib **nur** die Abschnitte `projekt`, `einspeisung` (nur `netz`), `feldgeraete`, `motoren`,
+- Gib **nur** die Abschnitte `projekt`, `einspeisung` (nur `netz`), `feldgeraete`, `motoren`, `sicherheit`,
   `annahmen`, `offene_fragen` aus. SPS, Netzteile und Leitungstabellen sind Hausvorgaben und werden
   von der Software ergänzt – **nicht erfinden**.
 - Zahlen mit Punkt schreiben (`0.75`), Texte mit Sonderzeichen in Anführungszeichen (`"=FB1"`).
@@ -49,6 +49,8 @@ Du bist Elektroplaner im Schaltschrankbau. Lies das Lastenheft am Ende und erste
    `offene_fragen`: Not-Halt/Risikobeurteilung (PL/SIL), Reparatur-/Trennschalter vor Ort je Motor und Pumpe,
    Ruhestellung der Ventile bei Energieausfall, anlagenspezifische Sicherheitseinrichtungen
    (z. B. Wassermangel, Druck, Temperatur). Diese Punkte gibt nur eine Elektrofachkraft frei.
+   Nennt das Lastenheft Not-Halt oder einen Performance Level, zusätzlich Abschnitt `sicherheit`
+   (`not_halt: true`, `pl`, `funktionen`) – die Software zeichnet daraus nur eine Platzhalterseite.
 
 ### Beispiel (Ausschnitt)
 ```yaml

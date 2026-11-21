@@ -101,6 +101,11 @@ ABSCHNITTE: dict[str, tuple[str, bool, list[Feld], str, str]] = {
         Feld("min_querschnitt_mm2", "zahl", False, "kleinster Querschnitt für Motor-/Leistungsleitungen in mm² (Hausregel)",
              "2.5", (0.5, 240)),
     ], "Leitungsauslegung (Hausregeln, Freigabe durch Elektrofachkraft)", "Leitungsauslegung"),
+    "sicherheit": ("P", False, [
+        Feld("not_halt", "ja_nein", False, "Not-Halt gefordert (wird nur als Platzhalter gezeichnet)", "true"),
+        Feld("pl", "text", False, "geforderter Performance Level laut Risikobeurteilung (z. B. PL d)", "PL d"),
+        Feld("funktionen", "text", False, "weitere Sicherheitsfunktionen in Klartext", "Schutztür Pumpenraum"),
+    ], "Sicherheitsfunktionen – nur Platzhalter, Auslegung und Freigabe durch Elektrofachkraft", "Sicherheit"),
 }
 PFLICHT_ABSCHNITTE = ("projekt", "einspeisung", "feldgeraete")
 ZUSATZ = {"schema": "Schemaversion, immer „projektmodell/1“",

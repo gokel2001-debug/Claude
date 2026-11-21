@@ -76,6 +76,14 @@ def _anschluss(g: Betriebsmittel) -> str:
 def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     pk = projekt["projekt"]
     m = Planmodell(projekt={k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in pk.items()})
+    sicherheit = projekt.get("sicherheit") or {}
+    fragen = " ".join(str(x) for x in projekt.get("offene_fragen") or [])
+    if sicherheit or re.search(r"not-?halt|performance level|\bPL\b|sil\b", fragen, re.I):
+        # ZIEL.md: Sicherheitsrelevantes nur als Platzhalter mit Freigabepflicht   # ANNAHME A49
+        m.projekt["_sicherheit"] = {"not_halt": bool(sicherheit.get("not_halt", True)), "pl": str(sicherheit.get("pl") or ""),
+                                    "funktionen": str(sicherheit.get("funktionen") or "")}
+        m.warnungen.append("Sicherheitsfunktionen (Not-Halt/PL) nur als PLATZHALTER – Auslegung, Validierung und Freigabe "
+                           "durch Elektrofachkraft/Sicherheitsverantwortlichen erforderlich")
     m.projekt["_netz"] = projekt["einspeisung"].get("netz", "")
     art = stamm["artikel"]
     v24 = projekt["versorgung_24V"]
