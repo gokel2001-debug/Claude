@@ -127,7 +127,8 @@ Wenn Sie im erzeugten Plan immer wieder dasselbe ändern (z. B. „bei uns induk
 können Sie die Korrektur als **Hausregel** speichern. Sie wirkt ab dem nächsten Plan automatisch und steht im
 Auslegungsnachweis unter „Angewendete Hausregeln“ (mit Bearbeiter, Datum und Herkunft).
 
-Im Menü über die Punkte **K** und **L**. Für Fortgeschrittene geht es auch über die Kommandozeile:
+Im Menü über die Punkte **K** und **L**. Für Fortgeschrittene geht es auch über die Kommandozeile
+(im Programmpaket statt `python -m slpgen` jeweils `programm\slpgen.exe` schreiben):
 
 - Regel anlegen: `python -m slpgen korrektur <Projektdatei> --art artikel_ersetzen --wenn OPT-REF-PNP --dann IND-M12-PNP --grund "Hausstandard"` (mit `--vorschau` nur ansehen)
 - Mindestquerschnitt: `python -m slpgen korrektur <Projektdatei> --art mindestquerschnitt --wenn motorleitung --dann 2,5`

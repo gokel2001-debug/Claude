@@ -2,7 +2,10 @@
 name: Paket
 on:
   push:
+    branches: [claude/ai-schaltplan-generator-u6lzbz, main]
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   windows-paket:
     runs-on: windows-latest
@@ -25,7 +28,7 @@ jobs:
           programm\slpgen.exe --help || exit /b 1
           programm\slpgen.exe generieren beispiele\projekt_beispiel.yaml --ausgabe ausgabe\selbsttest || exit /b 1
           programm\slpgen.exe generieren beispiele\Projekt_Vorlage.xlsx --ausgabe ausgabe\excel || exit /b 1
-          programm\slpgen.exe ki-auftrag beispiele\lastenheft_beispiel.md || exit /b 1
+          programm\slpgen.exe ki-auftrag beispiele\lastenheft_beispiel.md --ziel ausgabe\ki_auftrag.txt || exit /b 1
           if not exist ausgabe\selbsttest\P-2026-001_Stromlaufplan_Hausstil.pdf exit /b 1
           if exist hausprofil exit /b 1
       - name: Prüfausgaben entfernen
@@ -33,7 +36,6 @@ jobs:
         shell: cmd
         run: |
           rmdir /s /q ausgabe
-          del /q beispiele\lastenheft_beispiel_KI-Auftrag.txt
       - uses: actions/upload-artifact@v4
         with:
           name: Stromlaufplan-Generator-Windows

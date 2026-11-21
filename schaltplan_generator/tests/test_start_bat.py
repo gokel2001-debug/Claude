@@ -60,3 +60,18 @@ def test_programmordner_als_exe(monkeypatch, tmp_path):
     finally:
         monkeypatch.undo()
         importlib.reload(cli)
+
+
+def test_keineexe_und_paketquellen():
+    """Prüfung M9a Software 6: Meldung bei fehlender Exe vor der Python-Suche; alle Paketquellen vorhanden."""
+    import importlib.util
+    hier = Path(__file__).resolve().parent.parent
+    zeilen = (hier / "start.bat").read_bytes().decode().split("\r\n")
+    i = zeilen.index('if exist "programm\\" goto :keineexe')
+    assert zeilen[i - 1].startswith('if exist "programm\\slpgen.exe"') and ":keineexe" in zeilen
+    spec = importlib.util.spec_from_file_location("paket_bauen", hier / "paket_bauen.py")
+    pb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pb)
+    assert all((hier / n).exists() for n in pb.MIT)
+    assert all((hier.parent / "docs" / n).is_file() for n in pb.DOKUMENTE)
+    assert "beispiele/geraetestamm.yaml" in pb._beispiele_aus_git()

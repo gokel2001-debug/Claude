@@ -18,6 +18,7 @@ from .modell import Planmodell
 PROG = (Path(sys.executable).resolve().parent.parent if getattr(sys, "frozen", False)
         else Path(__file__).resolve().parent.parent)
 # Dokumente: im Paket neben start.bat (docs\), in der Entwicklung im Repository-Ordner docs\
+AUFRUF = "programm\\slpgen.exe" if getattr(sys, "frozen", False) else "python -m slpgen"   # für Hinweistexte
 DOCS = PROG / "docs" if (PROG / "docs" / "KI_AUFBEREITUNG.md").exists() else PROG.parent / "docs"
 PROFIL = str(PROG / "hausprofil" / "profil.yaml")      # fester Ort, unabhängig vom aktuellen Ordner
 STAMM = str(PROG / "beispiele" / "geraetestamm.yaml")
@@ -403,7 +404,7 @@ def cmd_ki_auftrag(a):
         if MENUE:
             print("Weiter mit Punkt 9 (KI-Antwort prüfen und Plan erzeugen).")
         else:
-            print(f"Prüfen: python -m slpgen pruefen \"{antwort}\"")
+            print(f"Prüfen: {AUFRUF} pruefen \"{antwort}\"")
         return
     print("So geht es weiter:")
     if MENUE:
@@ -416,17 +417,17 @@ def cmd_ki_auftrag(a):
     print("1. Inhalt der Datei vollständig in einen KI-Chat einfügen (nur eine vom Betrieb freigegebene KI;")
     print("   Kundennamen vorher entfernen, wenn die KI nicht freigegeben ist).")
     print(f"2. Antwort der KI mit dem Editor speichern als: {antwort}")
-    print(f"3. Prüfen:        python -m slpgen pruefen \"{antwort}\"")
-    print(f"4. Plan erzeugen: python -m slpgen generieren \"{antwort}\"")
+    print(f"3. Prüfen:        {AUFRUF} pruefen \"{antwort}\"")
+    print(f"4. Plan erzeugen: {AUFRUF} generieren \"{antwort}\"")
 
 
 def cmd_schema(a):
     if a.planmodell:
         from .modell import schema_planmodell_markdown as erzeuge
-        ziel = a.ziel or str(PROG.parent / "docs" / "SCHEMA_PLANMODELL.md")
+        ziel = a.ziel or str(DOCS / "SCHEMA_PLANMODELL.md")
     else:
         from .projektmodell import schema_markdown as erzeuge
-        ziel = a.ziel or str(PROG.parent / "docs" / "SCHEMA_PROJEKTMODELL.md")
+        ziel = a.ziel or str(DOCS / "SCHEMA_PROJEKTMODELL.md")
     Path(ziel).write_text(erzeuge(), encoding="utf-8")
     print(f"Schema -> {ziel}")
 

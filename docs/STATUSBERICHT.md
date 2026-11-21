@@ -22,16 +22,17 @@ Branch: `claude/ai-schaltplan-generator-u6lzbz`
 | M6 | 1 von 1 | echter Ollama-Test = PC5 |
 | M7 | 3 von 4 (M7a–c; offen M7d) | – |
 | M8 | 1 von 2 (M8a; offen M8b) | echte Abnahme = PC8 |
-| M9 | 1 von 3 (M9a; offen M9p Software-Prüfung, M9b Installer) | – |
+| M9 | 2 von 3 (M9a, M9p; offen M9b Installer) | – |
 | M10 | 0 von 6 (M10a–f) | neu (Ü-E1) |
 
 ## 2. Seit letztem Bericht erledigt
 | Datum | Paket | Ergebnis | Erprobt an | Tests |
 |---|---|---|---|---|
 | 21.11. | Überwachungsantwort übernommen | archiviert, Ü-E1–E6 in `ENTSCHEIDUNGEN.md`, E19 (Technik M10) vorläufig, Arbeitsvorrat auf neue Reihenfolge, ROADMAP M10, PC-Tag-Reihenfolge, Satz in ZIEL.md (Ü-E5), `docs/EFK_FREIGABE.xlsx` (55 Annahmen) | – | 318/318 |
+| 21.11. | M9p | Software-Prüfung M9a nachgeholt: keine kritisch/hoch; behoben: Prüfausgabe im Artefakt, nur git-erfasste Beispiele ins Paket, Exe-Hinweistexte, Workflow-Rechte; Test ergänzt | synthetisch (CI-Windows-Lauf) | 319/319 |
 
 ## 3. Tests
-318/318 grün; ruff und mypy ohne Befund; CI Ubuntu+Windows und Workflow „Paket“ (Windows-Exe) grün.
+319/319 grün; ruff und mypy ohne Befund; CI Ubuntu+Windows und Workflow „Paket“ (Windows-Exe) grün.
 
 ## 4. Neue vorläufige Entscheidungen
 E19 – Oberfläche als lokaler Webserver aus der Python-Standardbibliothek (127.0.0.1, ohne Internet, ohne neue Abhängigkeit, im Exe-Paket lauffähig, End-to-End-Test per HTTP in CI).
@@ -39,7 +40,6 @@ E19 – Oberfläche als lokaler Webserver aus der Python-Standardbibliothek (127
 ## 5. Offene Fehler / Risiken
 - Alles nur an synthetischen bzw. selbst erzeugten Plänen erprobt (Ü2) – größtes Risiko; erster PC-Tag: PC9 → PC3 → PC8.
 - Leitungsschutz-/Kurzschlussnachweis fehlt, I_z ohne Quelle (Ü3 → M4f).
-- Software-Prüfung M9a steht aus (Nutzungslimit).
 - Nutzungslimit (5 h und Woche) kann Autostarts ausfallen lassen.
 
 ## 6. Abweichungen von ZIEL.md (jede Lücke)
@@ -55,7 +55,7 @@ E19 – Oberfläche als lokaler Webserver aus der Python-Standardbibliothek (127
 - Steuerdateien in `docs/` (bestätigt Ü-E5).
 
 ## 7. Nächster geplanter Schritt
-M9p (Software-Prüfung M9a), dann M10a (Oberfläche Grundgerüst). Arbeitsvorrat: M10a–f, M4f, M8b, M5g, M7d, M9b, M4e.
+M10a (Oberfläche Grundgerüst). Arbeitsvorrat: M10a–f, M4f, M8b, M5g, M7d, M9b, M4e.
 
 ## 8. Fragen an die Überwachung (max. 3)
 1. E19 (Oberfläche als lokaler Webserver aus der Standardbibliothek) – so bestätigen?
