@@ -78,3 +78,30 @@ def test_fehler_klartext(tmp_path):
     wb.save(profil.with_name("artikelzuordnung.xlsx"))
     with pytest.raises(SystemExit, match="nichts übernommen"):
         main(["artikelzuordnung", "--profil", str(profil)])
+
+
+def test_semikolon_mit_dezimalkomma_utf16_und_zweites_blatt(tmp_path):
+    p = tmp_path / "e.csv"
+    p.write_text("Art.-Nr.;Hersteller;Bezeichnung\nLS-1;Muster;LS-Schalter B 0,5 A 1,5 kA 0,3 s, 1-polig, 2,5 mm²\n",
+                 encoding="utf-8")
+    assert lese_export(p)[0]["artikelnummer"] == "LS-1"
+    p.write_bytes("Artikelnummer\tBezeichnung\nU-1\tNetzteil 24 V 5 A\n".encode("utf-16"))
+    assert lese_export(p)[0]["artikelnummer"] == "U-1"
+    p.write_bytes(b"Artikelnummer;Bezeichnung\nX-1;Kabel \x81 grau\n")
+    assert lese_export(p)[0]["artikelnummer"] == "X-1"
+    x = tmp_path / "e.xlsx"
+    wb = Workbook()
+    wb.active.append(["Exportinfo"])
+    blatt = wb.create_sheet("Daten")
+    for z in EXPORT:
+        blatt.append(z)
+    wb.save(x)
+    assert lese_export(x)[0]["artikelnummer"] == "HN-1000"
+
+
+def test_kein_vorschlag_bei_abweichendem_kennwert_und_warnung():
+    haus = [{"artikelnummer": "N2", "hersteller": "", "bezeichnung": "Netzteil 24 V DC 2,5 A primär 230 V"},
+            {"artikelnummer": "L13", "hersteller": "", "bezeichnung": "Leitungsschutzschalter B 13 A 1-polig"}]
+    assert vorschlag(STAMM["artikel"]["NT-24-05"], haus) is None
+    from slpgen.artikelstamm import kennwert_abweichung
+    assert kennwert_abweichung("Netzteil 24 V 5 A", "Netzteil 24 V 2,5 A") == ["a"]
