@@ -26,7 +26,9 @@ import yaml
 from .modell import RegelFehler
 
 ARTEN = {"artikel_ersetzen": "Artikel ersetzen", "gruppe_setzen": "24-V-Gruppe setzen",
-         "mindestquerschnitt": "Mindestquerschnitt Motor-/Leistungsleitung"}
+         "mindestquerschnitt": "Mindestquerschnitt Motor-/Leistungsleitung",
+         "auswahl_ersetzen": "vom Programm gewähltes Gerät ersetzen (FU/Schütz/Motorschutzschalter)"}
+AUSWAHL_KATEGORIEN = ("fu", "schuetz", "motorschutz")      # Geräte, die die Planung selbst aus dem Stamm wählt
 ZIEL_MINDESTQUERSCHNITT = "motorleitung"
 PFLICHT = ("id", "art", "wenn", "dann")
 MAX_DURCHLAEUFE = 10                 # Regelketten A→B→C; mehr Durchläufe = Kreis
@@ -104,6 +106,19 @@ def wende_an(projekt: dict[str, Any], regeln: list[dict[str, Any]]) -> tuple[dic
                                      f"{mm2(r['dann']):g} mm² – {r.get('bearbeiter', '?')}, {r.get('datum', '?')}, "
                                      f"Herkunft {r.get('herkunft', '?')}".replace(".", ","))
                 continue
+            if r["art"] == "auswahl_ersetzen":
+                if not isinstance(neu.get("auswahl_ersetzen"), dict):
+                    neu["auswahl_ersetzen"] = {}
+                aus = neu["auswahl_ersetzen"]
+                ziele = [k for k, v in aus.items() if v == r["wenn"]]            # Kette A→B, B→C ergibt A→C
+                if r["wenn"] not in aus:                                     # eigener Eintrag nur einmal
+                    ziele.append(r["wenn"])
+                for k in ziele:
+                    aus[k] = r["dann"]
+                    geaendert = True
+                    meldungen.append(f"Hausregel {r['id']} ({ARTEN[r['art']]}): Programmauswahl {k} → {r['dann']} "
+                                     f"– {r.get('bearbeiter', '?')}, {r.get('datum', '?')}, Herkunft {r.get('herkunft', '?')}")
+                continue
             feld = "artikel" if r["art"] == "artikel_ersetzen" else "gruppe"
             for fg in neu.get("feldgeraete") or []:
                 if not isinstance(fg, dict) or fg.get("artikel") != r["wenn"] or fg.get(feld) == r["dann"]:
@@ -135,8 +150,9 @@ def _naechste_id(regeln: list[dict[str, Any]]) -> str:
 def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft: str, grund: str,
                       projekt: dict[str, Any], stamm: dict[str, Any], gilt_ab: str | None = None,
                       nur_projekt: str | None = None, bearbeiter: str | None = None,
-                      probelauf: Callable[[dict[str, Any]], None] | None = None,
-                      nur_vorschau: bool = False) -> dict[str, Any]:
+                      probelauf: Callable[[dict[str, Any]], Any] | None = None,
+                      nur_vorschau: bool = False,
+                      planartikel: Callable[[dict[str, Any]], set[str]] | None = None) -> dict[str, Any]:
     """Korrektur als Hausregel speichern, samt Regressionsfall. Speichert nur, wenn die Regel wirkt und der
     Probelauf (Prüfung + Planung mit allen Regeln) gelingt."""
     if art not in ARTEN:
@@ -144,7 +160,7 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
     artikel = stamm.get("artikel", {})
     gross = {k.upper(): k for k in artikel}                     # Groß-/Kleinschreibung egal
     wenn = gross.get(str(wenn).strip().upper(), str(wenn).strip())
-    if art == "artikel_ersetzen":
+    if art in ("artikel_ersetzen", "auswahl_ersetzen"):
         dann = gross.get(str(dann).strip().upper(), str(dann).strip())
     if art == "mindestquerschnitt":
         try:
@@ -158,6 +174,13 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
             raise RegelFehler("Im Projekt gibt es keine Motor-/Leistungsleitung – Korrektur würde nichts ändern")
     elif wenn not in artikel:
         raise RegelFehler(f"Artikel „{wenn}“ gibt es nicht im Gerätestamm")
+    if art == "auswahl_ersetzen":
+        kat = artikel[wenn].get("kategorie")
+        if kat not in AUSWAHL_KATEGORIEN:
+            raise RegelFehler(f"„{wenn}“ ({kat}) wählt das Programm nicht selbst – für Feldgeräte „Artikel ersetzen“ "
+                              f"verwenden; hier nur Frequenzumrichter, Schütz, Motorschutzschalter")
+        if dann not in artikel or artikel[dann].get("kategorie") != kat:
+            raise RegelFehler(f"Ersatz „{dann}“ muss ein Artikel derselben Art ({kat}) aus dem Gerätestamm sein")
     if art == "artikel_ersetzen":
         if dann not in artikel:
             raise RegelFehler(f"Ersatzartikel „{dann}“ gibt es nicht im Gerätestamm")
@@ -183,11 +206,16 @@ def erfasse_korrektur(pfad: str | Path, art: str, wenn: str, dann: str, herkunft
             if isinstance(mit_bisherigen.get("leitungen"), dict) else None
         ausschnitt: dict[str, Any] = {"leitungen": {"min_querschnitt_mm2": alt_min}}
         betroffen: list[Any] = [ausschnitt]
+    elif art == "auswahl_ersetzen":
+        vorher = mit_bisherigen.get("auswahl_ersetzen")
+        ausschnitt = {"auswahl_ersetzen": copy.deepcopy(vorher) if isinstance(vorher, dict) else {}}
+        betroffen = [wenn] if planartikel is None or wenn in planartikel(mit_bisherigen) else []
     else:
         betroffen = [fg for fg in mit_bisherigen.get("feldgeraete") or [] if isinstance(fg, dict) and fg.get("artikel") == wenn]
         ausschnitt = {"feldgeraete": copy.deepcopy(betroffen)}
     if not betroffen:
-        raise RegelFehler(f"Im Plan kommt Artikel „{wenn}“ nicht vor (ggf. schon durch eine Hausregel ersetzt) – "
+        raise RegelFehler(f"Im Plan kommt Artikel „{wenn}“ nicht vor (ggf. schon durch eine Hausregel ersetzt"
+                          f"{'' if art != 'auswahl_ersetzen' else ' oder vom Programm nicht gewählt'}) – "
                           f"Korrektur würde nichts ändern")
     kopf = projekt.get("projekt") or {}
     regel: dict[str, Any] = {

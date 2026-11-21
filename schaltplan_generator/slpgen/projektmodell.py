@@ -117,7 +117,8 @@ ABSCHNITTE: dict[str, tuple[str, bool, list[Feld], str, str]] = {
 PFLICHT_ABSCHNITTE = ("projekt", "einspeisung", "feldgeraete")
 ZUSATZ = {"schema": "Schemaversion, immer „projektmodell/1“",
           "annahmen": "Liste: was die KI angenommen hat (erscheint im Auslegungsnachweis)",
-          "offene_fragen": "Liste: was im Lastenheft fehlt oder unklar ist (erscheint im Auslegungsnachweis)"}
+          "offene_fragen": "Liste: was im Lastenheft fehlt oder unklar ist (erscheint im Auslegungsnachweis)",
+          "auswahl_ersetzen": "nur Hausregeln (Lernschleife): vom Programm gewählter Artikel → Ersatz, z. B. {SCH-09: SCH-12}"}
 TYP_KLARTEXT = {"text": "Text", "zahl": "Zahl (Punkt oder Komma, ohne Einheit)", "ja_nein": "ja / nein",
                 "datum": "Datum JJJJ-MM-TT", "bmk": "Kennzeichen wie B1", "artikel": "Artikel aus Gerätestamm",
                 "liste_artikel": "Liste von Artikeln", "typical": "Bausteinname", "tabelle": "Tabelle",

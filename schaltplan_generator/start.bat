@@ -231,12 +231,14 @@ if errorlevel 1 goto :fehler_lauf
 echo.
 echo Was soll sich in allen weiteren Plaenen aendern?
 echo   1 = Artikel ersetzen   2 = 24-V-Gruppe setzen   3 = Mindestquerschnitt Motor-/Leistungsleitung
+echo   4 = vom Programm gewaehltes Geraet ersetzen (Frequenzumrichter, Schuetz, Motorschutzschalter)
 set "KA="
 set /p "KA=> "
 set "KART="
 if "%KA%"=="1" set "KART=artikel_ersetzen"
 if "%KA%"=="2" set "KART=gruppe_setzen"
 if "%KA%"=="3" set "KART=mindestquerschnitt"
+if "%KA%"=="4" set "KART=auswahl_ersetzen"
 if not defined KART echo Ungueltige Wahl - zurueck zum Menue. & pause & goto :menue
 set "KW=motorleitung"
 set "FRAGE=Mindestquerschnitt in mm2 (0,5 bis 240, z. B. 2,5): "

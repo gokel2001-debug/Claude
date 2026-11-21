@@ -179,9 +179,12 @@ def cmd_korrektur(a):
         kabel_neu.update({k.bmk: k.querschnitt_mm2 for k in regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0],
                                                                            stamm).kabel})
 
+    def planartikel(projekt: dict) -> set[str]:                 # vom Programm gewählte Artikel im Plan
+        return {b.artikel for b in regeln.plane(bereit_machen(projekt, stamm, vorgaben)[0], stamm).betriebsmittel}
+
     r = erfasse_korrektur(_hausregeln_pfad(a.profil), a.art, a.wenn, a.dann, a.herkunft or Path(a.projekt).name,
                           a.grund, lade_projekt(a.projekt), stamm, a.gilt_ab, a.nur_projekt, a.bearbeiter, probelauf,
-                          nur_vorschau=a.vorschau)
+                          nur_vorschau=a.vorschau, planartikel=planartikel)
     if a.art == "mindestquerschnitt":
         from .lernschleife import lade_regeln, schalte, wende_an
         pfad = _hausregeln_pfad(a.profil)
@@ -227,6 +230,17 @@ def cmd_artikelliste(a):
     for k in sorted({str(x.get("artikel")) for x in fg}):
         print(f"  {k:<18} {art.get(k, {}).get('bezeichnung', '')}")
     print("24-V-Gruppen: " + ", ".join(sorted({str(x.get("gruppe")) for x in fg if x.get("gruppe")})))
+    try:                                                        # vom Programm gewählte Geräte (Korrekturart 4)
+        from .lernschleife import AUSWAHL_KATEGORIEN
+        from .projektmodell import bereit_machen
+        m = regeln.plane(bereit_machen(daten, lade_yaml(a.stamm), _vorgaben(a.vorgaben))[0], lade_yaml(a.stamm))
+        gewaehlt = sorted({b.artikel for b in m.betriebsmittel if b.kategorie in AUSWAHL_KATEGORIEN})
+        if gewaehlt:
+            print("Vom Programm gewählt (Frequenzumrichter, Schütze, Motorschutzschalter):")
+            for k in gewaehlt:
+                print(f"  {k:<18} {art.get(k, {}).get('bezeichnung', '')}")
+    except regeln.RegelFehler:
+        pass
 
 
 def cmd_hausregel(a):
@@ -484,7 +498,8 @@ def main(argv=None):
     g.set_defaults(f=cmd_generieren)
     kr = sub.add_parser("korrektur", help="Korrektur als Hausregel speichern (Lernschleife)")
     kr.add_argument("projekt")
-    kr.add_argument("--art", required=True, choices=["artikel_ersetzen", "gruppe_setzen", "mindestquerschnitt"])
+    kr.add_argument("--art", required=True,
+                    choices=["artikel_ersetzen", "gruppe_setzen", "mindestquerschnitt", "auswahl_ersetzen"])
     kr.add_argument("--vorschau", action="store_true", help="nur zeigen, was sich ändern würde – nichts speichern")
     kr.add_argument("--wenn", required=True, help="Artikel, für den die Regel gilt")
     kr.add_argument("--dann", required=True, help="Ersatzartikel bzw. 24-V-Gruppe")
@@ -512,6 +527,7 @@ def main(argv=None):
     al = sub.add_parser("artikelliste", help="Artikel und 24-V-Gruppen eines Projekts anzeigen")
     al.add_argument("projekt")
     al.add_argument("--stamm", default=STAMM)
+    al.add_argument("--vorgaben", default=VORGABEN)
     al.set_defaults(f=cmd_artikelliste)
     hs = sub.add_parser("hausregel", help="Hausregel ein-/ausschalten oder löschen")
     hs.add_argument("aktion", choices=["ein", "aus", "loeschen"])

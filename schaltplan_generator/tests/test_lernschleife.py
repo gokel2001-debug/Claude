@@ -172,3 +172,57 @@ def test_mindestquerschnitt_robust_und_strengerer_wert_gilt():
     neu, _ = wende_an({"leitungen": {}}, r)
     zusammen, _ = mit_hausvorgaben(neu, {"leitungen": {"min_querschnitt_mm2": 4.0, "kappa": 56}})
     assert zusammen["leitungen"]["min_querschnitt_mm2"] == 4.0 and zusammen["leitungen"]["kappa"] == 56
+
+
+def test_auswahl_ersetzen_programmgewaehlte_geraete(tmp_path, capsys):
+    """M5f (Prüfung M7c S2): Hausregel für Geräte, die das Programm selbst wählt (Schütz/MSS/FU)."""
+    profil = tmp_path / "hausprofil" / "profil.yaml"
+    projekt = _projekt(tmp_path)
+    main(["artikelliste", str(projekt)])
+    assert "Vom Programm gewählt" in capsys.readouterr().out
+    main(["korrektur", str(projekt), "--art", "auswahl_ersetzen", "--wenn", "sch-09", "--dann", "SCH-12",
+          "--grund", "Hausstandard 12-A-Schütz", "--profil", str(profil)])
+    main(["generieren", str(projekt), "--ausgabe", str(tmp_path / "aus"), "--profil", str(profil)])
+    pm = yaml.safe_load((tmp_path / "aus" / "P-2026-001_Planmodell.json").read_text(encoding="utf-8"))
+    schuetze = {b["bmk"]: b["artikel"] for b in pm["betriebsmittel"] if b["kategorie"] == "schuetz"}
+    assert "SCH-09" not in schuetze.values() and schuetze["-K1"] == "SCH-12"
+    assert any("Programmauswahl SCH-09 → SCH-12" in w for w in pm["warnungen"])
+    regeln, _ = lade_regeln(profil.with_name("hausregeln.yaml"))
+    assert regeln[0]["fall"]["erwartet"] == {"auswahl_ersetzen": {"SCH-09": "SCH-12"}} and not pruefe_regressionen(regeln)
+    # Kette: SCH-12 -> SCH-18 verändert den alten Fall -> Regressionstest meldet es
+    main(["korrektur", str(projekt), "--art", "auswahl_ersetzen", "--wenn", "SCH-12", "--dann", "SCH-18",
+          "--profil", str(profil)])
+    regeln, _ = lade_regeln(profil.with_name("hausregeln.yaml"))
+    assert wende_an(BEISPIEL, regeln)[0]["auswahl_ersetzen"]["SCH-09"] == "SCH-18"
+    assert pruefe_regressionen(regeln)
+
+
+def test_auswahl_ersetzen_klartext(tmp_path):
+    h = tmp_path / "h.yaml"
+
+    def nie(_p):
+        return set()
+
+    with pytest.raises(RegelFehler, match="wählt das Programm nicht selbst"):
+        erfasse_korrektur(h, "auswahl_ersetzen", "IND-M12-PNP", "OPT-REF-PNP", "x", "", BEISPIEL, STAMM)
+    with pytest.raises(RegelFehler, match="derselben Art"):
+        erfasse_korrektur(h, "auswahl_ersetzen", "SCH-09", "MSS-4", "x", "", BEISPIEL, STAMM)
+    with pytest.raises(RegelFehler, match="vom Programm nicht gewählt"):
+        erfasse_korrektur(h, "auswahl_ersetzen", "FU-1.5", "FU-3.0", "x", "", BEISPIEL, STAMM, planartikel=nie)
+
+    def probelauf(p):
+        from slpgen import regeln
+        from slpgen.projektmodell import bereit_machen
+        regeln.plane(bereit_machen(p, STAMM, yaml.safe_load((B / "hausvorgaben.yaml").read_text(encoding="utf-8")))[0],
+                     STAMM)
+
+    with pytest.raises(RegelFehler, match=r"nicht gespeichert.*MSS-4 erfüllt nicht Einstellbereich"):
+        erfasse_korrektur(h, "auswahl_ersetzen", "MSS-2.5", "MSS-4", "x", "", BEISPIEL, STAMM, probelauf=probelauf)
+    assert not h.exists()
+
+
+def test_auswahl_ersetzen_kreis():
+    regeln = [{"id": "R1", "art": "auswahl_ersetzen", "wenn": "SCH-09", "dann": "SCH-12"},
+              {"id": "R2", "art": "auswahl_ersetzen", "wenn": "SCH-12", "dann": "SCH-09"}]
+    with pytest.raises(RegelFehler, match="Kreis"):
+        wende_an(BEISPIEL, regeln)

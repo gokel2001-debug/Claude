@@ -28,6 +28,7 @@ Pflichtabschnitte: projekt, einspeisung, feldgeraete.
 | `schema` | Schemaversion, immer „projektmodell/1“ |
 | `annahmen` | Liste: was die KI angenommen hat (erscheint im Auslegungsnachweis) |
 | `offene_fragen` | Liste: was im Lastenheft fehlt oder unklar ist (erscheint im Auslegungsnachweis) |
+| `auswahl_ersetzen` | nur Hausregeln (Lernschleife): vom Programm gewählter Artikel → Ersatz, z. B. {SCH-09: SCH-12} |
 
 ## Felder
 
