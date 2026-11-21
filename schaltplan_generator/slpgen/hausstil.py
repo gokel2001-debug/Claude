@@ -215,11 +215,15 @@ class Hausplan:
             an.seiten += [("Lastkreis", self._s_motor_last), ("Steuerung", self._s_motor_steuer)]
             self.netzkette.append(kenn)
             self.netzbedarf[kenn] = {"L1", "L2", "L3", "PE"}
-            q, k, w = mot.daten["mss"], mot.daten["schuetz"], mot.daten["kabel"]
+            q, w = mot.daten["mss"], mot.daten["kabel"]
+            k = mot.daten.get("fu") or mot.daten["schuetz"]
             self._lokal(mot.bmk, kenn, "-M1", 1, 4)
             self._lokal(w, kenn, "-W1", 1, 4)
             self._lokal(q, kenn, "-Q1", 2, 6)          # 24-V-Verbraucher: Hilfskontakt 13/14 (Steuerung)
-            self._lokal(k, kenn, "-K1", 2, 2)          # 24-V-Verbraucher: Spule A1/A2 (Steuerung)
+            self._lokal(k, kenn, "-T1" if mot.daten.get("fu") else "-K1", 2, 2)   # Spule A1/A2 bzw. FU-Eingang DI1
+            if mot.daten.get("fu"):                    # Sollwert (AO) Spalte 4, Störrelais (DI) Spalte 8
+                self.pos[f"kanal:{k}.2"] = Ort(kenn, 2, 4)
+                self.pos[f"kanal:{k}.3"] = Ort(kenn, 2, 8)
             self.pos[f"haupt:{q}"] = Ort(kenn, 1, 4)  # Leistungsteil im Lastkreis
             self.pos[f"haupt:{k}"] = Ort(kenn, 1, 4)
             self.pos[f"kanal:{k}"] = Ort(kenn, 2, 2)
@@ -662,21 +666,26 @@ class Hausplan:
         alt_m = next(k for k, (an, lok) in self.lokal.items() if an == a.kennung and lok == "-M1")
         mot = self.m.bm(alt_m)
         kabel = next(c for c in self.m.kabel if c.bmk == mot.daten["kabel"])
-        return mot, self.m.bm(mot.daten["mss"]), self.m.bm(mot.daten["schuetz"]), kabel
+        return mot, self.m.bm(mot.daten["mss"]), self.m.bm(mot.daten.get("fu") or mot.daten["schuetz"]), kabel
 
     def _s_motor_last(self, b: Blatt, a: Anlage):
         mot, q, k, w = self._motor(a)
         ac = self.stil["ader_ac"]
         x = self.x(4)
         self._kette(b, a)
+        fu = k.kategorie == "fu"
         for d, (_lt, y) in zip((-6, 0, 6), (("L1", 262), ("L2", 256), ("L3", 250))):
             b.kreis(x + d, y, 0.6, True)
             b.linie(X0 + 8, y, x + d, y)
             b.linie(x + d, y, x + d, 222)
             b.rechteck(x + d - 1.2, 216, 2.4, 6)
-            b.linie(x + d, 216, x + d, 190)
-            sym_schliesser(b, x + d, 190, 12)
-            b.linie(x + d, 178, x + d, 131.1)
+            if fu:                                                   # Frequenzumrichter statt Schütz
+                b.linie(x + d, 216, x + d, 194)
+                b.linie(x + d, 174, x + d, 131.1)
+            else:
+                b.linie(x + d, 216, x + d, 190)
+                sym_schliesser(b, x + d, 190, 12)
+                b.linie(x + d, 178, x + d, 131.1)
         b.kreis(x + 12, 238, 0.6, True)
         b.linie(X0 + 8, 238, x + 12, 238)
         b.linie(x + 12, 238, x + 12, 131.1)
@@ -684,9 +693,20 @@ class Hausplan:
         b.text(x - 11, 222, "-Q1", 3, True, "r")
         b.text(x - 11, 218, f"Ir = {q.daten['i_r_A']:g} A".replace(".", ","), 2, ausr="r")
         b.text(x - 11, 214.5, f"13-14 {self.ref(self.pos[f'kanal:{q.bmk}'], a.kennung)}", 1.9, ausr="r")
-        b.text(x - 11, 186, "-K1", 3, True, "r")
-        b.text(x - 11, 182.5, f"A1-A2 {self.ref(self.pos[f'kanal:{k.bmk}'], a.kennung)}", 1.9, ausr="r")
-        b.linie(x - 6, 184, x + 6, 184, strich=([1, 1], 0))
+        if fu:
+            b.rechteck(x - 9, 174, 18, 20, 0.4)
+            b.linie(x - 9, 174, x + 9, 194, 0.2)
+            b.text(x - 5, 188, "3~", 2.2, ausr="m")
+            b.text(x + 5, 177, "3~", 2.2, ausr="m")
+            b.text(x - 11, 188, "-T1", 3, True, "r")
+            b.text(x - 11, 184.5, f"I_aus = {k.daten['i_aus_A']:g} A".replace(".", ","), 2, ausr="r")
+            b.text(x - 11, 181, f"DI1 {self.ref(self.pos[f'kanal:{k.bmk}'], a.kennung)}", 1.9, ausr="r")
+            b.text(x - 11, 177.5, f"AI1 {self.ref(self.pos[f'kanal:{k.bmk}.2'], a.kennung)}", 1.9, ausr="r")
+            b.text(x + 10, 192, k.artikel, 1.9)
+        else:
+            b.text(x - 11, 186, "-K1", 3, True, "r")
+            b.text(x - 11, 182.5, f"A1-A2 {self.ref(self.pos[f'kanal:{k.bmk}'], a.kennung)}", 1.9, ausr="r")
+            b.linie(x - 6, 184, x + 6, 184, strich=([1, 1], 0))
         for i, d in enumerate((-6, 0, 6, 12), 1):
             sym_klemme(b, x + d, 130, "-X1", i)
             b.linie(x + d, 128.9, x + d, 100 if d < 12 else 90)
@@ -694,7 +714,8 @@ class Hausplan:
             b.text(x + d + 1, 157, f"{w.querschnitt_mm2:g}".replace(".", ","), 1.8)
         b.text(x - 11, 129.2, "-X1", 2.4, True, "r")
         b.linie(x - 9, 112, x + 15, 118, 0.25)
-        b.text(x + 16, 119, f"-W1 {w.adern}G{w.querschnitt_mm2:g} {w.laenge_m:g} m".replace(".", ","), 2.2)
+        b.text(x + 16, 119, f"-W1 {w.adern}G{w.querschnitt_mm2:g} {w.laenge_m:g} m".replace(".", ",")
+               + (" geschirmt, Schirm beidseitig auflegen" if fu else ""), 2.2)
         b.linie(x + 12, 90, x + 9.9, 90)
         b.kreis(x, 90, 10)
         b.text(x, 91, "M", 4, True, "m")
@@ -704,6 +725,9 @@ class Hausplan:
 
     def _s_motor_steuer(self, b: Blatt, a: Anlage):
         _mot, q, k, _w = self._motor(a)
+        if k.kategorie == "fu":
+            self._s_fu_steuer(b, a, q, k)
+            return
         ad = self.stil["ader"]
         x = self.x(2)
         self._sps_kasten(b, x, 215, k.bmk, a.kennung, "-K1:A1")
@@ -729,6 +753,35 @@ class Hausplan:
         b.linie(xb, 193, xb, 172)
         self._sps_kasten(b, xb, 140, q.bmk, a.kennung, "-Q1:14")
         b.linie(xb, 172, xb, 140 + 32)
+
+    def _s_fu_steuer(self, b: Blatt, a: Anlage, q: Betriebsmittel, k: Betriebsmittel):
+        """Steuerung FU: Freigabe (DO -> DI1), Sollwert (AO -> AI1), Rückmeldung -Q1 13/14, Störrelais RL1 (DI)."""
+        ad = self.stil["ader"]
+        for spalte, kanal, pin, sig in ((2, k.bmk, "DI1", "DO"), (4, f"{k.bmk}.2", "AI1", "AO")):
+            x = self.x(spalte)
+            self._sps_kasten(b, x, 215, kanal, a.kennung, f"-T1:{pin}")
+            b.linie(x, 215, x, 160)
+            b.text(x + 1, 190, f"{ad.get(sig, ad['DO'])} {ad['querschnitt']}", 1.9)
+            b.rechteck(x - 5, 150, 10, 10, 0.4)
+            b.text(x, 154, pin, 2.2, True, "m")
+            b.text(x - 7, 154, "-T1", 3, True, "r")
+            b.text(x - 7, 150.5, self.ref(self.pos[f"haupt:{q.bmk}"], a.kennung), 1.9, ausr="r")
+        # Rückmeldung Motorschutzschalter 13/14 und Störrelais des FU: Kontaktspeisung 24L+
+        fa = self.pos.get(q.daten.get("absicherung", ""))
+        for spalte, kanal, name, kontakt, ref in ((6, q.bmk, "-Q1", ("13", "14"), self.pos[f"haupt:{q.bmk}"]),
+                                                  (8, f"{k.bmk}.3", "-T1", ("RL1", "RL2"), self.pos[f"haupt:{q.bmk}"])):
+            xb = self.x(spalte)
+            b.text(xb - 1, 266, f"24L+ {self.ref(fa, a.kennung)}", 2, ausr="r")
+            b.linie(xb, 268, xb, 205)
+            sym_schliesser(b, xb, 205, 12)
+            b.text(xb - 4, 199, name, 3, True, "r")
+            b.text(xb - 4, 195.5, self.ref(ref, a.kennung), 1.9, ausr="r")
+            b.text(xb + 2, 203, kontakt[0], 1.9)
+            b.text(xb + 2, 194, kontakt[1], 1.9)
+            b.linie(xb, 193, xb, 172)
+            self._sps_kasten(b, xb, 140, kanal, a.kennung, f"{name}:{kontakt[1]}")
+        b.text(self.x(5), 128, "Bezugspotential DI/AI (COM, AGND) und Störrelais RL1/RL2 (Arbeits-/Ruhestrom) laut "
+                               "Datenblatt des FU anschließen (A51)", 1.8)
 
     # ---- SPS -------------------------------------------------------------------
     def _karten(self) -> list[Betriebsmittel]:

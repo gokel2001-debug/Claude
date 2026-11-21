@@ -47,6 +47,7 @@ FELD_SPALTEN = ["BMK", "Artikel", "Funktion", "Gruppe"]
 BAUSTEIN_SPALTE = "Baustein (optional)"     # Typical aus der Bibliothek, z. B. zaehler_di
 LAENGE_SPALTE = "Leitungslänge m (optional)" # Pflicht bei Leistungsteil, sonst für die Kabelliste
 MOTOR_SPALTEN = ["BMK", "Funktion", "P_kW", "I_N_A", "cos_phi", "Laenge_m"]
+ANLAUF_SPALTE = "Anlauf (direkt/fu, optional)"
 FETT = Font(bold=True)
 KOPF = PatternFill("solid", fgColor="DDDDDD")
 
@@ -138,7 +139,8 @@ def lade_excel(pfad: str | Path) -> dict[str, Any]:
                     "p_kW": _zahl(d["P_kW"], f"Motoren Z.{d['_zeile']}"),
                     "i_N_A": _zahl(d["I_N_A"], f"Motoren Z.{d['_zeile']}"),
                     "cos_phi": _zahl(d["cos_phi"], f"Motoren Z.{d['_zeile']}"),
-                    "laenge_m": _zahl(d["Laenge_m"], f"Motoren Z.{d['_zeile']}")}
+                    "laenge_m": _zahl(d["Laenge_m"], f"Motoren Z.{d['_zeile']}"),
+                    **({"anlauf": str(d[ANLAUF_SPALTE]).strip().lower()} if d.get(ANLAUF_SPALTE) not in (None, "") else {})}
                    for d in _tabelle(wb["Motoren"], MOTOR_SPALTEN)]
         if motoren:
             projekt["motoren"] = motoren
@@ -208,10 +210,14 @@ def schreibe_vorlage(projekt: dict[str, Any], stamm: dict[str, Any], pfad: str |
     dv.add("B2:B500")
 
     wm = wb.create_sheet("Motoren", 3)
-    _kopf(wm, MOTOR_SPALTEN)
+    _kopf(wm, [*MOTOR_SPALTEN, ANLAUF_SPALTE])
     for mo in projekt.get("motoren", []):
         wm.append([mo["bmk"], mo.get("funktion", ""), mo["p_kW"], mo["i_N_A"], mo.get("cos_phi", 0.8),
-                   mo["laenge_m"]])
+                   mo["laenge_m"], mo.get("anlauf", "direkt")])
+    dva = DataValidation(type="list", formula1='"direkt,fu"', allow_blank=True, showErrorMessage=True,
+                         errorTitle="Anlauf", error="direkt oder fu")
+    wm.add_data_validation(dva)
+    dva.add("G2:G200")
 
     ws = wb.create_sheet("Sicherheit", 4)
     _kopf(ws, ["Feld", "Wert", "Hinweis"])

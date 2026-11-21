@@ -343,7 +343,8 @@ def s_motor_last(b: Blatt, m: Planmodell, seite: int, idx: int):
             potential_pfeil(b, X1 - 14, y, f"{verweis(weitere[0], 1)}")
     for mot in motoren:
         x = X0 + mot.spalte * COLW
-        q, k = m.bm(mot.daten["mss"]), m.bm(mot.daten["schuetz"])   # nicht aus der Motornummer ableiten
+        q, k = m.bm(mot.daten["mss"]), m.bm(mot.daten.get("fu") or mot.daten["schuetz"])   # nicht aus der Nummer ableiten
+        fu = k.kategorie == "fu"
         w = next(c for c in m.kabel if c.nach == mot.bmk)
         kl = [c for c in m.klemmen if c.leiste == "-X2" and c.ziel_aussen.startswith(mot.bmk + ":")]
         for d, (_, y_bus) in zip((-6, 0, 6), busse):
@@ -351,25 +352,36 @@ def s_motor_last(b: Blatt, m: Planmodell, seite: int, idx: int):
             b.kreis(xl, y_bus, 0.6, True)
             b.linie(xl, y_bus, xl, 222)
             b.rechteck(xl - 1.2, 216, 2.4, 6)                      # Auslöser (therm./magn.)
-            b.linie(xl, 216, xl, 190)
-            sym_schliesser(b, xl, 190, 12)                          # Hauptkontakt Schütz
-            b.linie(xl, 178, xl, 146.1)
+            if fu:                                                  # Frequenzumrichter statt Schütz
+                b.linie(xl, 216, xl, 194)
+                b.linie(xl, 174, xl, 146.1)
+            else:
+                b.linie(xl, 216, xl, 190)
+                sym_schliesser(b, xl, 190, 12)                      # Hauptkontakt Schütz
+                b.linie(xl, 178, xl, 146.1)
         b.kreis(x + 12, 238, 0.6, True)
         b.linie(x + 12, 238, x + 12, 146.1)
         b.rechteck(x - 10, 210, 20, 18, strich=([1.5, 1], 0))
-        b.linie(x - 6, 184, x + 6, 184, strich=([1, 1], 0))         # mechanische Wirkverbindung
+        if fu:
+            b.rechteck(x - 9, 174, 18, 20, 0.4)
+            b.linie(x - 9, 174, x + 9, 194, 0.2)
+            b.text(x - 5, 188, "3~", 2.2, ausr="m")
+            b.text(x + 5, 177, "3~", 2.2, ausr="m")
+        else:
+            b.linie(x - 6, 184, x + 6, 184, strich=([1, 1], 0))     # mechanische Wirkverbindung
         b.text(x - 11, 222, q.bmk, 3, True, "r")
         b.text(x - 11, 218, f"Ir = {q.daten['i_r_A']:g} A", 2, ausr="r")
         b.text(x - 11, 214.5, f"13-14 {verweis(q.daten['steuer_seite'], q.daten['steuer_spalte'])}", 1.9, ausr="r")
         b.text(x - 11, 186, k.bmk, 3, True, "r")
-        b.text(x - 11, 182.5, f"A1-A2 {verweis(k.daten['steuer_seite'], k.daten['steuer_spalte'])}", 1.9, ausr="r")
+        b.text(x - 11, 182.5, f"{'DI1' if fu else 'A1-A2'} {verweis(k.daten['steuer_seite'], k.daten['steuer_spalte'])}",
+               1.9, ausr="r")
         for c, d in zip(kl, (-6, 0, 6, 12)):
             sym_klemme(b, x + d, 145, c.leiste, c.nr)
             b.linie(x + d, 143.9, x + d, 110 if d < 12 else 100)
         b.text(x - 11, 144.2, "-X2", 2.2, True, "r")
         b.linie(x - 9, 124, x + 15, 130, 0.25)                      # Kabelmarkierung
         b.text(x + 15, 131.5, w.bmk, 2.3, True)
-        b.text(x + 15, 128, f"{w.adern}G{w.querschnitt_mm2:g} {w.laenge_m:g} m", 1.9)
+        b.text(x + 15, 128, f"{w.adern}G{w.querschnitt_mm2:g} {w.laenge_m:g} m{' geschirmt' if fu else ''}", 1.9)
         b.linie(x + 12, 100, x + 9.9, 100)
         b.kreis(x, 100, 10)
         b.text(x, 101, "M", 4, True, "m")
@@ -382,25 +394,32 @@ def s_motor_last(b: Blatt, m: Planmodell, seite: int, idx: int):
 
 def s_motor_steuer(b: Blatt, m: Planmodell, seite: int, idx: int):
     """Steuerkreis: Schützspule über SPS-Ausgang, Rückmeldung Motorschutzschalter auf SPS-Eingang."""
-    spulen = [x for x in m.betriebsmittel if x.kategorie == "schuetz" and x.daten.get("steuer_seite") == seite]
+    spulen = [x for x in m.betriebsmittel if x.kategorie in ("schuetz", "fu") and x.daten.get("steuer_seite") == seite]
     y0v = 95
     b.linie(X0 + 6, y0v, X1 - 6, y0v)
     potential_pfeil(b, X0 + 6, y0v, f"0V {verweis(SEITE_VERTEILUNG, 1)}", False)
     for k in spulen:
-        mot = next(x for x in m.betriebsmittel if x.kategorie == "motor" and x.daten.get("schuetz") == k.bmk)
+        mot = next(x for x in m.betriebsmittel if x.kategorie == "motor" and k.bmk in (x.daten.get("schuetz"),
+                                                                                         x.daten.get("fu")))
+        fu = k.kategorie == "fu"
         q = m.bm(mot.daten["mss"])                      # nicht aus der Schütznummer ableiten
         # Spalte a: Spule
         x = sx(k.daten["steuer_spalte"])
         sps_box(b, m, x, 238, k.bmk)
         b.linie(x, 238, x, 156)
         b.rechteck(x - 4, 150, 8, 6, 0.4)
-        b.text(x + 1, 157, "A1", 1.9)
-        b.text(x + 1, 147.5, "A2", 1.9)
+        b.text(x + 1, 157, "DI1" if fu else "A1", 1.9)
+        b.text(x + 1, 147.5, "COM" if fu else "A2", 1.9)
         b.text(x - 6, 152, k.bmk, 3, True, "r")
         b.linie(x, 150, x, y0v)
         b.kreis(x, y0v, 0.6, True)
-        for i, kontakt in enumerate(("1-2", "3-4", "5-6")):
-            b.text(x - 6, 88 - i * 3.5, f"{kontakt}  {verweis(k.seite, (k.spalte or 1) - 1)}", 1.9)
+        if fu:                                  # Sollwert und Störrelais als Liste (Hausstil zeichnet sie aus)
+            for i, t in enumerate(k.daten.get("teilsignale", [])):
+                kn = next(c for c in m.sps_kanaele if c.geraet_bmk == t)
+                b.text(x - 6, 88 - i * 3.5, f"{kn.funktion}: {kn.art} {kn.adresse} ({kn.anschluss})", 1.9)
+        else:
+            for i, kontakt in enumerate(("1-2", "3-4", "5-6")):
+                b.text(x - 6, 88 - i * 3.5, f"{kontakt}  {verweis(k.seite, (k.spalte or 1) - 1)}", 1.9)
         # Spalte b: Rückmeldung Motorschutzschalter
         xb = sx(q.daten["steuer_spalte"])
         fa = m.bm(q.daten["absicherung"])

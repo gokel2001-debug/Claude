@@ -34,7 +34,7 @@ ADRESS_PLATZHALTER = {"byte": 0, "bit": 0, "wort": 0}
 @dataclass(frozen=True)
 class Feld:
     name: str
-    typ: str                  # text | zahl | ja_nein | datum | bmk | artikel:<kat> | liste_artikel:<kat> | typical | tabelle
+    typ: str                  # text|zahl|wahl:a|b|ja_nein | datum | bmk | artikel:<kat> | liste_artikel:<kat> | typical | tabelle
     pflicht: bool
     text: str
     beispiel: str = ""
@@ -74,7 +74,9 @@ ABSCHNITTE: dict[str, tuple[str, bool, list[Feld], str, str]] = {
         Feld("i_N_A", "zahl", True, "Bemessungsstrom in A (Typenschild)", "1.9", (0.01, 1000)),
         Feld("cos_phi", "zahl", False, "Leistungsfaktor (Typenschild), Standard 0,8", "0.78", (0.1, 1.0)),
         Feld("laenge_m", "zahl", True, "Leitungslänge Schrank–Motor in m", "12", (0.1, 1000)),
-    ], "Drehstrommotoren mit Direktstart", "Motor"),
+        Feld("anlauf", "wahl:direkt|fu", False, "direkt (Schütz, Standard) oder fu (Frequenzumrichter mit Freigabe, "
+             "Sollwert 4–20 mA, Störmeldung)", "fu"),
+    ], "Drehstrommotoren mit Direktstart oder Frequenzumrichter", "Motor"),
     "versorgung_24V": ("H", False, [
         Feld("netzteile", "liste_artikel:netzteil", True, "Netzteil-Kandidaten, das kleinste passende wird gewählt",
              "[NT-24-05, NT-24-10]"),
@@ -118,7 +120,8 @@ ZUSATZ = {"schema": "Schemaversion, immer „projektmodell/1“",
           "offene_fragen": "Liste: was im Lastenheft fehlt oder unklar ist (erscheint im Auslegungsnachweis)"}
 TYP_KLARTEXT = {"text": "Text", "zahl": "Zahl (Punkt oder Komma, ohne Einheit)", "ja_nein": "ja / nein",
                 "datum": "Datum JJJJ-MM-TT", "bmk": "Kennzeichen wie B1", "artikel": "Artikel aus Gerätestamm",
-                "liste_artikel": "Liste von Artikeln", "typical": "Bausteinname", "tabelle": "Tabelle"}
+                "liste_artikel": "Liste von Artikeln", "typical": "Bausteinname", "tabelle": "Tabelle",
+                "wahl": "Auswahl"}
 
 
 def _zahl(w: Any) -> float | None:
@@ -215,6 +218,8 @@ def _pruefe_feld(ort: str, f: Feld, w: Any, art: dict, typicals: dict) -> list[s
             return [f"{ort}: {was} = „{w}“ ist keine Zahl – bitte nur die Zahl eintragen, z. B. {f.beispiel}"]
         if f.bereich and not f.bereich[0] <= z <= f.bereich[1]:
             return [f"{ort}: {was} = {w} liegt außerhalb {f.bereich[0]:g}…{f.bereich[1]:g} – bitte prüfen"]
+    elif typ == "wahl" and str(w).strip().lower() not in kat.split("|"):
+        return [f"{ort}: {was} = „{w}“ – erlaubt: {', '.join(kat.split('|'))}"]
     elif typ == "ja_nein" and _ja_nein(w) is None:
         return [f"{ort}: {was} muss ja oder nein sein"]
     elif typ == "datum" and not isinstance(w, dt.date):

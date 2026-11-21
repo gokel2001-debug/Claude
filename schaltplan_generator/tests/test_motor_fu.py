@@ -1,0 +1,75 @@
+"""M7c: Motorabgang mit Frequenzumrichter (A51) – Auslegung, SPS-Signale, Zeichnung in beiden Stilen."""
+import copy
+from pathlib import Path
+
+import pytest
+import yaml
+from pypdf import PdfReader
+
+from slpgen import regeln, zeichnen
+from slpgen.excel_eingabe import lade_excel, schreibe_vorlage
+from slpgen.hausstil import erzeuge_hausstil_pdf
+from slpgen.konsistenz import FEHLER, pruefe_plan
+from slpgen.modell import RegelFehler
+from slpgen.projektmodell import bereit_machen
+
+B = Path(__file__).resolve().parent.parent / "beispiele"
+STAMM = yaml.safe_load((B / "geraetestamm.yaml").read_text(encoding="utf-8"))
+BEISPIEL = yaml.safe_load((B / "projekt_beispiel.yaml").read_text(encoding="utf-8"))
+VORGABEN = yaml.safe_load((B / "hausvorgaben.yaml").read_text(encoding="utf-8"))
+
+
+def _fu_projekt():
+    p = copy.deepcopy(BEISPIEL)
+    p["motoren"][1]["anlauf"] = "fu"            # M2: 1,5 kW, I_N 3,5 A
+    return p
+
+
+def test_fu_auslegung_und_signale():
+    m = regeln.plane(_fu_projekt(), STAMM)
+    fu = m.bm("-T2")
+    assert fu.kategorie == "fu" and fu.artikel == "FU-1.5"                         # kleinster mit I_aus ≥ I_N, P ≥ P_N
+    mot = m.bm("-M2")
+    assert mot.daten["fu"] == "-T2" and mot.daten["i_netz_A"] == 3.7
+    assert m.bm(mot.daten["mss"]).daten["i_r_A"] == 3.7                            # MSS auf Netzeingangsstrom (A51)
+    w = next(c for c in m.kabel if c.nach == "-M2")
+    assert STAMM["artikel"][w.artikel]["geschirmt"] is True
+    direkt = next(c for c in m.kabel if c.nach == "-M1")
+    assert not STAMM["artikel"][direkt.artikel].get("geschirmt")                 # Direktstart bleibt ungeschirmt
+    kan = {k.geraet_bmk: (k.art, k.anschluss) for k in m.sps_kanaele if k.geraet_bmk.startswith("-T2")}
+    assert kan == {"-T2": ("DO", "-T2:DI1"), "-T2.2": ("AO", "-T2:AI1"), "-T2.3": ("DI", "-T2:RL1")}
+    assert not any(b.bmk == "-K2" for b in m.betriebsmittel)                       # kein Schütz beim FU
+    ohne = regeln.plane(copy.deepcopy(BEISPIEL), STAMM)
+    assert m.bilanz["i_motoren_A"] == pytest.approx(ohne.bilanz["i_motoren_A"] - 3.5 + 3.7)
+    assert not [b for b in pruefe_plan(m) if b.art == FEHLER]
+    assert any("Frequenzumrichter FU-1.5" in w for w in m.warnungen)
+
+
+def test_fu_in_beiden_pdfs(tmp_path):
+    m = regeln.plane(_fu_projekt(), STAMM)
+    zeichnen.erzeuge_pdf(m, str(tmp_path / "a.pdf"))
+    text = "".join(p.extract_text() for p in PdfReader(str(tmp_path / "a.pdf")).pages)
+    assert "-T2" in text and "geschirmt" in text and "Sollwert Drehzahl -M2" in text
+    seiten = erzeuge_hausstil_pdf(m, str(tmp_path / "h.pdf"))
+    i = [(a, t) for a, _, t in seiten].index(("M02", "Lastkreis"))
+    r = PdfReader(str(tmp_path / "h.pdf"))
+    last, steuer = r.pages[i].extract_text(), r.pages[i + 1].extract_text()
+    assert "-T1" in last and "I_aus = 4,1 A" in last and "geschirmt" in last
+    assert "%QW" in steuer and "RL1" in steuer and "DI1" in steuer and "AI1" in steuer
+
+
+def test_fu_fehlerfaelle():
+    p = _fu_projekt()
+    p["motoren"][1]["p_kW"] = 30
+    with pytest.raises(RegelFehler, match="kein Frequenzumrichter"):
+        regeln.plane(p, STAMM)
+    p = _fu_projekt()
+    p["motoren"][1]["anlauf"] = "stern-dreieck"
+    with pytest.raises(RegelFehler, match="erlaubt: direkt, fu"):
+        bereit_machen(p, STAMM, VORGABEN)
+
+
+def test_fu_ueber_excel(tmp_path):
+    schreibe_vorlage(_fu_projekt(), STAMM, tmp_path / "p.xlsx")
+    d = lade_excel(tmp_path / "p.xlsx")
+    assert [mo.get("anlauf") for mo in d["motoren"]] == ["direkt", "fu", "direkt", "direkt"]

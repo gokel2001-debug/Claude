@@ -66,6 +66,10 @@ def _anschluss(g: Betriebsmittel) -> str:
         return f"{eltern}{g.daten['ueber']}:A1"
     if g.daten.get("quelle"):                         # Rückmeldung über Hilfskontakt eines Schrankgeräts
         return f"{eltern}{g.daten['quelle']}:13"
+    if g.daten.get("fu_pin"):                         # Teilsignal eines Frequenzumrichters (Sollwert, Störrelais)
+        return f"{eltern}:{g.daten['fu_pin']}"
+    if g.kategorie == "fu":                           # Freigabe-Eingang des FU
+        return f"{g.bmk}:DI1"
     if g.kategorie == "schuetz":
         return f"{g.bmk}:A1"
     if g.kategorie == "motorschutz":
@@ -276,7 +280,9 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     gruppen: OrderedDict[str, list[Betriebsmittel]] = OrderedDict()
     gruppen["SPS"] = [b for b in sps_bm if b.kategorie != "sps_do"]
     do_last = [b for b in sps_bm if b.kategorie == "sps_do"]
-    for b in motor_signale:          # Schützspulen -> DO-Last, MSS-Rückmeldung -> SPS
+    for b in motor_signale:          # Schützspulen/FU-Freigabe -> DO-Last, MSS-/FU-Rückmeldung -> SPS
+        if b.daten["gruppe"] == "-":
+            continue                 # Sollwert 4–20 mA: keine 24-V-Last
         (do_last if b.daten["gruppe"] == "DO-Last" else gruppen["SPS"]).append(b)
     for b in feld:
         if b.daten["signal"] == "BAUSTEIN" and not b.daten["versorgt"]:
@@ -314,7 +320,7 @@ def plane(projekt: dict[str, Any], stamm: dict[str, Any]) -> Planmodell:
     }
     # 400-V-Summenstrom gegen Hauptschalter (Netzteil vereinfacht auf einem Außenleiter addiert)
     # Außenleiterströme: Motoren auf allen drei, Netzteil auf L1, 1~-Geräte reihum L1/L2/L3
-    i_mot = sum(float(x["i_N_A"]) for x in projekt.get("motoren", []))
+    i_mot = sum(float(x.daten.get("i_netz_A", x.daten["i_N_A"])) for x in m.betriebsmittel if x.kategorie == "motor")
     je_leiter = {"L1": i_mot + i_primaer, "L2": i_mot, "L3": i_mot}
     netzgeraete = [b for b in feld if b.daten.get("leistung")]
     for i, b in enumerate(netzgeraete):

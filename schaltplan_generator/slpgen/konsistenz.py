@@ -153,7 +153,7 @@ def _absicherungen(m: Planmodell) -> list[Befund]:
     def ohne_grund(v: str) -> bool:
         x = bm.get(v)
         return (x is not None and float(x.daten.get("i_A", 0) or 0) == 0 and x.kategorie not in ("motorschutz", "meldung")
-                and not x.daten.get("versorgt"))
+                and not x.daten.get("versorgt") and not x.daten.get("fu_pin"))     # FU-Störrelais = Kontaktspeisung
 
     for a in m.absicherungen:
         if a.i_gruppe_A > a.i_nenn_A:
@@ -239,7 +239,8 @@ def _motorschutz(m: Planmodell) -> list[Befund]:
     """Einstellwert des Motorschutzschalters im Einstellbereich des Artikels und gleich dem Bemessungsstrom."""
     befunde = []
     bm = {x.bmk: x for x in m.betriebsmittel}
-    paare = [(x.daten["mss"], float(x.daten["i_N_A"])) for x in m.betriebsmittel if x.kategorie == "motor"]
+    paare = [(x.daten["mss"], float(x.daten.get("i_netz_A", x.daten["i_N_A"]))) for x in m.betriebsmittel
+             if x.kategorie == "motor"]
     paare += [(x.daten["leistung"]["mss"], float(x.daten["leistung"]["i_N_A"])) for x in m.betriebsmittel
               if x.daten.get("leistung")]
     for mss_bmk, i_nenn in paare:

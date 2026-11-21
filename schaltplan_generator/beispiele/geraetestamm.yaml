@@ -76,6 +76,14 @@ artikel:
   KAB-4G1.5: {kategorie: kabel, hersteller: Beispiel GmbH, bezeichnung: "Steuer-/Motorleitung 4G1,5 mm²", adern: 4, querschnitt_mm2: 1.5}
   KAB-4G2.5: {kategorie: kabel, hersteller: Beispiel GmbH, bezeichnung: "Steuer-/Motorleitung 4G2,5 mm²", adern: 4, querschnitt_mm2: 2.5}
 
+  # Motorabgang mit Frequenzumrichter (FU): SYNTHETISCHE BEISPIELWERTE – echte Werte aus dem Datenblatt übernehmen
+  # i_aus_A = Bemessungsausgangsstrom, i_ein_A = Netzeingangsstrom, vorsicherung_max_A = max. Vorsicherung lt. Hersteller
+  FU-1.5: {kategorie: fu, hersteller: Beispiel GmbH, bezeichnung: "Frequenzumrichter 3~400 V 1,5 kW", p_kW: 1.5, i_aus_A: 4.1, i_ein_A: 3.7, vorsicherung_max_A: 10, i_steuer_A: 0.01}
+  FU-3.0: {kategorie: fu, hersteller: Beispiel GmbH, bezeichnung: "Frequenzumrichter 3~400 V 3,0 kW", p_kW: 3.0, i_aus_A: 7.2, i_ein_A: 6.5, vorsicherung_max_A: 16, i_steuer_A: 0.01}
+  FU-5.5: {kategorie: fu, hersteller: Beispiel GmbH, bezeichnung: "Frequenzumrichter 3~400 V 5,5 kW", p_kW: 5.5, i_aus_A: 13.0, i_ein_A: 11.7, vorsicherung_max_A: 25, i_steuer_A: 0.01}
+  KAB-4G1.5-CY: {kategorie: kabel, hersteller: Beispiel GmbH, bezeichnung: "Motorleitung geschirmt 4G1,5 mm² (EMV)", adern: 4, querschnitt_mm2: 1.5, geschirmt: true}
+  KAB-4G2.5-CY: {kategorie: kabel, hersteller: Beispiel GmbH, bezeichnung: "Motorleitung geschirmt 4G2,5 mm² (EMV)", adern: 4, querschnitt_mm2: 2.5, geschirmt: true}
+
   SPS-CPU:
     kategorie: sps_cpu
     hersteller: Beispiel GmbH
