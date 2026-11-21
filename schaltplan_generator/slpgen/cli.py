@@ -442,6 +442,18 @@ def cmd_vergleichen(a):
     print(json.dumps(analyse.vergleiche(Path(a.pdf), modell), indent=2, ensure_ascii=False))
 
 
+def cmd_abweichungen(a):
+    from .abweichung import schreibe_liste, vergleiche
+    from .hausstil import lade_hausstil
+    m = Planmodell.lade(a.nachbau)
+    erg = vergleiche(Path(a.referenz), m, lade_hausstil(a.profil) if a.profil else None)
+    ziel = Path(a.ausgabe or Path(a.nachbau).with_name(Path(a.referenz).stem + "_Abweichungen.xlsx"))
+    schreibe_liste(erg, ziel)
+    for bereich, (g, r, n, q) in erg["kennzahlen"].items():
+        print(f"{bereich:<12} gemeinsam {g:>4}  nur Referenz {r:>4}  nur Nachbau {n:>4}  Übereinstimmung {q:.1%}".replace(".", ","))
+    print(f"Abweichungsliste: {ziel} – Spalte „Bewertung“ je Zeile ausfüllen (Elektrofachkraft).")
+
+
 def cmd_struktur(a):
     from .struktur import lese_struktur
     e = lese_struktur(Path(a.pdf), schwelle=a.schwelle)
@@ -579,6 +591,12 @@ def main(argv=None):
     v.add_argument("pdf")
     v.add_argument("modell")
     v.set_defaults(f=cmd_vergleichen)
+    ab = sub.add_parser("abweichungen", help="Abnahme: Referenzplan (PDF) gegen Nachbau (Planmodell JSON) -> Excel-Liste")
+    ab.add_argument("referenz")
+    ab.add_argument("nachbau", help="…_Planmodell.json aus „generieren“")
+    ab.add_argument("--ausgabe")
+    ab.add_argument("--profil", help="Hausprofil für den Hausstil des Nachbaus (Standard: eingebauter Stil)")
+    ab.set_defaults(f=cmd_abweichungen)
     st = sub.add_parser("struktur", help="Vektor-PDF: Anlagen, BMK, SPS-Adressen, Adern, Typical-Kandidaten")
     st.add_argument("pdf")
     st.add_argument("--schwelle", type=float, default=0.75, help="Ähnlichkeit für Typical-Gruppen (0..1)")

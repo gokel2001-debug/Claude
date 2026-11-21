@@ -55,6 +55,7 @@ echo   Werkzeuge:
 echo   1  Beispielplan erzeugen und anzeigen (bisher + Hausstil)
 echo   4  Bestands-PDF auswerten (Struktur, Typicals)
 echo   5  Selbsttest
+echo   V  Abnahme: Referenzplan mit Nachbau vergleichen (Abweichungsliste Excel)
 echo.
 echo   0  Beenden
 echo.
@@ -74,6 +75,7 @@ if /i "%W%"=="K" goto :korrektur
 if /i "%W%"=="L" goto :hausregeln
 if /i "%W%"=="A" goto :artikelstamm
 if /i "%W%"=="Z" goto :artikelzuordnung
+if /i "%W%"=="V" goto :abweichungen
 if "%W%"=="0" goto :ende
 goto :menue
 
@@ -262,6 +264,24 @@ set /p "OK=So speichern? (J/N): "
 if /i not "%OK%"=="J" echo Nicht gespeichert. & pause & goto :menue
 %SLP% korrektur "%KP%" --art %KART% --wenn "%KW%" --dann "%KD%" --grund "%KG%"
 if errorlevel 1 goto :fehler_lauf
+pause
+goto :menue
+
+:abweichungen
+echo Referenzplan (Vektor-PDF) in dieses Fenster ziehen und Enter druecken:
+set "AR="
+set /p "AR=> "
+if not defined AR goto :menue
+set "AR=%AR:"=%"
+echo Nachbau: ..._Planmodell.json aus dem Ordner ausgabe hineinziehen und Enter druecken:
+set "AN="
+set /p "AN=> "
+if not defined AN goto :menue
+set "AN=%AN:"=%"
+%SLP% abweichungen "%AR%" "%AN%"
+if errorlevel 1 goto :fehler_lauf
+for %%F in ("%AN%") do (set "ANDIR=%%~dpF")
+start "" "%ANDIR%"
 pause
 goto :menue
 
