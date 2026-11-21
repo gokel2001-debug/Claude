@@ -48,6 +48,8 @@ echo   6  Hausprofil lernen (Ordner mit Bestands-PDFs)
 echo   7  Hausprofil freigeben (Excel-Liste uebernehmen)
 echo   K  Korrektur merken (Hausregel, wirkt in allen weiteren Plaenen)
 echo   L  Hausregeln ansehen / abschalten
+echo   A  Eigenen Artikelstamm einlesen (Excel/CSV-Export)
+echo   Z  Artikel-Zuordnung uebernehmen (Excel-Liste)
 echo.
 echo   Werkzeuge:
 echo   1  Beispielplan erzeugen und anzeigen (bisher + Hausstil)
@@ -70,6 +72,8 @@ if "%W%"=="8" goto :kiauftrag
 if "%W%"=="9" goto :kiantwort
 if /i "%W%"=="K" goto :korrektur
 if /i "%W%"=="L" goto :hausregeln
+if /i "%W%"=="A" goto :artikelstamm
+if /i "%W%"=="Z" goto :artikelzuordnung
 if "%W%"=="0" goto :ende
 goto :menue
 
@@ -267,6 +271,25 @@ set "RID="
 set /p "RID=> "
 if not defined RID goto :menue
 %SLP% hausregel aus "%RID%"
+if errorlevel 1 goto :fehler_lauf
+pause
+goto :menue
+
+:artikelstamm
+echo Artikel-Export (Excel .xlsx oder .csv mit Spalten Artikelnummer, Hersteller, Bezeichnung) ins Fenster ziehen:
+set "AE="
+set /p "AE=> "
+if not defined AE goto :menue
+set "AE=%AE:"=%"
+%SLP% artikelstamm "%AE%"
+if errorlevel 1 goto :fehler_lauf
+echo In Excel Spalte E: JA = Vorschlag uebernehmen, oder eigene Artikelnummer eintragen. Speichern, dann Punkt Z.
+start "" "hausprofil\artikelzuordnung.xlsx"
+pause
+goto :menue
+
+:artikelzuordnung
+%SLP% artikelzuordnung
 if errorlevel 1 goto :fehler_lauf
 pause
 goto :menue

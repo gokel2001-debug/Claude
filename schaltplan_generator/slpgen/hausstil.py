@@ -932,7 +932,8 @@ class Hausplan:
             art = artikel.get(bm.artikel, {"hersteller": "", "bezeichnung": "Beistellung Kunde"})
             menge = ((f"{_zahl(bm.daten['laenge_m'])} m" if bm.daten.get("laenge_m") else NACH_FELDMASS)
                      if bm.kategorie == "kabel" else "1 Stk")
-            zeilen.append((f"={kenn}", ort, lok, menge, art.get("hersteller", ""), bm.artikel, _kuerze(art["bezeichnung"], 110)))
+            zeilen.append((f"={kenn}", ort, lok, menge, art.get("hersteller", ""), art.get("artikelnummer") or bm.artikel,
+                           _kuerze(art["bezeichnung"], 110)))
         klemmen: dict[tuple[str, str, str], int] = {}
         for k in self._klemmenzeilen():
             anlage, rest = k[0][1:].split("-", 1)

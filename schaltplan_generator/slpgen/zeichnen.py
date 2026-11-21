@@ -492,7 +492,7 @@ def stueckliste_zeilen(m: Planmodell) -> list[tuple]:
         einheit = "m" if a["kategorie"] == "kabel" else "Stk"
         if a["kategorie"] == "kabel" and any(not m.bm(x).daten.get("laenge_m") for x in bmks):
             einheit += " + Länge lt. Feld"
-        zeilen.append((pos, f"{menge:g} {einheit}", art, a.get("hersteller", ""), a["bezeichnung"][:60],
+        zeilen.append((pos, f"{menge:g} {einheit}", a.get("artikelnummer") or art, a.get("hersteller", ""), a["bezeichnung"][:60],
                        ", ".join(bmks)[:45]))
     return zeilen
 

@@ -136,6 +136,8 @@ def cmd_generieren(a):
     ziel = Path(a.ausgabe) if a.ausgabe else Path(a.projekt).resolve().parent / "ausgabe"   # Projektordner = alles
     ziel.mkdir(parents=True, exist_ok=True)
     json_pfad = ziel / f"{m.projekt['nummer']}_Planmodell.json"
+    from .artikelstamm import wende_zuordnung_an  # eigener Artikelstamm (Hersteller/Artikelnummer)
+    m.warnungen.extend(wende_zuordnung_an(m, Path(a.profil or PROFIL).with_name("artikelstamm.yaml")))
     from .hausstil import kennzeichne, lade_hausstil
     try:                                         # Kennzeichen gehören ins Planmodell (gleich in PDF und EPLAN)
         m.kennzeichen = kennzeichne(m, lade_hausstil(a.profil))
@@ -200,6 +202,20 @@ def cmd_korrektur(a):
     was = f"mindestens {r['dann']} mm²".replace(".", ",") if r["art"] == "mindestquerschnitt" else f"{r['wenn']} → {r['dann']}"
     print(f"Hausregel {r['id']} gespeichert ({ARTEN[r['art']]}: {was}). Sie wirkt ab dem nächsten Plan und steht im "
           f"Auslegungsnachweis.")
+
+
+def cmd_artikelstamm(a):
+    from .artikelstamm import importiere
+    yml, xlsx, n = importiere(a.export, lade_yaml(a.stamm), Path(a.profil).parent)
+    print(f"Eigener Artikelstamm gespeichert: {yml}")
+    print(f"Zuordnungsliste: {xlsx} – {n} Vorschläge. In Spalte E „JA“ (Vorschlag übernehmen) oder eine eigene "
+          f"Artikelnummer eintragen, speichern, dann Befehl artikelzuordnung (Menüpunkt Z).")
+
+
+def cmd_artikelzuordnung(a):
+    from .artikelstamm import uebernehme_zuordnung
+    z = uebernehme_zuordnung(Path(a.profil).parent)
+    print(f"{len(z)} Zuordnungen übernommen – sie wirken ab dem nächsten Plan (Stückliste, EPLAN-Daten).")
 
 
 def cmd_artikelliste(a):
@@ -485,6 +501,14 @@ def main(argv=None):
     hr.add_argument("--profil", default=PROFIL)
     hr.add_argument("--bestaetigen", action="store_true", help="aktuelles Ergebnis aller Fälle als neues Soll übernehmen")
     hr.set_defaults(f=cmd_hausregeln)
+    ast_ = sub.add_parser("artikelstamm", help="Eigenen Artikelstamm (Excel/CSV-Export) einlesen, Zuordnungsliste erzeugen")
+    ast_.add_argument("export")
+    ast_.add_argument("--stamm", default=STAMM)
+    ast_.add_argument("--profil", default=PROFIL)
+    ast_.set_defaults(f=cmd_artikelstamm)
+    az = sub.add_parser("artikelzuordnung", help="Ausgefüllte Zuordnungsliste übernehmen")
+    az.add_argument("--profil", default=PROFIL)
+    az.set_defaults(f=cmd_artikelzuordnung)
     al = sub.add_parser("artikelliste", help="Artikel und 24-V-Gruppen eines Projekts anzeigen")
     al.add_argument("projekt")
     al.add_argument("--stamm", default=STAMM)
