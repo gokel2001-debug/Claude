@@ -31,6 +31,15 @@ jobs:
           programm\slpgen.exe ki-auftrag beispiele\lastenheft_beispiel.md --ziel ausgabe\ki_auftrag.txt || exit /b 1
           if not exist ausgabe\selbsttest\P-2026-001_Stromlaufplan_Hausstil.pdf exit /b 1
           if exist hausprofil exit /b 1
+      - name: Startprüfung der Oberfläche (Exe, nur 127.0.0.1)
+        working-directory: schaltplan_generator/dist/Stromlaufplan-Generator
+        shell: pwsh
+        run: |
+          $p = Start-Process programm\slpgen.exe -ArgumentList "oberflaeche","--nicht-oeffnen","--port","8765" -PassThru -NoNewWindow
+          Start-Sleep -Seconds 8
+          $r = Invoke-WebRequest http://127.0.0.1:8765/ -UseBasicParsing
+          Stop-Process -Id $p.Id -Force
+          if ($r.Content -notmatch "Projekt anlegen") { exit 1 }
       - name: Prüfausgaben entfernen
         working-directory: schaltplan_generator/dist/Stromlaufplan-Generator
         shell: cmd

@@ -40,6 +40,8 @@ echo ==========================================================
 echo   Stromlaufplan-Generator  (Prototyp - nicht freigegeben)
 echo ==========================================================
 echo.
+echo   O  NEU: Oberflaeche im Browser (gefuehrter Ablauf, im Aufbau)
+echo.
 echo   Projekt aus Lastenheft (mit KI-Chat):
 echo   8  KI-Auftrag aus Lastenheft erstellen
 echo   9  KI-Antwort pruefen und Plan erzeugen
@@ -67,6 +69,7 @@ echo.
 set "W="
 set /p "W=Auswahl eingeben und Enter druecken: "
 if defined W set "W=%W:"=%"
+if /i "%W%"=="O" goto :oberflaeche
 if "%W%"=="1" goto :beispiel
 if "%W%"=="2" goto :neu
 if "%W%"=="3" goto :excel
@@ -82,6 +85,11 @@ if /i "%W%"=="A" goto :artikelstamm
 if /i "%W%"=="Z" goto :artikelzuordnung
 if /i "%W%"=="V" goto :abweichungen
 if "%W%"=="0" goto :ende
+goto :menue
+
+:oberflaeche
+%SLP% oberflaeche
+if errorlevel 1 goto :fehler_lauf
 goto :menue
 
 :beispiel

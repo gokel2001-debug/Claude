@@ -60,6 +60,10 @@ Auf Firmen-PCs braucht man dafür eventuell die IT (Administratorrechte).
 
 Danach erscheint ein Menü:
 
+**Neu (im Aufbau):** Taste **O** öffnet die Oberfläche im Browser mit dem geführten Ablauf in 6 Schritten. Sie läuft nur
+auf diesem PC (Adresse beginnt mit `http://127.0.0.1`), nichts geht ins Internet. Das Menüfenster offen lassen; mit Enter
+im Menüfenster wird die Oberfläche beendet. Bisher fertig: Schritt 1 „Projekt anlegen“ – die übrigen Schritte weiter über das Menü.
+
 | Taste | Funktion | Ergebnis |
 |---|---|---|
 | **1** | Beispielplan erzeugen und anzeigen | **zwei PDFs** öffnen sich: der bisherige Plan und derselbe Plan **im Hausstil** (Name endet auf `_Hausstil`) – bitte vor allem den Hausstil ansehen |

@@ -469,6 +469,24 @@ def cmd_struktur(a):
                                         "leere_anlagen", "aderkennzeichnung_gesamt")}, indent=1, ensure_ascii=False))
 
 
+def cmd_oberflaeche(a):
+    from .oberflaeche import oeffnen, starte
+    server = starte(PROG / "meine_projekte", PROG / "beispiele" / "Projekt_Vorlage.xlsx", a.port)
+    url = f"http://127.0.0.1:{server.server_address[1]}/"
+    if not a.nicht_oeffnen:
+        url = oeffnen(server)
+    print(f"Oberfläche läuft im Browser: {url}")
+    print("Dieses Fenster offen lassen. Beenden: Enter drücken (oder Fenster schließen).")
+    try:
+        input()
+    except EOFError:                       # ohne Konsoleneingabe (Hintergrundstart): laufen, bis beendet
+        import threading
+        threading.Event().wait()
+    except KeyboardInterrupt:
+        pass
+    server.shutdown()
+
+
 def cmd_vorlage(a):
     from .excel_eingabe import schreibe_vorlage
     schreibe_vorlage(lade_yaml(a.beispiel), lade_yaml(a.stamm), a.ziel)
@@ -608,6 +626,10 @@ def main(argv=None):
     st.add_argument("--schwelle", type=float, default=0.75, help="Ähnlichkeit für Typical-Gruppen (0..1)")
     st.add_argument("--ausgabe", help="JSON-Datei für das vollständige Ergebnis")
     st.set_defaults(f=cmd_struktur)
+    ob = sub.add_parser("oberflaeche", help="Anwender-Oberfläche im Browser öffnen (nur dieser PC)")
+    ob.add_argument("--port", type=int, default=0, help="Port (Standard: freier Port)")
+    ob.add_argument("--nicht-oeffnen", dest="nicht_oeffnen", action="store_true", help="Browser nicht öffnen")
+    ob.set_defaults(f=cmd_oberflaeche)
     vo = sub.add_parser("vorlage", help="Excel-Vorlage für die Projekteingabe erzeugen")
     vo.add_argument("ziel", nargs="?", default="beispiele/Projekt_Vorlage.xlsx")
     vo.add_argument("--beispiel", default="beispiele/projekt_beispiel.yaml")
